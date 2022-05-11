@@ -12,6 +12,7 @@
 include(GrPlatform) #define LIB_SUFFIX
 
 list(APPEND plasma_sources
+    lfm_source_impl.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)

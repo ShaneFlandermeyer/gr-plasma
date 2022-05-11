@@ -11,5 +11,5 @@
 ########################################################################
 install(FILES
     api.h
-    DESTINATION include/gnuradio/plasma
+    lfm_source.h DESTINATION include/gnuradio/plasma
 )

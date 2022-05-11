@@ -7,5 +7,5 @@
 #
 
 install(FILES
-    DESTINATION share/gnuradio/grc/blocks
+    plasma_lfm_source.block.yml DESTINATION share/gnuradio/grc/blocks
 )
