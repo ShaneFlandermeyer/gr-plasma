@@ -17,10 +17,20 @@ namespace plasma {
 class lfm_source_impl : public lfm_source
 {
 private:
-    // Nothing to declare in this block.
+    const pmt::pmt_t d_port;
+    pmt::pmt_t d_msg;
+    gr::thread::thread d_thread;
     ::plasma::LinearFMWaveform d_waveform;
     Eigen::ArrayXcf d_data;
-    int d_sample_index;
+    boost::posix_time::ptime d_epoch;
+    uint64_t d_start_time;
+    uint64_t d_send_time;
+    double d_prf;
+    size_t d_sample_index;
+    std::atomic<bool> d_finished;
+    std::atomic<bool> d_armed;
+
+    void run();
 
 public:
     lfm_source_impl(double bandwidth, double pulse_width, double prf, double samp_rate);
@@ -30,6 +40,9 @@ public:
     int work(int noutput_items,
              gr_vector_const_void_star& input_items,
              gr_vector_void_star& output_items);
+
+    bool start() override;
+    bool stop() override;
 };
 
 } // namespace plasma

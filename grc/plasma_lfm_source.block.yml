@@ -45,11 +45,14 @@ parameters:
 #  optional: ...
 
 outputs:
+- domain: message
+  id: pdu
+  optional: true
 - label: out
   domain: stream
   dtype: complex
   vlen: 1
-  optional: 0
+  optional: false
 
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.

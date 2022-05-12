@@ -96,9 +96,9 @@ endif(APPLE)
 # Find gnuradio build dependencies
 ########################################################################
 find_package(Doxygen)
-find_package(plasma-dsp REQUIRED)
 find_package(Eigen3 3.4 REQUIRED)
 find_package(OpenMP REQUIRED)
+find_package(plasma-dsp REQUIRED)
 
 ########################################################################
 # Setup doxygen option
