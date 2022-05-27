@@ -1,5 +1,5 @@
 id: plasma_lfm_source
-label: LFM Source
+label: Linear FM Source
 category: '[plasma]'
 
 templates:
@@ -47,12 +47,10 @@ parameters:
 outputs:
 - domain: message
   id: pdu
-  optional: true
-- label: out
-  domain: stream
-  dtype: complex
-  vlen: 1
   optional: false
+
+documentation: |-
+  Generates a linear frequency modulated radar waveform.
 
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.

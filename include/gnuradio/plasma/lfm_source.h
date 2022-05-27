@@ -9,17 +9,18 @@
 #define INCLUDED_PLASMA_LFM_SOURCE_H
 
 #include <gnuradio/plasma/api.h>
-#include <gnuradio/sync_block.h>
+// #include <gnuradio/sync_block.h>
+#include <gnuradio/block.h>
 
 namespace gr {
   namespace plasma {
 
     /*!
-     * \brief <+description of block+>
+     * \brief Generates a linear frequency modulated waveform
      * \ingroup plasma
      *
      */
-    class PLASMA_API lfm_source : virtual public gr::sync_block
+    class PLASMA_API lfm_source : virtual public gr::block
     {
      public:
       typedef std::shared_ptr<lfm_source> sptr;

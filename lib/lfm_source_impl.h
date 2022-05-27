@@ -36,11 +36,6 @@ public:
     lfm_source_impl(double bandwidth, double pulse_width, double prf, double samp_rate);
     ~lfm_source_impl();
 
-    // Where all the action really happens
-    int work(int noutput_items,
-             gr_vector_const_void_star& input_items,
-             gr_vector_void_star& output_items);
-
     bool start() override;
     bool stop() override;
 };
