@@ -44,11 +44,7 @@ lfm_source_impl::lfm_source_impl(double bandwidth,
         duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
     d_send_time = d_start_time + 1e5;
     d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, prf, samp_rate);
-    d_data = d_waveform.sample().cast<gr_complex>();
-    // Have to add zeros for tagged stream weirdness
-    // https://pretalx.sysmocom.de/media/ptrkrysik_gsm_bursts_OsmoDevCon2018.pdf
-    d_data.conservativeResize(d_data.size() + (int)(5*samp_rate/1e6));
-    d_data.tail((int)(5*samp_rate/1e6)).setZero();
+    d_data = d_waveform.step().cast<gr_complex>();
     message_port_register_out(d_port);
 }
 
