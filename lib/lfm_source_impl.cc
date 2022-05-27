@@ -42,10 +42,13 @@ lfm_source_impl::lfm_source_impl(double bandwidth,
     d_epoch = epoch;
     d_start_time =
         duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
-    d_send_time = d_start_time + 1e6;
+    d_send_time = d_start_time + 1e5;
     d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, prf, samp_rate);
     d_data = d_waveform.sample().cast<gr_complex>();
-
+    // Have to add zeros for tagged stream weirdness
+    // https://pretalx.sysmocom.de/media/ptrkrysik_gsm_bursts_OsmoDevCon2018.pdf
+    d_data.conservativeResize(d_data.size() + (int)(5*samp_rate/1e6));
+    d_data.tail((int)(5*samp_rate/1e6)).setZero();
     message_port_register_out(d_port);
 }
 
@@ -145,7 +148,7 @@ int lfm_source_impl::work(int noutput_items,
     // }
 
     // Tell runtime system how many output items we produced.
-    // return noutput_items;
+    return noutput_items;
 }
 
 } /* namespace plasma */
