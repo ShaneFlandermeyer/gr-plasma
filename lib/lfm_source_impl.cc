@@ -104,9 +104,9 @@ void lfm_source_impl::run()
             d_send_time - 1e3) {
             boost::this_thread::sleep(boost::posix_time::microseconds(1));
         }
-        d_send_time += 1e6 / d_prf;
         if (d_finished)
             return;
+        d_send_time += 1e6 / d_prf;
         // Create the metadata dictionary and publish the PDU
         pmt::pmt_t meta = pmt::make_dict();
         meta = pmt::dict_add(
