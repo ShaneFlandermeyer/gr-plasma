@@ -1,5 +1,5 @@
 id: plasma_waveform_controller
-label: waveform_controller
+label: Waveform Controller
 category: '[plasma]'
 
 templates:
