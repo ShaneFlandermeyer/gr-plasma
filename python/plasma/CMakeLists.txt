@@ -40,3 +40,4 @@ add_custom_target(
           ${CMAKE_BINARY_DIR}/test_modules/gnuradio/plasma/
 )
 GR_ADD_TEST(qa_lfm_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_lfm_source.py)
+GR_ADD_TEST(qa_waveform_controller ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_waveform_controller.py)

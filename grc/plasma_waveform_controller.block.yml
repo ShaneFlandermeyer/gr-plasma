@@ -1,10 +1,10 @@
-id: plasma_lfm_source
-label: Linear FM Source
+id: plasma_waveform_controller
+label: waveform_controller
 category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.lfm_source(${bandwidth}, ${pulse_width}, ${prf}, ${samp_rate})
+  make: plasma.waveform_controller(${prf}, ${samp_rate})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -13,17 +13,11 @@ templates:
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
-- id: bandwidth
-  label: Bandwidth
-  dtype: float
-- id: pulse_width
-  label: Pulse width
-  dtype: float
 - id: prf
   label: PRF
   dtype: float
 - id: samp_rate
-  label: Sample rate
+  label: Sample Rate
   dtype: float
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
@@ -33,20 +27,15 @@ parameters:
 #      * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #      * vlen (optional - data stream vector length. Default is 1)
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
-# inputs:
-#- label: ...
-#  domain: ...
-#  dtype: ...
-#  vlen: ...
-#  optional: ...
+inputs:
+- label: in
+  id: in
+  domain: message
 
 outputs:
-- domain: message
-  id: pdu
-  optional: false
-
-documentation: |-
-  Generates a linear frequency modulated radar waveform.
+- label: out
+  domain: stream
+  dtype: complex
 
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.
