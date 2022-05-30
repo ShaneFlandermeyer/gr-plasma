@@ -22,13 +22,13 @@ private:
     gr::thread::thread d_thread;
     ::plasma::LinearFMWaveform d_waveform;
     Eigen::ArrayXcf d_data;
-    boost::posix_time::ptime d_epoch;
+    // boost::posix_time::ptime d_epoch;
     uint64_t d_start_time;
     uint64_t d_send_time;
     double d_prf;
-    size_t d_sample_index;
+    // size_t d_sample_index;
     std::atomic<bool> d_finished;
-    std::atomic<bool> d_armed;
+    // std::atomic<bool> d_armed;
 
     void run();
 
