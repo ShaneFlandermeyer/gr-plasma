@@ -25,7 +25,7 @@ private:
     // boost::posix_time::ptime d_epoch;
     uint64_t d_start_time;
     uint64_t d_send_time;
-    double d_prf;
+    // double d_prf;
     // size_t d_sample_index;
     std::atomic<bool> d_finished;
     // std::atomic<bool> d_armed;
@@ -34,7 +34,7 @@ private:
 
 public:
     // TODO: Remove prf parameter
-    lfm_source_impl(double bandwidth, double pulse_width, double prf, double samp_rate);
+    lfm_source_impl(double bandwidth, double pulse_width, double samp_rate);
     ~lfm_source_impl();
 
     bool start() override;

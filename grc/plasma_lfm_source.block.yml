@@ -4,7 +4,7 @@ category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.lfm_source(${bandwidth}, ${pulse_width}, ${prf}, ${samp_rate})
+  make: plasma.lfm_source(${bandwidth}, ${pulse_width}, ${samp_rate})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -18,9 +18,6 @@ parameters:
   dtype: float
 - id: pulse_width
   label: Pulse width
-  dtype: float
-- id: prf
-  label: PRF
   dtype: float
 - id: samp_rate
   label: Sample rate

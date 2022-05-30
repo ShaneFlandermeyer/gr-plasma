@@ -13,26 +13,21 @@ namespace gr {
 namespace plasma {
 
 using output_type = gr_complex;
-lfm_source::sptr
-lfm_source::make(double bandwidth, double pulse_width, double prf, double samp_rate)
+lfm_source::sptr lfm_source::make(double bandwidth, double pulse_width, double samp_rate)
 {
-    return gnuradio::make_block_sptr<lfm_source_impl>(
-        bandwidth, pulse_width, prf, samp_rate);
+    return gnuradio::make_block_sptr<lfm_source_impl>(bandwidth, pulse_width, samp_rate);
 }
 
 
 /*
  * The private constructor
  */
-lfm_source_impl::lfm_source_impl(double bandwidth,
-                                 double pulse_width,
-                                 double prf,
-                                 double samp_rate)
+lfm_source_impl::lfm_source_impl(double bandwidth, double pulse_width, double samp_rate)
     : gr::block(
           "lfm_source", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
-      d_port(pmt::mp("pdu")),
-      d_prf(prf)
-    //   d_sample_index(0)
+      d_port(pmt::mp("pdu"))
+//   d_prf(prf)
+//   d_sample_index(0)
 
 {
     // using namespace std::chrono;
@@ -41,7 +36,7 @@ lfm_source_impl::lfm_source_impl(double bandwidth,
     // d_start_time =
     //     duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
     // d_send_time = d_start_time + 1e5;
-    d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, prf, samp_rate);
+    d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, 0, samp_rate);
     d_data = d_waveform.sample().cast<gr_complex>();
     message_port_register_out(d_port);
 }
@@ -63,9 +58,9 @@ bool lfm_source_impl::start()
     d_thread = gr::thread::thread([this] { run(); });
     // Send a PDU containing the waveform and its metadata
     pmt::pmt_t meta = pmt::make_dict();
-    meta = pmt::dict_add(meta, pmt::mp("prf"), pmt::from_double(d_prf));
+    // meta = pmt::dict_add(meta, pmt::mp("prf"), pmt::from_double(d_prf));
     pmt::pmt_t data = pmt::init_c32vector(d_data.size(), d_data.data());
-    message_port_pub(d_port, pmt::cons(meta,data));
+    message_port_pub(d_port, pmt::cons(meta, data));
 
 
     return block::start();
@@ -106,8 +101,8 @@ void lfm_source_impl::run()
     // using namespace std::chrono;
     while (not d_finished) {
         // while (
-        //     duration_cast<microseconds>(system_clock::now().time_since_epoch()).count() <
-        //     d_send_time - 1e3) {
+        //     duration_cast<microseconds>(system_clock::now().time_since_epoch()).count()
+        //     < d_send_time - 1e3) {
         //     boost::this_thread::sleep(boost::posix_time::microseconds(1));
         // }
         if (d_finished)
