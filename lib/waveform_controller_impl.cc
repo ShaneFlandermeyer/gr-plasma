@@ -63,6 +63,9 @@ int waveform_controller_impl::work(int noutput_items,
 {
     auto out = static_cast<output_type*>(output_items[0]);
     for (int i = 0; i < noutput_items; i++) {
+        if (d_sample_index == 0) {
+            // TODO: Propagate metadata through tags
+        }
         out[i] = d_data[d_sample_index];
         d_sample_index = (d_sample_index + 1) % d_data.size();
         
