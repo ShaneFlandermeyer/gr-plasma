@@ -13,8 +13,8 @@
 /* If manual edits are made, the following tags should be modified accordingly.    */
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
-/* BINDTOOL_HEADER_FILE(lfm_source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(add23f7130468affb769fd7a2724df0c)                     */
+/* BINDTOOL_HEADER_FILE(waveform_controller.h)                                        */
+/* BINDTOOL_HEADER_FILE_HASH(ab3587737e5fbc90729334a1a4f59fe5)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -23,24 +23,23 @@
 
 namespace py = pybind11;
 
-#include <gnuradio/plasma/lfm_source.h>
+#include <gnuradio/plasma/waveform_controller.h>
 // pydoc.h is automatically generated in the build directory
-#include <lfm_source_pydoc.h>
+#include <waveform_controller_pydoc.h>
 
-void bind_lfm_source(py::module& m)
+void bind_waveform_controller(py::module& m)
 {
 
-    using lfm_source    = ::gr::plasma::lfm_source;
+    using waveform_controller    = ::gr::plasma::waveform_controller;
 
 
-    py::class_<lfm_source, gr::block, gr::basic_block,
-        std::shared_ptr<lfm_source>>(m, "lfm_source", D(lfm_source))
+    py::class_<waveform_controller, gr::sync_block, gr::block, gr::basic_block,
+        std::shared_ptr<waveform_controller>>(m, "waveform_controller", D(waveform_controller))
 
-        .def(py::init(&lfm_source::make),
-           py::arg("bandwidth"),
-           py::arg("pulse_width"),
+        .def(py::init(&waveform_controller::make),
+           py::arg("prf"),
            py::arg("samp_rate"),
-           D(lfm_source,make)
+           D(waveform_controller,make)
         )
         
 

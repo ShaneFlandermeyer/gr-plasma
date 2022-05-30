@@ -16,12 +16,12 @@
 
 
  
- static const char *__doc_gr_plasma_lfm_source = R"doc()doc";
+ static const char *__doc_gr_plasma_waveform_controller = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_lfm_source_lfm_source = R"doc()doc";
+ static const char *__doc_gr_plasma_waveform_controller_waveform_controller = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_lfm_source_make = R"doc()doc";
+ static const char *__doc_gr_plasma_waveform_controller_make = R"doc()doc";
 
   

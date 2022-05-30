@@ -33,7 +33,7 @@ namespace gr {
        * class. plasma::lfm_source::make is the public interface for
        * creating new instances.
        */
-      static sptr make(double bandwidth, double pulse_width, double prf, double samp_rate);
+      static sptr make(double bandwidth, double pulse_width, double samp_rate);
     };
 
   } // namespace plasma

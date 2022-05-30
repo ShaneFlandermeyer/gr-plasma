@@ -29,7 +29,8 @@ include(GrPybind)
 ########################################################################
 
 list(APPEND plasma_python_files
-    lfm_source_python.cc python_bindings.cc)
+    lfm_source_python.cc
+    waveform_controller_python.cc python_bindings.cc)
 
 GR_PYBIND_MAKE_OOT(plasma
    ../../..
