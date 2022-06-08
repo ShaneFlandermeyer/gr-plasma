@@ -9,8 +9,11 @@
 #define INCLUDED_PLASMA_USRP_RADAR_IMPL_H
 
 #include <gnuradio/plasma/usrp_radar.h>
-#include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/types/time_spec.hpp>
+#include <uhd/usrp/multi_usrp.hpp>
+#include <uhd_radar/receive.h>
+#include <uhd_radar/transmit.h>
+#include <fstream>
 
 namespace gr {
 namespace plasma {
@@ -30,6 +33,8 @@ private:
 
     std::vector<gr_complex> d_data;
     double d_prf;
+    double d_num_pulse_cpi;
+    size_t d_delay_samps;
 
 public:
     usrp_radar_impl();
