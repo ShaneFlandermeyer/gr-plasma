@@ -29,6 +29,7 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
                          1 /* min outputs */, 1 /*max outputs */, sizeof(output_type)))
 {
     message_port_register_in(pmt::mp("in"));
+    message_port_register_out(pmt::mp("out"));
     set_msg_handler(pmt::mp("in"),
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_sample_index = 0;
@@ -57,6 +58,13 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
         // Create a std vector and zero-pad to the length of the PRI
         d_data = std::vector<output_type>(ptr, ptr + d_num_samp_waveform);
         d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
+
+        // Send the new waveform through the message port (with additional
+        // metadata)
+        meta = pmt::dict_add(meta, pmt::intern("prf"), pmt::from_double(d_prf));
+        // pmt::pmt_t data = ;
+        message_port_pub(pmt::mp("out"), pmt::cons(meta, pmt::init_c32vector(d_data.size(), d_data.data())));
+        
     } else if (pmt::is_pair(msg)) {
         pmt::pmt_t key = pmt::car(msg);
         pmt::pmt_t val = pmt::cdr(msg);

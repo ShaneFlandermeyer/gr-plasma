@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_WAVEFORM_CONTROLLER_IMPL_H
 
 #include <gnuradio/plasma/waveform_controller.h>
+#include <uhd/usrp/multi_usrp.hpp>
 
 namespace gr {
 namespace plasma {

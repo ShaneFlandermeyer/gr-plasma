@@ -41,3 +41,4 @@ add_custom_target(
 )
 GR_ADD_TEST(qa_lfm_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_lfm_source.py)
 GR_ADD_TEST(qa_waveform_controller ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_waveform_controller.py)
+GR_ADD_TEST(qa_usrp_radar ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_usrp_radar.py)

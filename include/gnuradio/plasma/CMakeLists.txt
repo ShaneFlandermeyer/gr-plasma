@@ -12,5 +12,6 @@
 install(FILES
     api.h
     lfm_source.h
-    waveform_controller.h DESTINATION include/gnuradio/plasma
+    waveform_controller.h
+    usrp_radar.h DESTINATION include/gnuradio/plasma
 )

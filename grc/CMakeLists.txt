@@ -8,5 +8,6 @@
 
 install(FILES
     plasma_lfm_source.block.yml
-    plasma_waveform_controller.block.yml DESTINATION share/gnuradio/grc/blocks
+    plasma_waveform_controller.block.yml
+    plasma_usrp_radar.block.yml DESTINATION share/gnuradio/grc/blocks
 )
