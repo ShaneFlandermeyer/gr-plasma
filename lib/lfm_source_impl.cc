@@ -50,13 +50,18 @@ bool lfm_source_impl::start()
     d_finished = false;
     // Send a PDU containing the waveform and its metadata
     pmt::pmt_t meta = pmt::make_dict();
+    meta = pmt::dict_add(
+        meta, pmt::intern("bandwidth"), pmt::from_double(d_waveform.bandwidth()));
+    meta = pmt::dict_add(
+        meta, pmt::intern("pulse_width"), pmt::from_double(d_waveform.pulse_width()));
+    meta = pmt::dict_add(
+        meta, pmt::intern("samp_rate"), pmt::from_double(d_waveform.samp_rate()));
     pmt::pmt_t data = pmt::init_c32vector(d_data.size(), d_data.data());
     message_port_pub(d_port, pmt::cons(meta, data));
 
 
     return block::start();
 }
-
 
 
 } /* namespace plasma */

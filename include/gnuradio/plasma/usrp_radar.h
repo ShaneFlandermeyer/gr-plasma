@@ -32,7 +32,16 @@ public:
      * class. plasma::usrp_radar::make is the public interface for
      * creating new instances.
      */
-    static sptr make();
+    static sptr make(double samp_rate,
+                     double tx_gain,
+                     double rx_gain,
+                     double tx_freq,
+                     double rx_freq,
+                     double tx_start_time,
+                     double rx_start_time,
+                     const std::string& tx_args,
+                     const std::string& rx_args,
+                     size_t num_pulse_cpi);
 };
 
 } // namespace plasma

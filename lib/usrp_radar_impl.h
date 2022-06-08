@@ -24,9 +24,12 @@ private:
     uhd::usrp::multi_usrp::sptr d_usrp;
     // double d_tx_rate, d_rx_rate;
     double d_samp_rate;
-    double d_tx_freq, d_rx_freq;
-    double d_tx_gain, d_rx_gain;
-    uhd::time_spec_t d_tx_start_time, d_rx_start_time;
+    double d_tx_gain;
+    double d_rx_gain;
+    double d_tx_freq;
+    double d_rx_freq;
+    uhd::time_spec_t d_tx_start_time;
+    uhd::time_spec_t d_rx_start_time;
     std::string d_tx_args, d_rx_args;
     bool d_finished;
     gr::thread::thread d_thread;
@@ -35,9 +38,19 @@ private:
     double d_prf;
     double d_num_pulse_cpi;
     size_t d_delay_samps;
+    pmt::pmt_t d_meta;
 
 public:
-    usrp_radar_impl();
+    usrp_radar_impl(double samp_rate,
+                     double tx_gain,
+                     double rx_gain,
+                     double tx_freq,
+                     double rx_freq,
+                     double tx_start_time,
+                     double rx_start_time,
+                     const std::string& tx_args,
+                     const std::string& rx_args,
+                     size_t num_pulse_cpi);
     ~usrp_radar_impl();
 
     void handle_message(const pmt::pmt_t& msg);

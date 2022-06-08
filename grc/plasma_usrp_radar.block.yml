@@ -4,7 +4,7 @@ category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.usrp_radar()
+  make: plasma.usrp_radar(${samp_rate},${tx_gain},${rx_gain},${tx_freq},${rx_freq},${tx_start_time},${rx_start_time},${tx_args},${rx_args},${num_pulse_cpi})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -12,14 +12,47 @@ templates:
 #     * label (label shown in the GUI)
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
-# parameters:
-# - id: parametername_replace_me
-#   label: FIX ME:
-#   dtype: string
-#   default: You need to fill in your grc/plasma_usrp_radar.block.yaml
-#- id: ...
-#  label: ...
-#  dtype: ...
+parameters:
+- id: samp_rate
+  label: Sample Rate
+  dtype: float
+  default: 'samp_rate'
+- id: tx_gain
+  label: Rx Gain
+  dtype: float
+  default: 0
+- id: rx_gain
+  label: Rx Gain
+  dtype: float
+  default: 0
+- id: tx_freq
+  label: Tx Center Frequency
+  dtype: float
+  default: 'center_freq'
+- id: rx_freq
+  label: Rx Center Frequency
+  dtype: float
+  default: 'center_freq'
+- id: tx_start_time
+  label: Tx Start Time
+  dtype: float
+  default: 0
+- id: rx_start_time
+  label: Rx Start Time
+  dtype: float
+  default: 0
+- id: tx_args
+  label: Tx Args
+  dtype: string
+  default: '""'
+- id: rx_args
+  label: Rx Args
+  dtype: string
+  default: '""'
+- id: num_pulse_cpi
+  label: Num Pulse CPI
+  dtype: int
+  default: 128
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
 #  Keys include:
