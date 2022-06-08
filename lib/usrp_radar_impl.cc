@@ -235,8 +235,12 @@ void usrp_radar_impl::run()
     d_tx_thread = gr::thread::thread([this, tx_buff_ptrs, time_now] {
         transmit(d_usrp, tx_buff_ptrs, d_data.size(), time_now + d_tx_start_time);
     });
-    receive(d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
+    d_rx_thread = gr::thread::thread([this, rx_buff_ptrs, num_samp_rx, time_now] {
+        receive(d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
+    });
+
     d_tx_thread.join();
+    d_rx_thread.join();
 }
 
 } /* namespace plasma */

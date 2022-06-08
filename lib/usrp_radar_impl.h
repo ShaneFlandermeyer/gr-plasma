@@ -33,6 +33,7 @@ private:
     gr::thread::thread d_thread;
     gr::thread::thread d_pdu_thread;
     gr::thread::thread d_tx_thread;
+    gr::thread::thread d_rx_thread;
     // boost::thread_group d_tx_thread;
 
     std::vector<gr_complex> d_data;
