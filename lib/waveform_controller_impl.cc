@@ -50,21 +50,16 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
         pmt::pmt_t meta = pmt::car(msg);
         pmt::pmt_t data = pmt::cdr(msg);
         d_num_samp_waveform = pmt::length(data);
-        // Convert from pmt to a pointer. The second argument of
-        // uniform_vector_elements expects an lvalue, so the dummy variable must
-        // be created below
-        size_t zero(0);
-        output_type* ptr = (output_type*)pmt::uniform_vector_elements(data, zero);
-        // Create a std vector and zero-pad to the length of the PRI
-        d_data = std::vector<output_type>(ptr, ptr + d_num_samp_waveform);
+        // Zero pad to the length of the PRI
+        d_data = c32vector_elements(data);
         d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
-
         // Send the new waveform through the message port (with additional
         // metadata)
         meta = pmt::dict_add(meta, pmt::intern("prf"), pmt::from_double(d_prf));
-        // pmt::pmt_t data = ;
-        message_port_pub(pmt::mp("out"), pmt::cons(meta, pmt::init_c32vector(d_data.size(), d_data.data())));
-        
+        message_port_pub(
+            pmt::mp("out"),
+            pmt::cons(meta, pmt::init_c32vector(d_data.size(), d_data.data())));
+
     } else if (pmt::is_pair(msg)) {
         pmt::pmt_t key = pmt::car(msg);
         pmt::pmt_t val = pmt::cdr(msg);

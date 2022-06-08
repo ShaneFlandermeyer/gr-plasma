@@ -30,16 +30,16 @@ usrp_radar_impl::usrp_radar_impl()
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
 // Initialize the USRP device
 #pragma message("TODO: Don't hard-code these parameters")
-    d_samp_rate = 30e6;
-    d_tx_gain = 50;
-    d_rx_gain = 40;
+    d_samp_rate = 200e6;
+    d_tx_gain = 10;
+    d_rx_gain = 10;
     d_tx_freq = 5e9;
     d_rx_freq = 5e9;
     d_tx_start_time = 0.2;
     d_rx_start_time = 0.2;
     d_tx_args = "";
     d_rx_args = "";
-    d_num_pulse_cpi = 1024;
+    d_num_pulse_cpi = 1000;
     d_usrp = uhd::usrp::multi_usrp::make(d_tx_args);
     d_usrp->set_tx_rate(d_samp_rate);
     d_usrp->set_rx_rate(d_samp_rate);
@@ -60,10 +60,11 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         // Parse the PDU and store the data in a member variable
         pmt::pmt_t meta = pmt::car(msg);
         pmt::pmt_t data = pmt::cdr(msg);
-        size_t num_samp_pulse = pmt::length(data);
-        size_t zero(0);
-        gr_complex* ptr = (gr_complex*)pmt::uniform_vector_writable_elements(data, zero);
-        d_data = std::vector<gr_complex>(ptr, ptr + num_samp_pulse);
+        // size_t num_samp_pulse = pmt::length(data);
+        d_data = c32vector_elements(data);
+        // size_t zero(0);
+        // gr_complex* ptr = (gr_complex*)pmt::uniform_vector_writable_elements(data, zero);
+        // d_data = std::vector<gr_complex>(ptr, ptr + num_samp_pulse);
     }
 }
 
@@ -113,12 +114,18 @@ void usrp_radar_impl::run()
     size_t n = uhd::radar::receive(
         d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
     tx_thread.join_all();
+    
+    // Send the pdu
+    pmt::pmt_t pdu =
+        pmt::cons(pmt::make_dict(), pmt::init_c32vector(rx_buff.size(), rx_buff));
+    message_port_pub(pmt::mp("out"), pdu);
 
-#pragma message("TODO: Remove file write")
-    std::ofstream outfile("/home/shane/gnuradar_test.dat",
-                          std::ios::out | std::ios::binary);
-    outfile.write((char*)rx_buff.data(), rx_buff.size() * sizeof(gr_complex));
-    outfile.close();
+    // #pragma message("TODO: Remove file write")
+    //     std::ofstream outfile("/home/shane/gnuradar_test.dat",
+    //                           std::ios::out | std::ios::binary);
+    //     outfile.write((char*)rx_buff.data(), rx_buff.size() * sizeof(gr_complex));
+    //     outfile.close();
+    // GR_LOG_DEBUG(d_logger, "Wrote to file");
 }
 
 } /* namespace plasma */
