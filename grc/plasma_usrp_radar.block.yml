@@ -18,7 +18,7 @@ parameters:
   dtype: float
   default: 'samp_rate'
 - id: tx_gain
-  label: Rx Gain
+  label: Tx Gain
   dtype: float
   default: 0
 - id: rx_gain

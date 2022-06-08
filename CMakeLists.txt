@@ -99,19 +99,9 @@ find_package(Doxygen)
 find_package(Eigen3 3.4 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(plasma_dsp REQUIRED)
-find_package(uhd_radar REQUIRED)
+find_package(UHD 4.0.0 REQUIRED)
 # UHD Radar dependencies
 find_package(nlohmann_json REQUIRED)
-find_package(Qt5 COMPONENTS Widgets)
-# # Add UHD boost requirements
-# set(UHD_BOOST_REQUIRED_COMPONENTS
-#   program_options
-#   filesystem
-#   system
-#   thread)
-# set(BOOST_MIN_VERSION 1.58)
-# # Include UHDBoost to do the actual finding
-# include(UHDBoost)
 ########################################################################
 # Setup doxygen option
 ########################################################################

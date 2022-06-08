@@ -11,8 +11,6 @@
 #include <gnuradio/plasma/usrp_radar.h>
 #include <uhd/types/time_spec.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
-#include <uhd_radar/receive.h>
-#include <uhd_radar/transmit.h>
 #include <fstream>
 
 namespace gr {
@@ -31,8 +29,11 @@ private:
     uhd::time_spec_t d_tx_start_time;
     uhd::time_spec_t d_rx_start_time;
     std::string d_tx_args, d_rx_args;
-    bool d_finished;
+    std::atomic<bool> d_finished;
     gr::thread::thread d_thread;
+    gr::thread::thread d_pdu_thread;
+    gr::thread::thread d_tx_thread;
+    // boost::thread_group d_tx_thread;
 
     std::vector<gr_complex> d_data;
     double d_prf;
@@ -42,18 +43,26 @@ private:
 
 public:
     usrp_radar_impl(double samp_rate,
-                     double tx_gain,
-                     double rx_gain,
-                     double tx_freq,
-                     double rx_freq,
-                     double tx_start_time,
-                     double rx_start_time,
-                     const std::string& tx_args,
-                     const std::string& rx_args,
-                     size_t num_pulse_cpi);
+                    double tx_gain,
+                    double rx_gain,
+                    double tx_freq,
+                    double rx_freq,
+                    double tx_start_time,
+                    double rx_start_time,
+                    const std::string& tx_args,
+                    const std::string& rx_args,
+                    size_t num_pulse_cpi);
     ~usrp_radar_impl();
 
     void handle_message(const pmt::pmt_t& msg);
+    void send_pdu(const std::vector<gr_complex*> buffs, size_t len);
+    void transmit(uhd::usrp::multi_usrp::sptr usrp,
+              std::vector<std::complex<float> *> buff_ptrs,
+              size_t num_samps_pulse, uhd::time_spec_t start_time);
+    void receive(uhd::usrp::multi_usrp::sptr usrp,
+                 std::vector<std::complex<float>*> buff_ptrs,
+                 size_t num_samps,
+                 uhd::time_spec_t start_time);
     void run();
     bool start() override;
     bool stop() override;

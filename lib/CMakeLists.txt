@@ -27,7 +27,7 @@ add_library(gnuradio-plasma SHARED ${plasma_sources})
 target_link_libraries(gnuradio-plasma 
     gnuradio::gnuradio-runtime
     plasma_dsp
-    uhd_radar)
+    ${UHD_LIBRARIES})
 target_include_directories(gnuradio-plasma
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     PUBLIC $<INSTALL_INTERFACE:include>

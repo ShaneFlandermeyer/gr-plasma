@@ -93,6 +93,110 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
     }
 }
 
+// std::vector<gr_complex> big_boi;
+inline void usrp_radar_impl::send_pdu(const std::vector<gr_complex*> buffs, size_t len)
+{
+    std::vector<gr_complex> rx_buff(buffs[0], buffs[0] + len);
+    pmt::pmt_t pdu = pmt::cons(d_meta, pmt::init_c32vector(len, rx_buff));
+    message_port_pub(pmt::mp("out"), pdu);
+}
+
+void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
+                               std::vector<std::complex<float>*> buff_ptrs,
+                               size_t num_samps_pulse,
+                               uhd::time_spec_t start_time)
+{
+    uhd::stream_args_t tx_stream_args("fc32", "sc16");
+    uhd::tx_streamer::sptr tx_stream;
+    tx_stream_args.channels.push_back(0);
+    tx_stream = usrp->get_tx_stream(tx_stream_args);
+    // Create metadata structure
+    uhd::tx_metadata_t tx_md;
+    tx_md.start_of_burst = true;
+    tx_md.end_of_burst = false;
+    tx_md.has_time_spec = (start_time.get_real_secs() > 0 ? true : false);
+    tx_md.time_spec = start_time;
+
+    while (true) {
+        tx_stream->send(buff_ptrs, num_samps_pulse, tx_md, 0.5);
+        tx_md.start_of_burst = false;
+        tx_md.has_time_spec = false;
+
+        if (d_finished) {
+            // Send mini EOB packet
+            tx_md.has_time_spec = false;
+            tx_md.end_of_burst = true;
+            tx_stream->send("", 0, tx_md);
+            return;
+        }
+    }
+}
+
+void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
+                              std::vector<gr_complex*> buff_ptrs,
+                              size_t num_samps_cpi,
+                              uhd::time_spec_t start_time)
+{
+    size_t channels = buff_ptrs.size();
+    std::vector<size_t> channel_vec;
+    uhd::stream_args_t stream_args("fc32", "sc16");
+    uhd::rx_streamer::sptr rx_stream;
+    if (channel_vec.size() == 0) {
+        for (size_t i = 0; i < channels; i++) {
+            channel_vec.push_back(i);
+        }
+    }
+    stream_args.channels = channel_vec;
+    rx_stream = usrp->get_rx_stream(stream_args);
+
+    uhd::rx_metadata_t md;
+
+    // Set up streaming
+    // uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
+    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
+    stream_cmd.num_samps = num_samps_cpi;
+    stream_cmd.time_spec = start_time;
+    stream_cmd.stream_now = (start_time.get_real_secs() > 0 ? false : true);
+    rx_stream->issue_stream_cmd(stream_cmd);
+
+    size_t max_num_samps = rx_stream->get_max_num_samps();
+    size_t num_samps_total = 0;
+    std::vector<gr_complex*> buff_ptrs2(buff_ptrs.size());
+    double timeout = 0.5 + start_time.get_real_secs();
+    while (true) {
+        // Move storing pointer to correct location
+        for (size_t i = 0; i < channels; i++)
+            buff_ptrs2[i] = &(buff_ptrs[i][num_samps_total]);
+
+        // Sampling data
+        size_t samps_to_recv = std::min(num_samps_cpi - num_samps_total, max_num_samps);
+        size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
+        timeout = 0.5;
+
+        num_samps_total += num_rx_samps;
+
+        // handle the error code
+        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
+            break;
+        if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
+            break;
+        // Send the pdu
+        if (num_samps_total >= num_samps_cpi) {
+            d_pdu_thread = gr::thread::thread(
+                [this, buff_ptrs, num_samps_cpi] { send_pdu(buff_ptrs, num_samps_cpi); });
+            num_samps_total = 0;
+        }
+        // If the flowgraph is finished, clean up the stream object and data
+        // writer thread
+        if (d_finished) {
+            stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
+            rx_stream->issue_stream_cmd(stream_cmd);
+            d_pdu_thread.join();
+            return;
+        }
+    }
+}
+
 bool usrp_radar_impl::start()
 {
     d_finished = false;
@@ -104,7 +208,6 @@ bool usrp_radar_impl::start()
 bool usrp_radar_impl::stop()
 {
     d_finished = true;
-    d_thread.interrupt();
     d_thread.join();
 
     return block::stop();
@@ -113,7 +216,7 @@ bool usrp_radar_impl::stop()
 void usrp_radar_impl::run()
 {
 #pragma message("TODO: Implement the radar and remove this warning")
-    boost::thread_group tx_thread;
+    // boost::thread_group tx_thread;
     while (d_data.size() == 0) {
         // Wait for data to arrive
         boost::this_thread::sleep(boost::posix_time::microseconds(1));
@@ -128,28 +231,12 @@ void usrp_radar_impl::run()
     std::vector<gr_complex> rx_buff(num_samp_rx, 0);
     rx_buff_ptrs.push_back(&rx_buff.front());
 
-    // Simultaneously transmit and receive the data
     uhd::time_spec_t time_now = d_usrp->get_time_now();
-    tx_thread.create_thread(boost::bind(&uhd::radar::transmit,
-                                        d_usrp,
-                                        tx_buff_ptrs,
-                                        d_num_pulse_cpi,
-                                        d_data.size(),
-                                        time_now + d_tx_start_time));
-    size_t n = uhd::radar::receive(
-        d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
-    tx_thread.join_all();
-
-    // Send the pdu
-    pmt::pmt_t pdu = pmt::cons(d_meta, pmt::init_c32vector(rx_buff.size(), rx_buff));
-    message_port_pub(pmt::mp("out"), pdu);
-
-    // #pragma message("TODO: Remove file write")
-    //     std::ofstream outfile("/home/shane/gnuradar_test.dat",
-    //                           std::ios::out | std::ios::binary);
-    //     outfile.write((char*)rx_buff.data(), rx_buff.size() * sizeof(gr_complex));
-    //     outfile.close();
-    // GR_LOG_DEBUG(d_logger, "Wrote to file");
+    d_tx_thread = gr::thread::thread([this, tx_buff_ptrs, time_now] {
+        transmit(d_usrp, tx_buff_ptrs, d_data.size(), time_now + d_tx_start_time);
+    });
+    receive(d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
+    d_tx_thread.join();
 }
 
 } /* namespace plasma */
