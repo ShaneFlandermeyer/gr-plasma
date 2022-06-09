@@ -20,18 +20,27 @@ class pdu_file_sink_impl : public pdu_file_sink
 {
 private:
     // Nothing to declare in this block.
-    std::vector<gr_complex> d_data;
-    std::ofstream d_file;
-    std::string d_filename;
     size_t d_num_pulse_cpi;
+    std::string d_filename;
+    std::queue<const gr_complex*> d_pulse_queue;    
+    std::ofstream d_file;
     size_t d_num_samp_pulse;
-    size_t d_current_pulse_index;
+    gr::thread::thread d_thread;
+    std::atomic<bool> d_finished;
+    std::mutex d_mutex;
+    std::unique_lock<std::mutex> d_lock;
 
 public:
     pdu_file_sink_impl(size_t num_pulse_cpi,const std::string& filename);
     ~pdu_file_sink_impl();
 
     void handle_message(const pmt::pmt_t& msg);
+
+    bool start() override;
+    bool stop() override;
+    void run();
+
+
 
     // Where all the action really happens
     // int work(int noutput_items,
