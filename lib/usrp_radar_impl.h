@@ -11,6 +11,7 @@
 #include <gnuradio/plasma/usrp_radar.h>
 #include <uhd/types/time_spec.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
+#include <uhd/utils/thread.hpp>
 #include <fstream>
 
 namespace gr {
@@ -56,7 +57,7 @@ public:
     ~usrp_radar_impl();
 
     void handle_message(const pmt::pmt_t& msg);
-    void send_pdu(const std::vector<gr_complex*> buffs, size_t len);
+    void send_pdu();
     void transmit(uhd::usrp::multi_usrp::sptr usrp,
               std::vector<std::complex<float> *> buff_ptrs,
               size_t num_samps_pulse, uhd::time_spec_t start_time);
