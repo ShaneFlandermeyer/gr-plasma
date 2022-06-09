@@ -66,6 +66,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
     set_msg_handler(pmt::mp("in"),
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     // Initialize the USRP device
+    d_usrp.reset();
     d_usrp = uhd::usrp::multi_usrp::make(d_tx_args);
     d_usrp->set_tx_rate(d_samp_rate);
     d_usrp->set_rx_rate(d_samp_rate);
@@ -100,11 +101,6 @@ inline void usrp_radar_impl::send_pdu(std::vector<gr_complex> data)
     d_pdu_data = pmt::init_c32vector(data.size(), data.data());
     pmt::pmt_t pdu = pmt::cons(d_meta, d_pdu_data);
     message_port_pub(pmt::mp("out"), pdu);
-
-    // std::ofstream outfile("/home/shane/test.dat",
-    //                       std::ios::out | std::ios::binary | std::ios::app);
-    // outfile.write(reinterpret_cast<char*>(data.data()), sizeof(gr_complex) *
-    // data.size()); outfile.close();
 }
 
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,

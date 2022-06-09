@@ -33,17 +33,16 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t num_pulse_cpi, const std::string& 
     message_port_register_in(pmt::mp("in"));
     set_msg_handler(pmt::mp("in"),
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
-    // d_current_pulse_index = 0;
     d_file = std::ofstream(d_filename, std::ios::binary | std::ios::out);
-    d_lock = std::unique_lock<std::mutex>(d_mutex);
 }
 
 void pdu_file_sink_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
-        pmt::pmt_t data = pmt::cdr(msg);
-        d_num_samp_pulse = pmt::length(data);
-        d_pulse_queue.push(c32vector_elements(pmt::cdr(msg)).data());
+        // std::shared_ptr<pmt::pmt_t> data(new pmt::pmt_t(pmt::cdr(msg)));
+        // std::shared_ptr<pmt::pmt_t> meta(new pmt::pmt_t(pmt::car(msg)));
+        d_data_queue.push(pmt::cdr(msg));
+        d_meta_queue.push(pmt::car(msg));
     }
 }
 
@@ -59,6 +58,7 @@ bool pdu_file_sink_impl::stop()
 {
     d_finished = true;
     d_thread.join();
+    // d_file.close();
 
     return block::stop();
 }
@@ -67,10 +67,14 @@ void pdu_file_sink_impl::run()
 {
 
     while (!d_finished) {
-        while (not d_pulse_queue.empty()) {
-            d_file.write((char*)d_pulse_queue.front(),
-                         sizeof(gr_complex) * d_num_samp_pulse);
-            d_pulse_queue.pop();
+        while (not d_data_queue.empty()) {
+            size_t n = pmt::length(d_data_queue.front());
+            d_file.write((char*)pmt::c32vector_writable_elements(d_data_queue.front(), n),
+                         n * sizeof(gr_complex));
+            d_data_queue.pop();
+            if (not d_meta_queue.empty()) {
+                d_meta_queue.pop();
+            }
         }
     }
 }
@@ -79,7 +83,9 @@ void pdu_file_sink_impl::run()
 /*
  * Our virtual destructor.
  */
-pdu_file_sink_impl::~pdu_file_sink_impl() { d_file.close(); }
+pdu_file_sink_impl::~pdu_file_sink_impl() {
+    d_file.close();
+}
 
 
 } /* namespace plasma */
