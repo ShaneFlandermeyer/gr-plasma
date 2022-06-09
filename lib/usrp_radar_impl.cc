@@ -98,13 +98,13 @@ inline void usrp_radar_impl::send_pdu(std::vector<gr_complex> data)
 {
     uhd::set_thread_priority_safe();
     d_pdu_data = pmt::init_c32vector(data.size(), data.data());
-    pmt::pmt_t pdu = pmt::cons(d_meta,d_pdu_data);
+    pmt::pmt_t pdu = pmt::cons(d_meta, d_pdu_data);
     message_port_pub(pmt::mp("out"), pdu);
 
     // std::ofstream outfile("/home/shane/test.dat",
     //                       std::ios::out | std::ios::binary | std::ios::app);
-    // outfile.write(reinterpret_cast<char*>(data.data()), sizeof(gr_complex) * data.size());
-    // outfile.close();
+    // outfile.write(reinterpret_cast<char*>(data.data()), sizeof(gr_complex) *
+    // data.size()); outfile.close();
 }
 
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
@@ -124,19 +124,14 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     tx_md.has_time_spec = (start_time.get_real_secs() > 0 ? true : false);
     tx_md.time_spec = start_time;
 
-    while (true) {
+    while (!d_finished) {
         tx_stream->send(buff_ptrs, num_samps_pulse, tx_md, 0.5);
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
-
-        if (d_finished) {
-            // Send mini EOB packet
-            tx_md.has_time_spec = false;
-            tx_md.end_of_burst = true;
-            tx_stream->send("", 0, tx_md);
-            return;
-        }
     }
+    tx_md.has_time_spec = false;
+    tx_md.end_of_burst = true;
+    tx_stream->send("", 0, tx_md);
 }
 
 void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
@@ -158,9 +153,6 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
     rx_stream = usrp->get_rx_stream(stream_args);
 
     uhd::rx_metadata_t md;
-
-    // Set up streaming
-    // uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
     stream_cmd.num_samps = num_samps_cpi;
     stream_cmd.time_spec = start_time;
@@ -171,7 +163,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
     size_t num_samps_total = 0;
     std::vector<gr_complex*> buff_ptrs2(buff_ptrs.size());
     double timeout = 0.5 + start_time.get_real_secs();
-    while (true) {
+    while (!d_finished) {
         // Move storing pointer to correct location
         for (size_t i = 0; i < channels; i++)
             buff_ptrs2[i] = &(buff_ptrs[i][num_samps_total]);
@@ -188,20 +180,13 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         // Send the pdu
         if (num_samps_total >= num_samps_cpi) {
             d_pdu_thread.join();
-            d_pdu_thread = gr::thread::thread([this] {
-                send_pdu(d_rx_buff);
-            });
+            d_pdu_thread = gr::thread::thread([this] { send_pdu(d_rx_buff); });
             num_samps_total = 0;
         }
-        // If the flowgraph is finished, clean up the stream object and data
-        // writer thread
-        if (d_finished) {
-            stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
-            rx_stream->issue_stream_cmd(stream_cmd);
-            d_pdu_thread.join();
-            return;
-        }
     }
+    stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
+    stream_cmd.stream_now = true;
+    rx_stream->issue_stream_cmd(stream_cmd);
 }
 
 bool usrp_radar_impl::start()
@@ -249,7 +234,6 @@ void usrp_radar_impl::run()
 
     d_tx_thread.join();
     d_rx_thread.join();
-    d_usrp.reset();
 }
 
 } /* namespace plasma */
