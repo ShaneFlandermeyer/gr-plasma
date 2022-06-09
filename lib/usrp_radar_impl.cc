@@ -10,7 +10,7 @@
 namespace gr {
 namespace plasma {
 
-std::vector<gr_complex> rx_buff;
+// std::vector<gr_complex> rx_buff;
 usrp_radar::sptr usrp_radar::make(double samp_rate,
                                   double tx_gain,
                                   double rx_gain,
@@ -94,13 +94,17 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
 }
 
 // std::vector<gr_complex> big_boi;
-inline void usrp_radar_impl::send_pdu()
+inline void usrp_radar_impl::send_pdu(std::vector<gr_complex> data)
 {
     uhd::set_thread_priority_safe();
-    pmt::pmt_t data = pmt::make_blob(reinterpret_cast<const char*>(&rx_buff[0]),
-                                     rx_buff.size() * sizeof(gr_complex));
-    pmt::pmt_t pdu = pmt::cons(d_meta, data);
+    d_pdu_data = pmt::init_c32vector(data.size(), data.data());
+    pmt::pmt_t pdu = pmt::cons(d_meta,d_pdu_data);
     message_port_pub(pmt::mp("out"), pdu);
+
+    // std::ofstream outfile("/home/shane/test.dat",
+    //                       std::ios::out | std::ios::binary | std::ios::app);
+    // outfile.write(reinterpret_cast<char*>(data.data()), sizeof(gr_complex) * data.size());
+    // outfile.close();
 }
 
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
@@ -180,26 +184,13 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 
         num_samps_total += num_rx_samps;
 
-        // handle the error code
-        // if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
-        //     break;
-        // if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
-        //     break;
+        // TODO: Handle errors
         // Send the pdu
         if (num_samps_total >= num_samps_cpi) {
-            pmt::pmt_t data = pmt::make_blob(reinterpret_cast<const char*>(&rx_buff[0]),
-                                             rx_buff.size() * sizeof(gr_complex));
-            pmt::pmt_t pdu = pmt::cons(d_meta, data);
-            message_port_pub(pmt::mp("out"), pdu);
-            // std::vector<gr_complex> rx_buff(
-            //     std::move(buff_ptrs2[0], buff_ptrs2[0] + num_rx_samps));
-            // d_pdu_thread.join();
-            // d_pdu_thread = gr::thread::thread([this] { send_pdu(); });
-            // queue = std::vector<gr_complex>(rx_buff.begin(), rx_buff.end());
-            // pmt::pmt_t blob = pmt::cons(d_meta, pmt::make_blob(queue.data(),
-            // queue.size()*sizeof(gr_complex))); pmt::pmt_t pdu =
-            //     pmt::cons(d_meta, pmt::init_c32vector(queue.size(), queue.data()));
-            // message_port_pub(pmt::mp("out"), blob);
+            d_pdu_thread.join();
+            d_pdu_thread = gr::thread::thread([this] {
+                send_pdu(d_rx_buff);
+            });
             num_samps_total = 0;
         }
         // If the flowgraph is finished, clean up the stream object and data
@@ -216,7 +207,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 bool usrp_radar_impl::start()
 {
     d_finished = false;
-    d_thread = gr::thread::thread([this] { run(); });
+    d_main_thread = gr::thread::thread([this] { run(); });
 
     return block::start();
 }
@@ -224,14 +215,13 @@ bool usrp_radar_impl::start()
 bool usrp_radar_impl::stop()
 {
     d_finished = true;
-    d_thread.join();
+    d_main_thread.join();
 
     return block::stop();
 }
 
 void usrp_radar_impl::run()
 {
-#pragma message("TODO: Implement the radar and remove this warning")
     uhd::set_thread_priority_safe();
     // boost::thread_group tx_thread;
     while (d_data.size() == 0) {
@@ -245,8 +235,8 @@ void usrp_radar_impl::run()
     // Set up Rx buffer
     size_t num_samp_rx = d_data.size() * d_num_pulse_cpi;
     std::vector<gr_complex*> rx_buff_ptrs;
-    rx_buff = std::vector<gr_complex>(num_samp_rx, 0);
-    rx_buff_ptrs.push_back(&rx_buff.front());
+    d_rx_buff = std::vector<gr_complex>(num_samp_rx, 0);
+    rx_buff_ptrs.push_back(&d_rx_buff.front());
 
     // Start the transmit and receive threads
     uhd::time_spec_t time_now = d_usrp->get_time_now();
@@ -259,6 +249,7 @@ void usrp_radar_impl::run()
 
     d_tx_thread.join();
     d_rx_thread.join();
+    d_usrp.reset();
 }
 
 } /* namespace plasma */

@@ -31,17 +31,19 @@ private:
     uhd::time_spec_t d_rx_start_time;
     std::string d_tx_args, d_rx_args;
     std::atomic<bool> d_finished;
-    gr::thread::thread d_thread;
+    gr::thread::thread d_main_thread;
     gr::thread::thread d_pdu_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::thread d_rx_thread;
     // boost::thread_group d_tx_thread;
 
     std::vector<gr_complex> d_data;
+    std::vector<gr_complex> d_rx_buff;
     double d_prf;
     double d_num_pulse_cpi;
     size_t d_delay_samps;
     pmt::pmt_t d_meta;
+    pmt::pmt_t d_pdu_data;
 
 public:
     usrp_radar_impl(double samp_rate,
@@ -57,7 +59,7 @@ public:
     ~usrp_radar_impl();
 
     void handle_message(const pmt::pmt_t& msg);
-    void send_pdu();
+    void send_pdu(std::vector<gr_complex> data);
     void transmit(uhd::usrp::multi_usrp::sptr usrp,
               std::vector<std::complex<float> *> buff_ptrs,
               size_t num_samps_pulse, uhd::time_spec_t start_time);
