@@ -15,6 +15,7 @@ list(APPEND plasma_sources
     lfm_source_impl.cc
     waveform_controller_impl.cc
     usrp_radar_impl.cc
+    pdu_file_sink_impl.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
