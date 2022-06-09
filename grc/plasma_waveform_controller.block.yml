@@ -33,9 +33,9 @@ inputs:
   domain: message
 
 outputs:
-- label: out
-  domain: stream
-  dtype: complex
+# - label: out
+#   domain: stream
+#   dtype: complex
 - label: out
   id: out
   domain: message

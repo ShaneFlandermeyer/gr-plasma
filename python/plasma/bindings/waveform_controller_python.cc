@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(waveform_controller.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(ab3587737e5fbc90729334a1a4f59fe5)                     */
+/* BINDTOOL_HEADER_FILE_HASH(8bfed0b87495963a7f1121983df198e3)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -33,7 +33,7 @@ void bind_waveform_controller(py::module& m)
     using waveform_controller    = ::gr::plasma::waveform_controller;
 
 
-    py::class_<waveform_controller, gr::sync_block, gr::block, gr::basic_block,
+    py::class_<waveform_controller, gr::block, gr::basic_block,
         std::shared_ptr<waveform_controller>>(m, "waveform_controller", D(waveform_controller))
 
         .def(py::init(&waveform_controller::make),

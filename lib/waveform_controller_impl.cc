@@ -23,10 +23,9 @@ waveform_controller::sptr waveform_controller::make(double prf, double samp_rate
  * The private constructor
  */
 waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
-    : gr::sync_block("waveform_controller",
+    : gr::block("waveform_controller",
                      gr::io_signature::make(0, 0, 0),
-                     gr::io_signature::make(
-                         1 /* min outputs */, 1 /*max outputs */, sizeof(output_type)))
+                     gr::io_signature::make(0, 0, 0))
 {
     message_port_register_in(pmt::mp("in"));
     message_port_register_out(pmt::mp("out"));
@@ -76,34 +75,34 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
     }
 }
 
-int waveform_controller_impl::work(int noutput_items,
-                                   gr_vector_const_void_star& input_items,
-                                   gr_vector_void_star& output_items)
-{
-    auto out = static_cast<output_type*>(output_items[0]);
-    for (int i = 0; i < noutput_items; i++) {
-        if (d_sample_index == 0) {
-            if (d_updated) {
-                // Update the waveform's zero-padding
-                d_data.resize(d_num_samp_waveform);
-                d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
-                d_updated = false;
-            }
-            // Propagate metadata through tags
-            add_item_tag(
-                0, nitems_written(0) + i, pmt::intern("prf"), pmt::from_double(d_prf));
-            add_item_tag(0,
-                         nitems_written(0) + i,
-                         pmt::intern("samp_rate"),
-                         pmt::from_double(d_samp_rate));
-        }
-        out[i] = d_data[d_sample_index];
-        d_sample_index = (d_sample_index + 1) % d_data.size();
-    }
+// int waveform_controller_impl::work(int noutput_items,
+//                                    gr_vector_const_void_star& input_items,
+//                                    gr_vector_void_star& output_items)
+// {
+//     auto out = static_cast<output_type*>(output_items[0]);
+//     for (int i = 0; i < noutput_items; i++) {
+//         if (d_sample_index == 0) {
+//             if (d_updated) {
+//                 // Update the waveform's zero-padding
+//                 d_data.resize(d_num_samp_waveform);
+//                 d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
+//                 d_updated = false;
+//             }
+//             // Propagate metadata through tags
+//             add_item_tag(
+//                 0, nitems_written(0) + i, pmt::intern("prf"), pmt::from_double(d_prf));
+//             add_item_tag(0,
+//                          nitems_written(0) + i,
+//                          pmt::intern("samp_rate"),
+//                          pmt::from_double(d_samp_rate));
+//         }
+//         out[i] = d_data[d_sample_index];
+//         d_sample_index = (d_sample_index + 1) % d_data.size();
+//     }
 
-    // Tell runtime system how many output items we produced.
-    return noutput_items;
-}
+//     // Tell runtime system how many output items we produced.
+//     return noutput_items;
+// }
 
 } /* namespace plasma */
 } /* namespace gr */
