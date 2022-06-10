@@ -21,7 +21,6 @@ class usrp_radar_impl : public usrp_radar
 {
 private:
     uhd::usrp::multi_usrp::sptr d_usrp;
-    // double d_tx_rate, d_rx_rate;
     double d_samp_rate;
     double d_tx_gain;
     double d_rx_gain;
@@ -30,20 +29,43 @@ private:
     uhd::time_spec_t d_tx_start_time;
     uhd::time_spec_t d_rx_start_time;
     std::string d_tx_args, d_rx_args;
-    std::atomic<bool> d_finished;
     gr::thread::thread d_main_thread;
     gr::thread::thread d_pdu_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::thread d_rx_thread;
-    // boost::thread_group d_tx_thread;
-
-    std::vector<gr_complex> d_data;
+    std::atomic<bool> d_finished;
+    std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
     double d_prf;
     double d_num_pulse_cpi;
     size_t d_delay_samps;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_pdu_data;
+
+    /**
+     * @brief Transmit the data in the tx buffer until 
+     * 
+     * @param usrp 
+     * @param buff_ptrs 
+     * @param num_samps_pulse 
+     * @param start_time 
+     */
+    void transmit(uhd::usrp::multi_usrp::sptr usrp,
+                  std::vector<std::complex<float>*> buff_ptrs,
+                  size_t num_samps_pulse,
+                  uhd::time_spec_t start_time);
+    /**
+     * @brief Receive a CPI of samples from the USRP, then package them into a PDU
+     * 
+     * @param usrp 
+     * @param buff_ptrs 
+     * @param num_samp_cpi 
+     * @param start_time 
+     */
+    void receive(uhd::usrp::multi_usrp::sptr usrp,
+                 std::vector<std::complex<float>*> buff_ptrs,
+                 size_t num_samp_cpi,
+                 uhd::time_spec_t start_time);
 
 public:
     usrp_radar_impl(double samp_rate,
@@ -58,23 +80,33 @@ public:
                     size_t num_pulse_cpi);
     ~usrp_radar_impl();
 
+    /**
+     * @brief 
+     * 
+     * @param msg 
+     */
     void handle_message(const pmt::pmt_t& msg);
-    void send_pdu(std::vector<gr_complex> data);
-    void transmit(uhd::usrp::multi_usrp::sptr usrp,
-              std::vector<std::complex<float> *> buff_ptrs,
-              size_t num_samps_pulse, uhd::time_spec_t start_time);
-    void receive(uhd::usrp::multi_usrp::sptr usrp,
-                 std::vector<std::complex<float>*> buff_ptrs,
-                 size_t num_samps,
-                 uhd::time_spec_t start_time);
-    void run();
-    bool start() override;
-    bool stop() override;
 
-    // Where all the action really happens
-    // int work(int noutput_items,
-    //          gr_vector_const_void_star& input_items,
-    //          gr_vector_void_star& output_items);
+    /**
+     * @brief Send a PDU containing the data and metadata from the CPI
+     * 
+     * @param data IQ data for the CPI
+     */
+    void send_pdu(const std::vector<gr_complex>& data);
+
+    /**
+     * @brief Initialize all buffers and set up the transmit and recieve threads
+     *
+     */
+    void run();
+    /**
+     * @brief Start the main worker thread
+     */
+    bool start() override;
+    /**
+     * @brief Stop the main worker thread
+     */
+    bool stop() override;
 };
 
 } // namespace plasma
