@@ -39,10 +39,10 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t num_pulse_cpi, const std::string& 
 void pdu_file_sink_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
-        // std::shared_ptr<pmt::pmt_t> data(new pmt::pmt_t(pmt::cdr(msg)));
-        // std::shared_ptr<pmt::pmt_t> meta(new pmt::pmt_t(pmt::car(msg)));
+        gr::thread::scoped_lock lock(d_mutex);
         d_data_queue.push(pmt::cdr(msg));
         d_meta_queue.push(pmt::car(msg));
+        d_cond.notify_one();
     }
 }
 
@@ -57,8 +57,8 @@ bool pdu_file_sink_impl::start()
 bool pdu_file_sink_impl::stop()
 {
     d_finished = true;
+    d_cond.notify_one();
     d_thread.join();
-    // d_file.close();
 
     return block::stop();
 }
@@ -66,16 +66,20 @@ bool pdu_file_sink_impl::stop()
 void pdu_file_sink_impl::run()
 {
 
-    while (!d_finished) {
-        while (not d_data_queue.empty()) {
-            size_t n = pmt::length(d_data_queue.front());
-            d_file.write((char*)pmt::c32vector_writable_elements(d_data_queue.front(), n),
-                         n * sizeof(gr_complex));
+    while (true) {
+        {
+            gr::thread::scoped_lock lock(d_mutex);
+            d_cond.wait(lock, [this] { return not d_data_queue.empty() || d_finished; });
+            if (d_finished)
+                return;
+            d_data = d_data_queue.front();
+            d_meta = d_meta_queue.front();
             d_data_queue.pop();
-            if (not d_meta_queue.empty()) {
-                d_meta_queue.pop();
-            }
+            d_meta_queue.pop();
         }
+        size_t n = pmt::length(d_data);
+        d_file.write((char*)pmt::c32vector_writable_elements(d_data, n),
+                     n * sizeof(gr_complex));
     }
 }
 
@@ -83,9 +87,7 @@ void pdu_file_sink_impl::run()
 /*
  * Our virtual destructor.
  */
-pdu_file_sink_impl::~pdu_file_sink_impl() {
-    d_file.close();
-}
+pdu_file_sink_impl::~pdu_file_sink_impl() { d_file.close(); }
 
 
 } /* namespace plasma */
