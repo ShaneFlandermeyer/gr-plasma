@@ -9,7 +9,6 @@
 #define INCLUDED_PLASMA_LFM_SOURCE_H
 
 #include <gnuradio/plasma/api.h>
-// #include <gnuradio/sync_block.h>
 #include <gnuradio/block.h>
 
 namespace gr {

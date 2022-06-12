@@ -8,14 +8,20 @@
 #ifndef INCLUDED_PLASMA_WAVEFORM_CONTROLLER_H
 #define INCLUDED_PLASMA_WAVEFORM_CONTROLLER_H
 
-#include <gnuradio/plasma/api.h>
 #include <gnuradio/block.h>
+#include <gnuradio/plasma/api.h>
 
 namespace gr {
 namespace plasma {
 
 /*!
- * \brief <+description of block+>
+ * \brief A block that generates a continuous stream of data for the USRP radar
+ * block by zero-padding the input waveform to match the number of samples in a
+ * pulse repetition interval (PRI).
+ * 
+ * \details In the future, this will serve as a cognitive radar controller that
+ * does more than simple pulse repetition frequency manipulation. 
+ * 
  * \ingroup plasma
  *
  */

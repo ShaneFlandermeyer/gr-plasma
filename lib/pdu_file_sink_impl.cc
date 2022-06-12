@@ -29,6 +29,7 @@ pdu_file_sink_impl::pdu_file_sink_impl(const std::string& filename)
                 gr::io_signature::make(0, 0, 0)),
       d_filename(filename)
 {
+    // TODO: Declare port names as const in a separate file
     message_port_register_in(pmt::mp("in"));
     set_msg_handler(pmt::mp("in"),
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });

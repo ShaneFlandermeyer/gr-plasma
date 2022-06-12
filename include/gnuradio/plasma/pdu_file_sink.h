@@ -16,7 +16,7 @@ namespace gr {
 namespace plasma {
 
 /*!
- * \brief Write PDU data to a file.
+ * \brief Writes PDU data to a file.
  * \ingroup plasma
  *
  */

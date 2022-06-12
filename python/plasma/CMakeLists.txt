@@ -43,3 +43,4 @@ GR_ADD_TEST(qa_lfm_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_lf
 GR_ADD_TEST(qa_waveform_controller ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_waveform_controller.py)
 GR_ADD_TEST(qa_usrp_radar ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_usrp_radar.py)
 GR_ADD_TEST(qa_pdu_file_sink ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_file_sink.py)
+GR_ADD_TEST(qa_pdu_head ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_head.py)

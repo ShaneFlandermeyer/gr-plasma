@@ -26,8 +26,6 @@ lfm_source_impl::lfm_source_impl(double bandwidth, double pulse_width, double sa
     : gr::block(
           "lfm_source", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
       d_port(pmt::mp("pdu"))
-
-
 {
     d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, 0, samp_rate);
     d_data = d_waveform.sample().cast<gr_complex>();

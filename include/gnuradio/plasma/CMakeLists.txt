@@ -15,5 +15,5 @@ install(FILES
     waveform_controller.h
     usrp_radar.h
     pdu_file_sink.h
-    DESTINATION include/gnuradio/plasma
+    pdu_head.h DESTINATION include/gnuradio/plasma
 )

@@ -15,7 +15,7 @@ namespace gr {
 namespace plasma {
 
 /*!
- * \brief <+description of block+>
+ * \brief A block that simultaneously transmits and receives data from a USRP device
  * \ingroup plasma
  *
  */
