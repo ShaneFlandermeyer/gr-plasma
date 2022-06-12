@@ -13,8 +13,8 @@
 /* If manual edits are made, the following tags should be modified accordingly.    */
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
-/* BINDTOOL_HEADER_FILE(waveform_controller.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(8bfed0b87495963a7f1121983df198e3)                     */
+/* BINDTOOL_HEADER_FILE(pdu_file_sink.h)                                        */
+/* BINDTOOL_HEADER_FILE_HASH(b0832682590472579dce56bb548013c4)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -23,23 +23,22 @@
 
 namespace py = pybind11;
 
-#include <gnuradio/plasma/waveform_controller.h>
+#include <gnuradio/plasma/pdu_file_sink.h>
 // pydoc.h is automatically generated in the build directory
-#include <waveform_controller_pydoc.h>
+#include <pdu_file_sink_pydoc.h>
 
-void bind_waveform_controller(py::module& m)
+void bind_pdu_file_sink(py::module& m)
 {
 
-    using waveform_controller    = ::gr::plasma::waveform_controller;
+    using pdu_file_sink    = ::gr::plasma::pdu_file_sink;
 
 
-    py::class_<waveform_controller, gr::block, gr::basic_block,
-        std::shared_ptr<waveform_controller>>(m, "waveform_controller", D(waveform_controller))
+    py::class_<pdu_file_sink, gr::block, gr::basic_block,
+        std::shared_ptr<pdu_file_sink>>(m, "pdu_file_sink", D(pdu_file_sink))
 
-        .def(py::init(&waveform_controller::make),
-           py::arg("prf"),
-           py::arg("samp_rate"),
-           D(waveform_controller,make)
+        .def(py::init(&pdu_file_sink::make),
+           py::arg("filename"),
+           D(pdu_file_sink,make)
         )
         
 

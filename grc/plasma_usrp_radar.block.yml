@@ -1,10 +1,10 @@
-id: plasma_waveform_controller
-label: Waveform Controller
+id: plasma_usrp_radar
+label: 'UHD: USRP Radar'
 category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.waveform_controller(${prf}, ${samp_rate})
+  make: plasma.usrp_radar(${samp_rate},${tx_gain},${rx_gain},${tx_freq},${rx_freq},${tx_start_time},${rx_start_time},${tx_args},${rx_args},${num_pulse_cpi})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -13,12 +13,46 @@ templates:
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
-- id: prf
-  label: PRF
-  dtype: float
 - id: samp_rate
   label: Sample Rate
   dtype: float
+  default: 'samp_rate'
+- id: tx_gain
+  label: Tx Gain
+  dtype: float
+  default: 0
+- id: rx_gain
+  label: Rx Gain
+  dtype: float
+  default: 0
+- id: tx_freq
+  label: Tx Center Frequency
+  dtype: float
+  default: 'center_freq'
+- id: rx_freq
+  label: Rx Center Frequency
+  dtype: float
+  default: 'center_freq'
+- id: tx_start_time
+  label: Tx Start Time
+  dtype: float
+  default: 0
+- id: rx_start_time
+  label: Rx Start Time
+  dtype: float
+  default: 0
+- id: tx_args
+  label: Tx Args
+  dtype: string
+  default: '""'
+- id: rx_args
+  label: Rx Args
+  dtype: string
+  default: '""'
+- id: num_pulse_cpi
+  label: Num Pulse CPI
+  dtype: int
+  default: 128
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
 #  Keys include:
@@ -28,18 +62,13 @@ parameters:
 #      * vlen (optional - data stream vector length. Default is 1)
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
 inputs:
-- label: in
-  id: in
-  domain: message
+  - id: in
+    domain: message
 
 outputs:
-# - label: out
-#   domain: stream
-#   dtype: complex
-- label: out
-  id: out
-  domain: message
-  optional: true
+  - id: out
+    domain: message
+    optional: true
 
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.

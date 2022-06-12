@@ -99,7 +99,9 @@ find_package(Doxygen)
 find_package(Eigen3 3.4 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(plasma_dsp REQUIRED)
-
+find_package(UHD 4.0.0 REQUIRED)
+# UHD Radar dependencies
+find_package(nlohmann_json REQUIRED)
 ########################################################################
 # Setup doxygen option
 ########################################################################

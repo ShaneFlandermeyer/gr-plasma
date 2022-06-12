@@ -9,7 +9,7 @@
 #define INCLUDED_PLASMA_WAVEFORM_CONTROLLER_H
 
 #include <gnuradio/plasma/api.h>
-#include <gnuradio/sync_block.h>
+#include <gnuradio/block.h>
 
 namespace gr {
 namespace plasma {
@@ -19,7 +19,7 @@ namespace plasma {
  * \ingroup plasma
  *
  */
-class PLASMA_API waveform_controller : virtual public gr::sync_block
+class PLASMA_API waveform_controller : virtual public gr::block
 {
 public:
     typedef std::shared_ptr<waveform_controller> sptr;

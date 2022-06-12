@@ -23,6 +23,8 @@ namespace py = pybind11;
 // BINDING_FUNCTION_PROTOTYPES(
     void bind_lfm_source(py::module& m);
     void bind_waveform_controller(py::module& m);
+    void bind_usrp_radar(py::module& m);
+    void bind_pdu_file_sink(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -53,5 +55,7 @@ PYBIND11_MODULE(plasma_python, m)
     // BINDING_FUNCTION_CALLS(
     bind_lfm_source(m);
     bind_waveform_controller(m);
+    bind_usrp_radar(m);
+    bind_pdu_file_sink(m);
     // ) END BINDING_FUNCTION_CALLS
 }

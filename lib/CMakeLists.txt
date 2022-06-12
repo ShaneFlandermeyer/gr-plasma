@@ -10,11 +10,12 @@
 # Setup library
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
-
 list(APPEND plasma_sources
     lfm_source_impl.cc
     waveform_controller_impl.cc
-)
+    usrp_radar_impl.cc
+    pdu_file_sink_impl.cc
+    )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
 if(NOT plasma_sources)
@@ -23,8 +24,10 @@ if(NOT plasma_sources)
 endif(NOT plasma_sources)
 
 add_library(gnuradio-plasma SHARED ${plasma_sources})
-target_link_libraries(gnuradio-plasma gnuradio::gnuradio-runtime)
-target_link_libraries(gnuradio-plasma plasma_dsp)
+target_link_libraries(gnuradio-plasma 
+    gnuradio::gnuradio-runtime
+    plasma_dsp
+    ${UHD_LIBRARIES})
 target_include_directories(gnuradio-plasma
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     PUBLIC $<INSTALL_INTERFACE:include>

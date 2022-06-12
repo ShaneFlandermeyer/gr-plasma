@@ -13,8 +13,8 @@
 /* If manual edits are made, the following tags should be modified accordingly.    */
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
-/* BINDTOOL_HEADER_FILE(waveform_controller.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(8bfed0b87495963a7f1121983df198e3)                     */
+/* BINDTOOL_HEADER_FILE(usrp_radar.h)                                        */
+/* BINDTOOL_HEADER_FILE_HASH(d0033974be811accf1ced7eacc077262)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -23,23 +23,31 @@
 
 namespace py = pybind11;
 
-#include <gnuradio/plasma/waveform_controller.h>
+#include <gnuradio/plasma/usrp_radar.h>
 // pydoc.h is automatically generated in the build directory
-#include <waveform_controller_pydoc.h>
+#include <usrp_radar_pydoc.h>
 
-void bind_waveform_controller(py::module& m)
+void bind_usrp_radar(py::module& m)
 {
 
-    using waveform_controller    = ::gr::plasma::waveform_controller;
+    using usrp_radar    = ::gr::plasma::usrp_radar;
 
 
-    py::class_<waveform_controller, gr::block, gr::basic_block,
-        std::shared_ptr<waveform_controller>>(m, "waveform_controller", D(waveform_controller))
+    py::class_<usrp_radar, gr::block, gr::basic_block,
+        std::shared_ptr<usrp_radar>>(m, "usrp_radar", D(usrp_radar))
 
-        .def(py::init(&waveform_controller::make),
-           py::arg("prf"),
+        .def(py::init(&usrp_radar::make),
            py::arg("samp_rate"),
-           D(waveform_controller,make)
+           py::arg("tx_gain"),
+           py::arg("rx_gain"),
+           py::arg("tx_freq"),
+           py::arg("rx_freq"),
+           py::arg("tx_start_time"),
+           py::arg("rx_start_time"),
+           py::arg("tx_args"),
+           py::arg("rx_args"),
+           py::arg("num_pulse_cpi"),
+           D(usrp_radar,make)
         )
         
 
