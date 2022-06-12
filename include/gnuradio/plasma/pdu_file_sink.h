@@ -16,7 +16,7 @@ namespace gr {
 namespace plasma {
 
 /*!
- * \brief <+description of block+>
+ * \brief Write PDU data to a file.
  * \ingroup plasma
  *
  */
@@ -33,7 +33,7 @@ public:
      * class. plasma::pdu_file_sink::make is the public interface for
      * creating new instances.
      */
-    static sptr make(size_t num_pulse_cpi, const std::string& filename);
+    static sptr make(const std::string& filename);
 };
 
 } // namespace plasma

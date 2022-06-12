@@ -14,20 +14,19 @@ namespace plasma {
 
 // #pragma message("set the following appropriately and remove this warning")
 // using input_type = float;
-pdu_file_sink::sptr pdu_file_sink::make(size_t num_pulse_cpi, const std::string& filename)
+pdu_file_sink::sptr pdu_file_sink::make(const std::string& filename)
 {
-    return gnuradio::make_block_sptr<pdu_file_sink_impl>(num_pulse_cpi, filename);
+    return gnuradio::make_block_sptr<pdu_file_sink_impl>(filename);
 }
 
 
 /*
  * The private constructor
  */
-pdu_file_sink_impl::pdu_file_sink_impl(size_t num_pulse_cpi, const std::string& filename)
+pdu_file_sink_impl::pdu_file_sink_impl(const std::string& filename)
     : gr::block("pdu_file_sink",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
-      d_num_pulse_cpi(num_pulse_cpi),
       d_filename(filename)
 {
     message_port_register_in(pmt::mp("in"));

@@ -20,12 +20,6 @@ class pdu_file_sink_impl : public pdu_file_sink
 {
 private:
     /**
-     * @brief Number of pulses per CPI
-     *
-     */
-    size_t d_num_pulse_cpi;
-
-    /**
      * @brief Name of the output file
      *
      * TODO: Need a separate probably file for metadata (probably SigMF json)
@@ -50,12 +44,6 @@ private:
      *
      */
     std::ofstream d_file;
-
-    /**
-     * @brief Number of samples per pulse
-     *
-     */
-    size_t d_num_samp_pulse;
 
     /**
      * @brief Worker thread used for run() method
@@ -95,7 +83,7 @@ private:
 
 
 public:
-    pdu_file_sink_impl(size_t num_pulse_cpi, const std::string& filename);
+    pdu_file_sink_impl(const std::string& filename);
     ~pdu_file_sink_impl();
 
     /**

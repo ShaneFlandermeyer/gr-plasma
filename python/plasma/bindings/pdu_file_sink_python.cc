@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(pdu_file_sink.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(1120231b46007e75cff686eaa0d49cc2)                     */
+/* BINDTOOL_HEADER_FILE_HASH(b0832682590472579dce56bb548013c4)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -37,7 +37,6 @@ void bind_pdu_file_sink(py::module& m)
         std::shared_ptr<pdu_file_sink>>(m, "pdu_file_sink", D(pdu_file_sink))
 
         .def(py::init(&pdu_file_sink::make),
-           py::arg("num_pulse_cpi"),
            py::arg("filename"),
            D(pdu_file_sink,make)
         )

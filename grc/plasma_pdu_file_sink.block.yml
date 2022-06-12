@@ -4,13 +4,9 @@ category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.pdu_file_sink(${num_pulse_cpi}, ${filename})
+  make: plasma.pdu_file_sink(${filename})
 
 parameters:
-- id: num_pulse_cpi
-  label: Num Pulse CPI
-  dtype: int
-  default: 128
 - id: filename
   label: Filename
   dtype: string
