@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(waveform_controller.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(8bfed0b87495963a7f1121983df198e3)                     */
+/* BINDTOOL_HEADER_FILE_HASH(2861d6aaa927ed5dbb1fb6bf4efc5aaa)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>

@@ -6,6 +6,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
+add_executable(pulse_doppler_processing pulse_doppler_processing.cc)
+target_link_libraries(pulse_doppler_processing plasma_dsp)
+
 include(GrPython)
 
 GR_PYTHON_INSTALL(
