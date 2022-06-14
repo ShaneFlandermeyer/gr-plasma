@@ -74,9 +74,11 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
     }
     d_usrp->set_tx_rate(d_samp_rate);
     d_usrp->set_rx_rate(d_samp_rate);
-    
+
     d_usrp->set_tx_gain(d_tx_gain);
     d_usrp->set_rx_gain(d_rx_gain);
+
+    d_pulse_count = 0;
 }
 
 /*
@@ -129,6 +131,12 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
+
+        if (d_pulse_count % d_num_pulse_cpi == 0) {
+            d_meta = pmt::dict_add(
+                d_meta, pmt::intern("pulse_count"), pmt::from_long(d_pulse_count));
+        }
+        d_pulse_count++;
     }
     // Send a mini EOB to tell the USRP that we're done
     tx_md.has_time_spec = false;
@@ -175,6 +183,11 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         boost::this_thread::disable_interruption disable_interrupt;
         size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
+        if (num_samps_total == 0) {
+            d_meta = pmt::dict_add(d_meta, pmt::intern("rx_time"),
+                                   pmt::from_double(md.time_spec.get_real_secs() -
+                                                    start_time.get_real_secs()));
+        }
 
         timeout = 0.5;
 
@@ -186,7 +199,12 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
             break;
         // Send the pdu for the entire CPI
-        if (num_samps_total >= num_samp_cpi) {
+        if (num_samps_total == num_samp_cpi) {
+            // std::cout << md.time_spec.get_real_secs() << std::endl;
+            // d_meta =
+            //     pmt::dict_add(d_meta,
+            //                   pmt::intern("end_time"),
+            //                   pmt::from_double(usrp->get_time_now().get_real_secs()));
             d_pdu_thread.join();
             d_pdu_thread = gr::thread::thread([this] { send_pdu(d_rx_buff); });
             num_samps_total = 0;

@@ -37,8 +37,9 @@ private:
     std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
     double d_prf;
-    double d_num_pulse_cpi;
+    size_t d_num_pulse_cpi;
     size_t d_delay_samps;
+    size_t d_pulse_count;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_pdu_data;
 
