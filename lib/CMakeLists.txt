@@ -15,7 +15,8 @@ list(APPEND plasma_sources
     waveform_controller_impl.cc
     usrp_radar_impl.cc
     pdu_file_sink_impl.cc
-    pdu_head_impl.cc )
+    pdu_head_impl.cc
+    pcfm_source_impl.cc )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
 if(NOT plasma_sources)
