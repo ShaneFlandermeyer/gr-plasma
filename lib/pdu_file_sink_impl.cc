@@ -38,7 +38,7 @@ pdu_file_sink_impl::pdu_file_sink_impl(std::string& data_filename,
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
     if (not d_meta_filename.empty()) {
-        d_data_file = std::ofstream(d_meta_filename, std::ios::out);
+        d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
     }
 }
 
@@ -86,6 +86,17 @@ void pdu_file_sink_impl::run()
         size_t n = pmt::length(d_data);
         d_data_file.write((char*)pmt::c32vector_writable_elements(d_data, n),
                           n * sizeof(gr_complex));
+        if (d_meta_file.is_open()) {
+            // TODO: Write the metadata to a sigmf file instead
+            pmt::pmt_t items = pmt::dict_items(d_meta);
+            for (size_t i = 0; i < pmt::length(items); i++) {
+                std::string key = pmt::write_string(pmt::car(pmt::nth(i, items)));
+                std::string value = pmt::write_string(pmt::cdr(pmt::nth(i, items)));
+                std::string line = key + ": " + value + "\n";
+                d_meta_file.write(line.c_str(), line.size());
+            }
+            d_meta_file.write("\n", 1);
+        }
     }
 }
 
@@ -93,7 +104,11 @@ void pdu_file_sink_impl::run()
 /*
  * Our virtual destructor.
  */
-pdu_file_sink_impl::~pdu_file_sink_impl() { d_data_file.close(); }
+pdu_file_sink_impl::~pdu_file_sink_impl()
+{
+    d_data_file.close();
+    d_meta_file.close();
+}
 
 
 } /* namespace plasma */
