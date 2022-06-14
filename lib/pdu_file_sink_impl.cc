@@ -14,26 +14,32 @@ namespace plasma {
 
 // #pragma message("set the following appropriately and remove this warning")
 // using input_type = float;
-pdu_file_sink::sptr pdu_file_sink::make(const std::string& filename)
+pdu_file_sink::sptr pdu_file_sink::make(std::string& data_filename,
+                                        std::string& meta_filename)
 {
-    return gnuradio::make_block_sptr<pdu_file_sink_impl>(filename);
+    return gnuradio::make_block_sptr<pdu_file_sink_impl>(data_filename, meta_filename);
 }
 
 
 /*
  * The private constructor
  */
-pdu_file_sink_impl::pdu_file_sink_impl(const std::string& filename)
+pdu_file_sink_impl::pdu_file_sink_impl(std::string& data_filename,
+                                       std::string& meta_filename)
     : gr::block("pdu_file_sink",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
-      d_filename(filename)
+      d_data_filename(data_filename),
+      d_meta_filename(meta_filename)
 {
     // TODO: Declare port names as const in a separate file
     message_port_register_in(pmt::mp("in"));
     set_msg_handler(pmt::mp("in"),
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
-    d_file = std::ofstream(d_filename, std::ios::binary | std::ios::out);
+    d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
+    if (not d_meta_filename.empty()) {
+        d_data_file = std::ofstream(d_meta_filename, std::ios::out);
+    }
 }
 
 void pdu_file_sink_impl::handle_message(const pmt::pmt_t& msg)
@@ -78,8 +84,8 @@ void pdu_file_sink_impl::run()
             d_meta_queue.pop();
         }
         size_t n = pmt::length(d_data);
-        d_file.write((char*)pmt::c32vector_writable_elements(d_data, n),
-                     n * sizeof(gr_complex));
+        d_data_file.write((char*)pmt::c32vector_writable_elements(d_data, n),
+                          n * sizeof(gr_complex));
     }
 }
 
@@ -87,7 +93,7 @@ void pdu_file_sink_impl::run()
 /*
  * Our virtual destructor.
  */
-pdu_file_sink_impl::~pdu_file_sink_impl() { d_file.close(); }
+pdu_file_sink_impl::~pdu_file_sink_impl() { d_data_file.close(); }
 
 
 } /* namespace plasma */

@@ -4,12 +4,21 @@ category: '[plasma]/PDU'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.pdu_file_sink(${filename})
+  make: plasma.pdu_file_sink(${data_filename}, ${meta_filename})
 
 parameters:
-- id: filename
-  label: Filename
-  dtype: string
+- id: data_filename
+  label: Data filename
+  dtype: file_save
+- id: save_meta
+  label: Save metadata
+  dtype: bool
+  default: 'False'
+  options: ['False', 'True']
+- id: meta_filename
+  label: Meta filename
+  dtype: file_save
+  hide: ${ 'all' if save_meta == False else 'none'}
 
 inputs:
 - label: in

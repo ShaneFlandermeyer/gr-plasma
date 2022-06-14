@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(pdu_file_sink.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(825b02f5b9b2587c9fece77c8c5a7972)                     */
+/* BINDTOOL_HEADER_FILE_HASH(3d6210dd45506814856c1457ef7838cf)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -37,7 +37,8 @@ void bind_pdu_file_sink(py::module& m)
         std::shared_ptr<pdu_file_sink>>(m, "pdu_file_sink", D(pdu_file_sink))
 
         .def(py::init(&pdu_file_sink::make),
-           py::arg("filename"),
+           py::arg("data_filename"),
+           py::arg("meta_filename"),
            D(pdu_file_sink,make)
         )
         
