@@ -10,7 +10,6 @@
 namespace gr {
 namespace plasma {
 
-// std::vector<gr_complex> rx_buff;
 usrp_radar::sptr usrp_radar::make(double samp_rate,
                                   double tx_gain,
                                   double rx_gain,
@@ -68,10 +67,14 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
     // Initialize the USRP device
     d_usrp.reset();
     d_usrp = uhd::usrp::multi_usrp::make(d_tx_args);
-    d_usrp->set_tx_rate(d_samp_rate);
-    d_usrp->set_rx_rate(d_samp_rate);
     d_usrp->set_tx_freq(d_tx_freq);
     d_usrp->set_rx_freq(d_rx_freq);
+    while (not d_usrp->get_rx_sensor("lo_locked").to_bool()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    d_usrp->set_tx_rate(d_samp_rate);
+    d_usrp->set_rx_rate(d_samp_rate);
+    
     d_usrp->set_tx_gain(d_tx_gain);
     d_usrp->set_rx_gain(d_rx_gain);
 }
@@ -94,9 +97,8 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
     }
 }
 
-inline void usrp_radar_impl::send_pdu(const std::vector<gr_complex> &data)
+inline void usrp_radar_impl::send_pdu(const std::vector<gr_complex>& data)
 {
-    uhd::set_thread_priority_safe();
     d_pdu_data = pmt::init_c32vector(data.size(), data.data());
     pmt::pmt_t pdu = pmt::cons(d_meta, d_pdu_data);
     message_port_pub(pmt::mp("out"), pdu);
@@ -119,9 +121,12 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     tx_md.has_time_spec = (start_time.get_real_secs() > 0 ? true : false);
     tx_md.time_spec = start_time;
     // Send the transmit buffer continuously. Note that this cannot be done in
-    // bursts because there is a bug in 
+    // bursts because there is a bug on the X310 that chops off part of the
+    // waveform at the beginning of each burst
     while (!d_finished) {
-        tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 0.5);
+        boost::this_thread::disable_interruption disable_interrupt;
+        tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 1.0);
+        boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
     }
@@ -136,7 +141,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
                               size_t num_samp_cpi,
                               uhd::time_spec_t start_time)
 {
-    uhd::set_thread_priority_safe(1);
+    uhd::set_thread_priority_safe();
     size_t channels = buff_ptrs.size();
     std::vector<size_t> channel_vec;
     uhd::stream_args_t stream_args("fc32", "sc16");
@@ -167,15 +172,19 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 
         // Sampling data
         size_t samps_to_recv = std::min(num_samp_cpi - num_samps_total, max_num_samps);
+        boost::this_thread::disable_interruption disable_interrupt;
         size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
+        boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
 
         timeout = 0.5;
 
         num_samps_total += num_rx_samps;
 
         // TODO: Handle errors
-        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) break;
-    if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE) break;
+        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
+            break;
+        if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
+            break;
         // Send the pdu for the entire CPI
         if (num_samps_total >= num_samp_cpi) {
             d_pdu_thread.join();
@@ -183,7 +192,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             num_samps_total = 0;
         }
     }
-    // Shut down the stream 
+    // Shut down the stream
     stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
     stream_cmd.stream_now = true;
     rx_stream->issue_stream_cmd(stream_cmd);
@@ -207,7 +216,6 @@ bool usrp_radar_impl::stop()
 
 void usrp_radar_impl::run()
 {
-    uhd::set_thread_priority_safe();
     while (d_tx_buff.size() == 0) {
         // Wait for data to arrive
         boost::this_thread::sleep(boost::posix_time::microseconds(1));
