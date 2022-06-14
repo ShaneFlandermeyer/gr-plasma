@@ -32,9 +32,7 @@ public:
      * class. plasma::pcfm_source::make is the public interface for
      * creating new instances.
      */
-    static sptr make(const std::vector<double>& code,
-                     const std::vector<double>& filter,
-                     double samp_rate);
+    static sptr make(std::vector<double>& code, std::vector<double>& filter);
 };
 
 } // namespace plasma

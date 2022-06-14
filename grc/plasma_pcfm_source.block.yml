@@ -4,7 +4,7 @@ category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.pcfm_source(${code}, ${filter}, ${samp_rate})
+  make: plasma.pcfm_source(${code}, ${filter})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -22,6 +22,11 @@ parameters:
 - id: samp_rate
   label: Sample Rate
   dtype: float
+  default: 'samp_rate'
+
+#- id: ...
+#  label: ...
+#  dtype: ...
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
 #  Keys include:
