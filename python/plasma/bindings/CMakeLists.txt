@@ -32,7 +32,8 @@ list(APPEND plasma_python_files
     waveform_controller_python.cc
     usrp_radar_python.cc
     pdu_file_sink_python.cc
-    pdu_head_python.cc python_bindings.cc)
+    pdu_head_python.cc
+    pcfm_source_python.cc python_bindings.cc)
 
 GR_PYBIND_MAKE_OOT(plasma
    ../../..
