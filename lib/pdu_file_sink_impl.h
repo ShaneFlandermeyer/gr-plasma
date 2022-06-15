@@ -9,9 +9,13 @@
 #define INCLUDED_PLASMA_PDU_FILE_SINK_IMPL_H
 
 #include <gnuradio/plasma/pdu_file_sink.h>
+#include <uhd/utils/thread.hpp>
 #include <fstream>
 #include <queue>
 
+#include <sigmf/sigmf_core_generated.h>
+#include <sigmf/sigmf_antenna_generated.h>
+#include <sigmf/sigmf.h>
 
 namespace gr {
 namespace plasma {
@@ -90,6 +94,9 @@ private:
      *
      */
     pmt::pmt_t d_meta;
+
+    // nlohmann::json d_meta_json;
+
 
 
 public:

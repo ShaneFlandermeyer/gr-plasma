@@ -7,13 +7,10 @@
 
 #include "pdu_file_sink_impl.h"
 #include <gnuradio/io_signature.h>
-#include <uhd/utils/thread.hpp>
 
 namespace gr {
 namespace plasma {
 
-// #pragma message("set the following appropriately and remove this warning")
-// using input_type = float;
 pdu_file_sink::sptr pdu_file_sink::make(std::string& data_filename,
                                         std::string& meta_filename)
 {
@@ -87,15 +84,69 @@ void pdu_file_sink_impl::run()
         d_data_file.write((char*)pmt::c32vector_writable_elements(d_data, n),
                           n * sizeof(gr_complex));
         if (d_meta_file.is_open()) {
-            // TODO: Write the metadata to a sigmf file instead
-            pmt::pmt_t items = pmt::dict_items(d_meta);
-            for (size_t i = 0; i < pmt::length(items); i++) {
-                std::string key = pmt::write_string(pmt::car(pmt::nth(i, items)));
-                std::string value = pmt::write_string(pmt::cdr(pmt::nth(i, items)));
-                std::string line = key + ": " + value + "\n";
-                d_meta_file.write(line.c_str(), line.size());
-            }
-            d_meta_file.write("\n", 1);
+            #pragma message("TODO: Save actual metadata in the PDU file sink")
+            // sigmf::SigMF<sigmf::Global<core::DescrT, antenna::DescrT>,
+            //              sigmf::Capture<core::DescrT>,
+            //              sigmf::Annotation<core::DescrT, antenna::DescrT>>
+            //     latest_record;
+            // latest_record.global.access<core::GlobalT>().author = "Nathan";
+            // latest_record.global.access<core::GlobalT>().description =
+            //     "Example of creating a new record";
+            // latest_record.global.access<core::GlobalT>().sample_rate = 1.0;
+            // latest_record.global.access<antenna::GlobalT>().gain = 40.0;
+            // latest_record.global.access<antenna::GlobalT>().low_frequency = 600e6;
+            // latest_record.global.access<antenna::GlobalT>().high_frequency = 1200e6;
+
+            // // Add a capture segment
+            // auto antenna_capture = sigmf::Capture<core::DescrT>();
+            // antenna_capture.get<core::DescrT>().frequency = 870e6;
+            // antenna_capture.get<core::DescrT>().global_index = 0;
+            // latest_record.captures.emplace_back(antenna_capture);
+
+            // auto& fancy_capture = latest_record.captures.create_new();
+            // auto& fancy_cap_core = fancy_capture.get<core::DescrT>();
+            // fancy_cap_core.datetime = "the future";
+            // fancy_cap_core.sample_start = 9001;
+
+
+            // // Add some annotations (sigmf::core_annotations is typedef of
+            // // core::AnnotationT, so they're interchangeable) This example uses the
+            // // core::AnnotationT to access data elements which is more using the
+            // // VariadicDataClass interface
+            // auto anno2 = sigmf::Annotation<core::DescrT, antenna::DescrT>();
+            // anno2.access<core::AnnotationT>().sample_count = 500000;
+            // anno2.access<core::AnnotationT>().description = "Annotation 1";
+            // anno2.access<core::AnnotationT>().generator = "libsigmf";
+            // anno2.access<core::AnnotationT>().description = "Woah!";
+            // latest_record.annotations.emplace_back(anno2);
+
+            // // This example shows off using the Annotation-specific interface where we
+            // // know it's an annotation, so we get annotation field from the underlying
+            // // DescrT... This uses a little bit of syntactic sugar on top of the
+            // // VariadicDataClass and basically you don't have to repeat "annotation" in
+            // // your get/access method.
+            // auto anno3 = sigmf::Annotation<core::DescrT, antenna::DescrT>();
+            // anno3.get<core::DescrT>().sample_count = 600000;
+            // anno3.get<core::DescrT>().sample_count = 600000;
+            // anno3.get<core::DescrT>().description = "Annotation 2";
+            // anno3.get<core::DescrT>().generator = "libsigmf";
+            // anno3.get<core::DescrT>().description = "Pretty easy";
+            // anno3.get<antenna::DescrT>().elevation_angle = 4.2;
+            // // You can also drop in this syntactic acid using this interface which I
+            // // personally don't really like because it mixes real calls with macros
+            // // without it being obvious and doesn't really feel like c++
+            // anno3.sigmfns(antenna).azimuth_angle = 0.1;
+            // anno3.get<antenna::DescrT>().polarization = "circular";
+
+            // latest_record.annotations.emplace_back(anno3);
+            // d_meta_file << json(latest_record).dump(4) << std::endl;
+            // for (size_t i = 0; i < pmt::length(items); i++) {
+            //     // std::string key = pmt::write_string(pmt::car(pmt::nth(i, items)));
+            //     // std::string value = pmt::write_string(pmt::cdr(pmt::nth(i, items)));
+            //     // std::string line = key + ": " + value + "\n";
+            //     d_meta_file.write(line.c_str(), line.size());
+            // }
+            // d_meta_file.write("\n", 1);
         }
     }
 }
