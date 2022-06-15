@@ -98,80 +98,47 @@ void pdu_file_sink_impl::run()
                           n * sizeof(gr_complex));
 #pragma message("TODO: Save actual metadata in the PDU file sink")
         if (d_meta_file.is_open()) {
-            update_global_fields(d_sigmf_meta);
-            // Add capture segment
+            // Update any global data that has changed
+            d_sigmf_meta.global.access<core::GlobalT>().sample_rate = pmt::to_double(
+                pmt::dict_ref(d_meta_dict, pmt::intern("sample_rate"), pmt::PMT_NIL));
+            // Update the capture segment
             auto capture = sigmf::Capture<core::DescrT>();
-            capture.get<core::DescrT>().sample_start = 0;
             pmt::pmt_t frequency =
                 pmt::dict_ref(d_meta_dict, pmt::intern("frequency"), pmt::PMT_NIL);
-            if (not pmt::eq(frequency, pmt::PMT_NIL))
-                capture.get<core::DescrT>().frequency = pmt::to_double(frequency);
-            d_sigmf_meta.captures.emplace_back(capture);
+
+            // Add annotation when the waveform changes
+            auto anno = sigmf::Annotation<core::DescrT, signal::DescrT>();
+
+            anno.get<core::DescrT>().sample_start = 0;
+            anno.get<core::DescrT>().sample_count = 100;
+
+            pmt::pmt_t bandwidth =
+                pmt::dict_ref(d_meta_dict, pmt::intern("bandwidth"), pmt::PMT_NIL);
+            if (not pmt::eq(bandwidth, pmt::PMT_NIL)) {
+                // If a center frequency is given, use it to compute the
+                // frequency edges. Otherwise, specify the edges at complex baseband.
+                if (not pmt::eq(frequency, pmt::PMT_NIL)) {
+                    double freq = pmt::to_double(frequency);
+                    capture.get<core::DescrT>().frequency = freq;
+                    anno.get<core::DescrT>().freq_lower_edge =
+                        -pmt::to_double(bandwidth) / 2 + freq;
+                    anno.get<core::DescrT>().freq_upper_edge =
+                        pmt::to_double(bandwidth) / 2 + freq;
+                } else {
+                    anno.get<core::DescrT>().freq_lower_edge =
+                        -pmt::to_double(bandwidth) / 2;
+                    anno.get<core::DescrT>().freq_upper_edge =
+                        pmt::to_double(bandwidth) / 2;
+                }
+            }
+            pmt::pmt_t label =
+                pmt::dict_ref(d_meta_dict, pmt::intern("label"), pmt::PMT_NIL);
+            if (not pmt::eq(label, pmt::PMT_NIL))
+                anno.get<core::DescrT>().label = pmt::symbol_to_string(label);
 
 
-            // sigmf::SigMF<sigmf::Global<core::DescrT>,
-            //              sigmf::Capture<core::DescrT>,
-            //              sigmf::Annotation<core::DescrT>>
-            //     latest_record;
-            //
-            // latest_record.global.access<core::GlobalT>().author = "Nathan";
-            // latest_record.global.access<core::GlobalT>().description =
-            //     "Example of creating a new record";
-            // latest_record.global.access<core::GlobalT>().sample_rate = 1.0;
-            // latest_record.global.access<antenna::GlobalT>().gain = 40.0;
-            // latest_record.global.access<antenna::GlobalT>().low_frequency = 600e6;
-            // latest_record.global.access<antenna::GlobalT>().high_frequency = 1200e6;
-
-            // // Add a capture segment
-            // auto antenna_capture = sigmf::Capture<core::DescrT>();
-            // antenna_capture.get<core::DescrT>().frequency = 870e6;
-            // antenna_capture.get<core::DescrT>().global_index = 0;
-            // latest_record.captures.emplace_back(antenna_capture);
-
-            // auto& fancy_capture = latest_record.captures.create_new();
-            // auto& fancy_cap_core = fancy_capture.get<core::DescrT>();
-            // fancy_cap_core.datetime = "the future";
-            // fancy_cap_core.sample_start = 9001;
-
-
-            // // Add some annotations (sigmf::core_annotations is typedef of
-            // // core::AnnotationT, so they're interchangeable) This example uses the
-            // // core::AnnotationT to access data elements which is more using the
-            // // VariadicDataClass interface
-            // auto anno2 = sigmf::Annotation<core::DescrT, antenna::DescrT>();
-            // anno2.access<core::AnnotationT>().sample_count = 500000;
-            // anno2.access<core::AnnotationT>().description = "Annotation 1";
-            // anno2.access<core::AnnotationT>().generator = "libsigmf";
-            // anno2.access<core::AnnotationT>().description = "Woah!";
-            // latest_record.annotations.emplace_back(anno2);
-
-            // // This example shows off using the Annotation-specific interface where we
-            // // know it's an annotation, so we get annotation field from the underlying
-            // // DescrT... This uses a little bit of syntactic sugar on top of the
-            // // VariadicDataClass and basically you don't have to repeat "annotation" in
-            // // your get/access method.
-            // auto anno3 = sigmf::Annotation<core::DescrT, antenna::DescrT>();
-            // anno3.get<core::DescrT>().sample_count = 600000;
-            // anno3.get<core::DescrT>().sample_count = 600000;
-            // anno3.get<core::DescrT>().description = "Annotation 2";
-            // anno3.get<core::DescrT>().generator = "libsigmf";
-            // anno3.get<core::DescrT>().description = "Pretty easy";
-            // anno3.get<antenna::DescrT>().elevation_angle = 4.2;
-            // // You can also drop in this syntactic acid using this interface which I
-            // // personally don't really like because it mixes real calls with macros
-            // // without it being obvious and doesn't really feel like c++
-            // anno3.sigmfns(antenna).azimuth_angle = 0.1;
-            // anno3.get<antenna::DescrT>().polarization = "circular";
-
-            // latest_record.annotations.emplace_back(anno3);
-
-            // for (size_t i = 0; i < pmt::length(items); i++) {
-            //     // std::string key = pmt::write_string(pmt::car(pmt::nth(i, items)));
-            //     // std::string value = pmt::write_string(pmt::cdr(pmt::nth(i, items)));
-            //     // std::string line = key + ": " + value + "\n";
-            //     d_meta_file.write(line.c_str(), line.size());
-            // }
-            // d_meta_file.write("\n", 1);
+            // Create a new annotation if necessary
+            d_sigmf_meta.annotations.emplace_back(anno);
         }
     }
 }
@@ -182,14 +149,10 @@ std::string pdu_file_sink_impl::get_datatype_string()
     return "cf32_le";
 }
 
-void pdu_file_sink_impl::update_global_fields(
-    sigmf::SigMF<sigmf::Global<core::DescrT>,
-                 sigmf::Capture<core::DescrT>,
-                 sigmf::Annotation<core::DescrT>>& meta)
-{
-    meta.global.access<core::GlobalT>().sample_rate = pmt::to_double(
-        pmt::dict_ref(d_meta_dict, pmt::intern("sample_rate"), pmt::PMT_NIL));
-}
+// void pdu_file_sink_impl::update_global_fields()
+// {
+
+// }
 
 
 } /* namespace plasma */

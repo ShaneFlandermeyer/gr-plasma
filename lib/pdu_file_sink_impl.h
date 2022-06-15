@@ -16,6 +16,7 @@
 #include <sigmf/sigmf.h>
 #include <sigmf/sigmf_antenna_generated.h>
 #include <sigmf/sigmf_core_generated.h>
+#include <sigmf/sigmf_signal_generated.h>
 
 namespace gr {
 namespace plasma {
@@ -97,14 +98,12 @@ private:
 
     sigmf::SigMF<sigmf::Global<core::DescrT>,
                  sigmf::Capture<core::DescrT>,
-                 sigmf::Annotation<core::DescrT>>
+                 sigmf::Annotation<core::DescrT,signal::DescrT>>
         d_sigmf_meta;
 
     std::string get_datatype_string();
 
-    void update_global_fields(sigmf::SigMF<sigmf::Global<core::DescrT>,
-                                           sigmf::Capture<core::DescrT>,
-                                           sigmf::Annotation<core::DescrT>>& meta);
+    void update_global_fields();
 
 
 public:

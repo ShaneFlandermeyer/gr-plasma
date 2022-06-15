@@ -203,11 +203,6 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             break;
         // Send the pdu for the entire CPI
         if (num_samps_total == num_samp_cpi) {
-            // std::cout << md.time_spec.get_real_secs() << std::endl;
-            // d_meta =
-            //     pmt::dict_add(d_meta,
-            //                   pmt::intern("end_time"),
-            //                   pmt::from_double(usrp->get_time_now().get_real_secs()));
             d_pdu_thread.join();
             d_pdu_thread = gr::thread::thread([this] { send_pdu(d_rx_buff); });
             num_samps_total = 0;
