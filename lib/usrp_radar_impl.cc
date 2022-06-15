@@ -79,6 +79,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
     d_usrp->set_rx_gain(d_rx_gain);
 
     d_pulse_count = 0;
+    d_meta = pmt::make_dict();
 }
 
 /*
@@ -90,12 +91,13 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
         // Parse the PDU and store the data in a member variable
-        d_meta = pmt::car(msg);
+        d_meta = pmt::dict_update(d_meta,pmt::car(msg));
         // Append additional metadata to the pmt object
         d_meta = pmt::dict_add(
             d_meta, pmt::intern("num_pulse_cpi"), pmt::from_long(d_num_pulse_cpi));
-        pmt::pmt_t data = pmt::cdr(msg);
-        d_tx_buff = c32vector_elements(data);
+        d_meta =
+            pmt::dict_add(d_meta, pmt::intern("frequency"), pmt::from_double(d_tx_freq));
+        d_tx_buff = c32vector_elements(pmt::cdr(msg));
     }
 }
 
@@ -184,7 +186,8 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
         if (num_samps_total == 0) {
-            d_meta = pmt::dict_add(d_meta, pmt::intern("rx_time"),
+            d_meta = pmt::dict_add(d_meta,
+                                   pmt::intern("rx_time"),
                                    pmt::from_double(md.time_spec.get_real_secs() -
                                                     start_time.get_real_secs()));
         }
@@ -228,6 +231,7 @@ bool usrp_radar_impl::stop()
 {
     d_finished = true;
     d_main_thread.join();
+    d_usrp.reset();
 
     return block::stop();
 }

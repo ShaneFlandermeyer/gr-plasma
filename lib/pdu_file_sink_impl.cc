@@ -36,7 +36,20 @@ pdu_file_sink_impl::pdu_file_sink_impl(std::string& data_filename,
     d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
     if (not d_meta_filename.empty()) {
         d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
+        // Initialize the global metadata fields
+        d_sigmf_meta.global.access<core::GlobalT>().datatype = get_datatype_string();
     }
+}
+
+/*
+ * Our virtual destructor.
+ */
+pdu_file_sink_impl::~pdu_file_sink_impl()
+{
+    // Write the metadata to a file
+    d_meta_file << json(d_sigmf_meta).dump(4) << std::endl;
+    d_data_file.close();
+    d_meta_file.close();
 }
 
 void pdu_file_sink_impl::handle_message(const pmt::pmt_t& msg)
@@ -76,19 +89,31 @@ void pdu_file_sink_impl::run()
             if (d_finished)
                 return;
             d_data = d_data_queue.front();
-            d_meta = d_meta_queue.front();
+            d_meta_dict = d_meta_queue.front();
             d_data_queue.pop();
             d_meta_queue.pop();
         }
         size_t n = pmt::length(d_data);
         d_data_file.write((char*)pmt::c32vector_writable_elements(d_data, n),
                           n * sizeof(gr_complex));
+#pragma message("TODO: Save actual metadata in the PDU file sink")
         if (d_meta_file.is_open()) {
-            #pragma message("TODO: Save actual metadata in the PDU file sink")
-            // sigmf::SigMF<sigmf::Global<core::DescrT, antenna::DescrT>,
+            update_global_fields(d_sigmf_meta);
+            // Add capture segment
+            auto capture = sigmf::Capture<core::DescrT>();
+            capture.get<core::DescrT>().sample_start = 0;
+            pmt::pmt_t frequency =
+                pmt::dict_ref(d_meta_dict, pmt::intern("frequency"), pmt::PMT_NIL);
+            if (not pmt::eq(frequency, pmt::PMT_NIL))
+                capture.get<core::DescrT>().frequency = pmt::to_double(frequency);
+            d_sigmf_meta.captures.emplace_back(capture);
+
+
+            // sigmf::SigMF<sigmf::Global<core::DescrT>,
             //              sigmf::Capture<core::DescrT>,
-            //              sigmf::Annotation<core::DescrT, antenna::DescrT>>
+            //              sigmf::Annotation<core::DescrT>>
             //     latest_record;
+            //
             // latest_record.global.access<core::GlobalT>().author = "Nathan";
             // latest_record.global.access<core::GlobalT>().description =
             //     "Example of creating a new record";
@@ -139,7 +164,7 @@ void pdu_file_sink_impl::run()
             // anno3.get<antenna::DescrT>().polarization = "circular";
 
             // latest_record.annotations.emplace_back(anno3);
-            // d_meta_file << json(latest_record).dump(4) << std::endl;
+
             // for (size_t i = 0; i < pmt::length(items); i++) {
             //     // std::string key = pmt::write_string(pmt::car(pmt::nth(i, items)));
             //     // std::string value = pmt::write_string(pmt::cdr(pmt::nth(i, items)));
@@ -151,14 +176,19 @@ void pdu_file_sink_impl::run()
     }
 }
 
-
-/*
- * Our virtual destructor.
- */
-pdu_file_sink_impl::~pdu_file_sink_impl()
+std::string pdu_file_sink_impl::get_datatype_string()
 {
-    d_data_file.close();
-    d_meta_file.close();
+#pragma message("TODO: Don't hardcode the datatype string")
+    return "cf32_le";
+}
+
+void pdu_file_sink_impl::update_global_fields(
+    sigmf::SigMF<sigmf::Global<core::DescrT>,
+                 sigmf::Capture<core::DescrT>,
+                 sigmf::Annotation<core::DescrT>>& meta)
+{
+    meta.global.access<core::GlobalT>().sample_rate = pmt::to_double(
+        pmt::dict_ref(d_meta_dict, pmt::intern("sample_rate"), pmt::PMT_NIL));
 }
 
 

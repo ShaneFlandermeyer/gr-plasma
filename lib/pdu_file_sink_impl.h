@@ -13,9 +13,9 @@
 #include <fstream>
 #include <queue>
 
-#include <sigmf/sigmf_core_generated.h>
-#include <sigmf/sigmf_antenna_generated.h>
 #include <sigmf/sigmf.h>
+#include <sigmf/sigmf_antenna_generated.h>
+#include <sigmf/sigmf_core_generated.h>
 
 namespace gr {
 namespace plasma {
@@ -93,10 +93,18 @@ private:
      * @brief Current metadata item to be written to file
      *
      */
-    pmt::pmt_t d_meta;
+    pmt::pmt_t d_meta_dict;
 
-    // nlohmann::json d_meta_json;
+    sigmf::SigMF<sigmf::Global<core::DescrT>,
+                 sigmf::Capture<core::DescrT>,
+                 sigmf::Annotation<core::DescrT>>
+        d_sigmf_meta;
 
+    std::string get_datatype_string();
+
+    void update_global_fields(sigmf::SigMF<sigmf::Global<core::DescrT>,
+                                           sigmf::Capture<core::DescrT>,
+                                           sigmf::Annotation<core::DescrT>>& meta);
 
 
 public:
