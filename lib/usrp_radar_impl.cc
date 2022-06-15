@@ -90,11 +90,11 @@ usrp_radar_impl::~usrp_radar_impl() {}
 void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
-        // Parse the PDU and store the data in a member variable
-        d_meta = pmt::dict_update(d_meta,pmt::car(msg));
+        // Maintain any metadata that was produced by upstream blocks
+        d_meta = pmt::car(msg);
         // Append additional metadata to the pmt object
-        d_meta = pmt::dict_add(
-            d_meta, pmt::intern("num_pulse_cpi"), pmt::from_long(d_num_pulse_cpi));
+        // d_meta = pmt::dict_add(
+        //     d_meta, pmt::intern("num_pulse_cpi"), pmt::from_long(d_num_pulse_cpi));
         d_meta =
             pmt::dict_add(d_meta, pmt::intern("frequency"), pmt::from_double(d_tx_freq));
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -106,6 +106,8 @@ inline void usrp_radar_impl::send_pdu(const std::vector<gr_complex>& data)
     d_pdu_data = pmt::init_c32vector(data.size(), data.data());
     pmt::pmt_t pdu = pmt::cons(d_meta, d_pdu_data);
     message_port_pub(pmt::mp("out"), pdu);
+    // Reset the metadata
+    d_meta = pmt::make_dict();
 }
 
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
@@ -133,11 +135,6 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
-
-        if (d_pulse_count % d_num_pulse_cpi == 0) {
-            d_meta = pmt::dict_add(
-                d_meta, pmt::intern("pulse_count"), pmt::from_long(d_pulse_count));
-        }
         d_pulse_count++;
     }
     // Send a mini EOB to tell the USRP that we're done
@@ -185,12 +182,6 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         boost::this_thread::disable_interruption disable_interrupt;
         size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
-        if (num_samps_total == 0) {
-            d_meta = pmt::dict_add(d_meta,
-                                   pmt::intern("rx_time"),
-                                   pmt::from_double(md.time_spec.get_real_secs() -
-                                                    start_time.get_real_secs()));
-        }
 
         timeout = 0.5;
 

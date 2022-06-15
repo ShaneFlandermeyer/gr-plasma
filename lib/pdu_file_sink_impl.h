@@ -98,8 +98,10 @@ private:
 
     sigmf::SigMF<sigmf::Global<core::DescrT>,
                  sigmf::Capture<core::DescrT>,
-                 sigmf::Annotation<core::DescrT,signal::DescrT>>
+                 sigmf::Annotation<core::DescrT, signal::DescrT>>
         d_sigmf_meta;
+    sigmf::Capture<core::DescrT> d_capture;
+    sigmf::Annotation<core::DescrT, signal::DescrT> d_annotation;
 
     std::string get_datatype_string();
 

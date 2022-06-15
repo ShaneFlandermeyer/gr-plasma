@@ -42,11 +42,6 @@ private:
 public:
     waveform_controller_impl(double prf, double samp_rate);
     ~waveform_controller_impl();
-
-    // // Where all the action really happens
-    // int work(int noutput_items,
-    //          gr_vector_const_void_star& input_items,
-    //          gr_vector_void_star& output_items);
 };
 
 } // namespace plasma

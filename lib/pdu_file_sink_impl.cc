@@ -47,6 +47,7 @@ pdu_file_sink_impl::pdu_file_sink_impl(std::string& data_filename,
 pdu_file_sink_impl::~pdu_file_sink_impl()
 {
     // Write the metadata to a file
+    d_sigmf_meta.annotations.emplace_back(d_annotation);
     d_meta_file << json(d_sigmf_meta).dump(4) << std::endl;
     d_data_file.close();
     d_meta_file.close();
@@ -98,47 +99,82 @@ void pdu_file_sink_impl::run()
                           n * sizeof(gr_complex));
 #pragma message("TODO: Save actual metadata in the PDU file sink")
         if (d_meta_file.is_open()) {
-            // Update any global data that has changed
-            d_sigmf_meta.global.access<core::GlobalT>().sample_rate = pmt::to_double(
-                pmt::dict_ref(d_meta_dict, pmt::intern("sample_rate"), pmt::PMT_NIL));
-            // Update the capture segment
-            auto capture = sigmf::Capture<core::DescrT>();
-            pmt::pmt_t frequency =
-                pmt::dict_ref(d_meta_dict, pmt::intern("frequency"), pmt::PMT_NIL);
+            // Update the d_capture segment
 
-            // Add annotation when the waveform changes
-            auto anno = sigmf::Annotation<core::DescrT, signal::DescrT>();
-
-            anno.get<core::DescrT>().sample_start = 0;
-            anno.get<core::DescrT>().sample_count = 100;
-
-            pmt::pmt_t bandwidth =
-                pmt::dict_ref(d_meta_dict, pmt::intern("bandwidth"), pmt::PMT_NIL);
-            if (not pmt::eq(bandwidth, pmt::PMT_NIL)) {
-                // If a center frequency is given, use it to compute the
-                // frequency edges. Otherwise, specify the edges at complex baseband.
-                if (not pmt::eq(frequency, pmt::PMT_NIL)) {
-                    double freq = pmt::to_double(frequency);
-                    capture.get<core::DescrT>().frequency = freq;
-                    anno.get<core::DescrT>().freq_lower_edge =
-                        -pmt::to_double(bandwidth) / 2 + freq;
-                    anno.get<core::DescrT>().freq_upper_edge =
-                        pmt::to_double(bandwidth) / 2 + freq;
-                } else {
-                    anno.get<core::DescrT>().freq_lower_edge =
-                        -pmt::to_double(bandwidth) / 2;
-                    anno.get<core::DescrT>().freq_upper_edge =
-                        pmt::to_double(bandwidth) / 2;
+            // Update sample rate
+            if (pmt::dict_has_key(d_meta_dict, pmt::intern("sample_rate"))) {
+                d_sigmf_meta.global.access<core::GlobalT>().sample_rate = pmt::to_double(
+                    pmt::dict_ref(d_meta_dict, pmt::intern("sample_rate"), pmt::PMT_NIL));
+            }
+            // Update center frequency
+            if (pmt::dict_has_key(d_meta_dict, pmt::intern("frequency"))) {
+                d_capture.get<core::DescrT>().frequency = pmt::to_double(
+                    pmt::dict_ref(d_meta_dict, pmt::intern("frequency"), pmt::PMT_NIL));
+                // TODO: Don't hard-code this
+                d_capture.get<core::DescrT>().sample_start = 0;
+                d_sigmf_meta.captures.emplace_back(d_capture);
+            }
+            // Update bandwidth
+            if (pmt::dict_has_key(d_meta_dict, pmt::intern("bandwidth"))) {
+                double bandwidth = pmt::to_double(
+                    pmt::dict_ref(d_meta_dict, pmt::intern("bandwidth"), pmt::PMT_NIL));
+                try {
+                    d_annotation.get<core::DescrT>().freq_lower_edge =
+                        -bandwidth / 2 + d_capture.get<core::DescrT>().frequency.value();
+                    d_annotation.get<core::DescrT>().freq_upper_edge =
+                        bandwidth / 2 + d_capture.get<core::DescrT>().frequency.value();
+                } catch (...) {
+                    d_annotation.get<core::DescrT>().freq_lower_edge =
+                        -bandwidth / 2;
+                    d_annotation.get<core::DescrT>().freq_upper_edge =
+                        bandwidth / 2;
                 }
             }
-            pmt::pmt_t label =
-                pmt::dict_ref(d_meta_dict, pmt::intern("label"), pmt::PMT_NIL);
-            if (not pmt::eq(label, pmt::PMT_NIL))
-                anno.get<core::DescrT>().label = pmt::symbol_to_string(label);
+
+            // pmt::pmt_t sample_start =
+            //     pmt::dict_ref(d_meta_dict, pmt::intern("sample_start"), pmt::PMT_NIL);
+            // pmt::pmt_t bandwidth =
+            //     pmt::dict_ref(d_meta_dict, pmt::intern("bandwidth"), pmt::PMT_NIL);
+            // pmt::pmt_t label =
+            //     pmt::dict_ref(d_meta_dict, pmt::intern("label"), pmt::PMT_NIL);
+
+            // if (not pmt::is_null(bandwidth)) {
+            //     // If a center frequency is given, use it to compute the
+            //     // frequency edges. Otherwise, specify the edges at complex baseband.
+            //     if (not pmt::is_null(frequency)) {
+            //         double freq = pmt::to_double(frequency);
+            //         d_capture.get<core::DescrT>().frequency = freq;
+            //         d_annotation.get<core::DescrT>().freq_lower_edge =
+            //             -pmt::to_double(bandwidth) / 2 + freq;
+            //         d_annotation.get<core::DescrT>().freq_upper_edge =
+            //             pmt::to_double(bandwidth) / 2 + freq;
+            //     } else {
+            //         d_annotation.get<core::DescrT>().freq_lower_edge =
+            //             -pmt::to_double(bandwidth) / 2;
+            //         d_annotation.get<core::DescrT>().freq_upper_edge =
+            //             pmt::to_double(bandwidth) / 2;
+            //     }
+            // }
+
+            // if (not pmt::is_null(label))
+            //     d_annotation.get<core::DescrT>().label = pmt::symbol_to_string(label);
+
+            // if (not pmt::is_null(sample_start)) {
+            //     size_t start = pmt::to_long(sample_start);
+            //     if (start > 0 and
+            //         start != d_annotation.get<core::DescrT>().sample_start.value()) {
+            //         d_annotation.get<core::DescrT>().sample_count =
+            //             start - d_annotation.get<core::DescrT>().sample_start.value();
+            //         d_sigmf_meta.annotations.emplace_back(d_annotation);
+            //     }
+            //     d_annotation.get<core::DescrT>().sample_start = start;
+            // }
 
 
-            // Create a new annotation if necessary
-            d_sigmf_meta.annotations.emplace_back(anno);
+            // Create a new annotation when the waveform changes
+
+
+            // Create a new d_capture segment when the center frequency changes
         }
     }
 }
