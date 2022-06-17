@@ -131,27 +131,103 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     // bursts because there is a bug on the X310 that chops off part of the
     // waveform at the beginning of each burst
     while (!d_finished) {
-        // gr::thread::scoped_lock lock(d_mutex);
+        // Update the waveform data if it has changed
+        if (d_armed) {
+            d_armed = false;
+            d_meta = pmt::dict_add(
+                d_meta, pmt::intern("sample_start"), pmt::from_uint64(d_sample_count));
+            gr::thread::scoped_lock lock(d_mutex);
+            for (size_t i = 0; i < buff_ptrs.size(); i++) {
+                buff_ptrs[i] = d_tx_buff.data();
+            }
+            num_samp_pulse = d_tx_buff.size();
+        }
         boost::this_thread::disable_interruption disable_interrupt;
         tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 1.0);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
         d_pulse_count++;
-        if (d_armed) {
-            d_armed = false;
-            gr::thread::scoped_lock lock(d_mutex);
-            for (size_t i = 0; i < buff_ptrs.size(); i++) {
-                buff_ptrs[i] = d_tx_buff.data();
-            }
-            num_samp_pulse = d_tx_buff.size();
-            std::cout << "Changed on pulse " << d_pulse_count << std::endl;
-        }
+        d_sample_count += num_samp_pulse;
     }
     // Send a mini EOB to tell the USRP that we're done
     tx_md.has_time_spec = false;
     tx_md.end_of_burst = true;
     tx_stream->send("", 0, tx_md);
+}
+
+void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
+                              std::vector<std::vector<gr_complex>> buffs,
+                              uhd::time_spec_t start_time)
+{
+    uhd::set_thread_priority_safe();
+    size_t channels = buffs.size();
+    std::vector<size_t> channel_vec;
+    uhd::stream_args_t stream_args("fc32", "sc16");
+    uhd::rx_streamer::sptr rx_stream;
+    if (channel_vec.size() == 0) {
+        for (size_t i = 0; i < channels; i++) {
+            channel_vec.push_back(i);
+        }
+    }
+    stream_args.channels = channel_vec;
+    rx_stream = usrp->get_rx_stream(stream_args);
+
+    uhd::rx_metadata_t md;
+    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
+    // stream_cmd.num_samps = num_samp_cpi;
+    stream_cmd.time_spec = start_time;
+    stream_cmd.stream_now = (start_time.get_real_secs() > 0 ? false : true);
+    rx_stream->issue_stream_cmd(stream_cmd);
+
+    size_t max_num_samps = rx_stream->get_max_num_samps();
+    size_t num_samps_total = 0;
+    size_t num_samps_pri = buffs[0].size();
+    std::vector<gr_complex*> buff_ptrs2(buffs.size());
+    double timeout = 0.5 + start_time.get_real_secs();
+    while (!d_finished) {
+        // Move storing pointer to correct location
+        for (size_t i = 0; i < channels; i++)
+            buff_ptrs2[i] = &(buffs[i][num_samps_total]);
+
+        // Sampling data
+        size_t samps_to_recv = std::min(num_samps_pri - num_samps_total, max_num_samps);
+        boost::this_thread::disable_interruption disable_interrupt;
+        size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
+        boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
+
+        timeout = 0.5;
+
+        num_samps_total += num_rx_samps;
+
+        // TODO: Handle errors
+        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
+            break;
+        if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
+            break;
+        // Send the pdu for the entire CPI
+        if (num_samps_total == num_samps_pri) {
+            d_pdu_thread.join();
+            d_pdu_thread = gr::thread::thread([this, buffs] { send_pdu(buffs[0]); });
+            num_samps_total = 0;
+            // If the PRF has changed, resize the buffers
+            size_t tx_buff_size;
+            {
+                gr::thread::scoped_lock lock(d_mutex);
+                tx_buff_size = d_tx_buff.size();
+            }
+            if (tx_buff_size != num_samps_pri) {
+                num_samps_pri = tx_buff_size;
+                for (size_t i = 0; i < buffs.size(); i++) {
+                    buffs[i].resize(num_samps_pri);
+                }
+            }
+        }
+    }
+    // Shut down the stream
+    stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
+    stream_cmd.stream_now = true;
+    rx_stream->issue_stream_cmd(stream_cmd);
 }
 
 void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
@@ -174,7 +250,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 
     uhd::rx_metadata_t md;
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
-    stream_cmd.num_samps = num_samp_cpi;
+    // stream_cmd.num_samps = num_samp_cpi;
     stream_cmd.time_spec = start_time;
     stream_cmd.stream_now = (start_time.get_real_secs() > 0 ? false : true);
     rx_stream->issue_stream_cmd(stream_cmd);
@@ -208,7 +284,6 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             d_pdu_thread.join();
             d_pdu_thread = gr::thread::thread([this] { send_pdu(d_rx_buff); });
             num_samps_total = 0;
-            num_samp_cpi = d_tx_buff.size() * d_num_pulse_cpi;
         }
     }
     // Shut down the stream
@@ -249,14 +324,19 @@ void usrp_radar_impl::run()
     std::vector<gr_complex*> rx_buff_ptrs;
     d_rx_buff = std::vector<gr_complex>(num_samp_rx, 0);
     rx_buff_ptrs.push_back(&d_rx_buff.front());
+    std::vector<std::vector<gr_complex>> rx_buffs;
+    rx_buffs.push_back(d_rx_buff);
 
     // Start the transmit and receive threads
     uhd::time_spec_t time_now = d_usrp->get_time_now();
     d_tx_thread = gr::thread::thread([this, tx_buff_ptrs, time_now] {
         transmit(d_usrp, tx_buff_ptrs, d_tx_buff.size(), time_now + d_tx_start_time);
     });
-    d_rx_thread = gr::thread::thread([this, rx_buff_ptrs, num_samp_rx, time_now] {
-        receive(d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
+    // d_rx_thread = gr::thread::thread([this, rx_buff_ptrs, num_samp_rx, time_now] {
+    //     receive(d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
+    // });
+    d_rx_thread = gr::thread::thread([this, rx_buffs, time_now] {
+        receive(d_usrp, rx_buffs, time_now + d_rx_start_time);
     });
 
     // Do nothing while the transmit and receive threads are running

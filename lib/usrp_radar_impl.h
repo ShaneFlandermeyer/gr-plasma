@@ -73,6 +73,17 @@ private:
                  size_t num_samp_cpi,
                  uhd::time_spec_t start_time);
 
+    /**
+     * @brief Receive a pulse of samples from the USRP, then package them into a PDU
+     * 
+     * @param usrp 
+     * @param buff_ptrs 
+     * @param start_time 
+     */
+    void receive(uhd::usrp::multi_usrp::sptr usrp,
+                 std::vector<std::vector<gr_complex>> buff_ptrs,
+                 uhd::time_spec_t start_time);
+
 public:
     usrp_radar_impl(double samp_rate,
                     double tx_gain,

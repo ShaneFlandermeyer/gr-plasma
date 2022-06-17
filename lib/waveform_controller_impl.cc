@@ -31,7 +31,6 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
     message_port_register_out(pmt::mp("out"));
     set_msg_handler(pmt::mp("in"),
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
-    d_sample_index = 0;
     d_updated = false;
     d_prf = prf;
     d_samp_rate = samp_rate;
@@ -43,10 +42,21 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
  */
 waveform_controller_impl::~waveform_controller_impl() {}
 
+bool waveform_controller_impl::start()
+{
+    d_finished = false;
+    return block::start();
+}
+
+bool waveform_controller_impl::stop()
+{
+    d_finished = true;
+    return block::stop();
+}
+
 void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
-#pragma message("Remove this debug repeating for loop")
         pmt::pmt_t meta = pmt::car(msg);
         pmt::pmt_t data = pmt::cdr(msg);
         d_num_samp_waveform = pmt::length(data);
@@ -56,12 +66,10 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
         // Send the new waveform through the message port (with additional
         // metadata)
         meta = pmt::dict_add(meta, pmt::intern("prf"), pmt::from_double(d_prf));
-        meta = pmt::dict_add(
-            meta, pmt::intern("sample_start"), pmt::from_long(d_sample_index));
         message_port_pub(
             pmt::mp("out"),
             pmt::cons(meta, pmt::init_c32vector(d_data.size(), d_data.data())));
-        d_sample_index += d_num_samp_pri;
+
 
     } else if (pmt::is_pair(msg)) {
         pmt::pmt_t key = pmt::car(msg);

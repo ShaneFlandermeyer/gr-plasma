@@ -22,9 +22,9 @@ private:
     double d_samp_rate;
     size_t d_num_samp_pri;
     size_t d_num_samp_waveform;
-    size_t d_sample_index;
     std::vector<gr_complex> d_data;
     std::atomic<bool> d_updated;
+    std::atomic<bool> d_finished;
 
     /**
      * @brief Message handler function
@@ -42,6 +42,9 @@ private:
 public:
     waveform_controller_impl(double prf, double samp_rate);
     ~waveform_controller_impl();
+
+    bool start() override;
+    bool stop() override;
 };
 
 } // namespace plasma
