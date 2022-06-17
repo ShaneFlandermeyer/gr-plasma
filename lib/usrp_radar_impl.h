@@ -33,14 +33,20 @@ private:
     gr::thread::thread d_pdu_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::thread d_rx_thread;
+    gr::thread::mutex d_mutex;
     std::atomic<bool> d_finished;
+    std::atomic<bool> d_armed;
     std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
     double d_prf;
-    double d_num_pulse_cpi;
+    size_t d_num_pulse_cpi;
     size_t d_delay_samps;
+    size_t d_pulse_count;
+    size_t d_sample_count;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_pdu_data;
+    pmt::pmt_t d_new_waveform;
+
 
     /**
      * @brief Transmit the data in the tx buffer until 
@@ -65,6 +71,17 @@ private:
     void receive(uhd::usrp::multi_usrp::sptr usrp,
                  std::vector<std::complex<float>*> buff_ptrs,
                  size_t num_samp_cpi,
+                 uhd::time_spec_t start_time);
+
+    /**
+     * @brief Receive a pulse of samples from the USRP, then package them into a PDU
+     * 
+     * @param usrp 
+     * @param buff_ptrs 
+     * @param start_time 
+     */
+    void receive(uhd::usrp::multi_usrp::sptr usrp,
+                 std::vector<std::vector<gr_complex>> buff_ptrs,
                  uhd::time_spec_t start_time);
 
 public:
