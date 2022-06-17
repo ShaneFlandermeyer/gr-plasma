@@ -93,10 +93,11 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         // Maintain any metadata that was produced by upstream blocks
         d_meta = pmt::car(msg);
         // Append additional metadata to the pmt object
-        // d_meta = pmt::dict_add(
-        //     d_meta, pmt::intern("num_pulse_cpi"), pmt::from_long(d_num_pulse_cpi));
         d_meta =
             pmt::dict_add(d_meta, pmt::intern("frequency"), pmt::from_double(d_tx_freq));
+        size_t io(0);
+        d_armed = true;
+        gr::thread::scoped_lock lock(d_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
     }
 }
@@ -130,12 +131,22 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     // bursts because there is a bug on the X310 that chops off part of the
     // waveform at the beginning of each burst
     while (!d_finished) {
+        // gr::thread::scoped_lock lock(d_mutex);
         boost::this_thread::disable_interruption disable_interrupt;
         tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 1.0);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
         d_pulse_count++;
+        if (d_armed) {
+            d_armed = false;
+            gr::thread::scoped_lock lock(d_mutex);
+            for (size_t i = 0; i < buff_ptrs.size(); i++) {
+                buff_ptrs[i] = d_tx_buff.data();
+            }
+            num_samp_pulse = d_tx_buff.size();
+            std::cout << "Changed on pulse " << d_pulse_count << std::endl;
+        }
     }
     // Send a mini EOB to tell the USRP that we're done
     tx_md.has_time_spec = false;
@@ -197,6 +208,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             d_pdu_thread.join();
             d_pdu_thread = gr::thread::thread([this] { send_pdu(d_rx_buff); });
             num_samps_total = 0;
+            num_samp_cpi = d_tx_buff.size() * d_num_pulse_cpi;
         }
     }
     // Shut down the stream

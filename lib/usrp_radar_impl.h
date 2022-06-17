@@ -33,15 +33,20 @@ private:
     gr::thread::thread d_pdu_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::thread d_rx_thread;
+    gr::thread::mutex d_mutex;
     std::atomic<bool> d_finished;
+    std::atomic<bool> d_armed;
     std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
     double d_prf;
     size_t d_num_pulse_cpi;
     size_t d_delay_samps;
     size_t d_pulse_count;
+    size_t d_sample_count;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_pdu_data;
+    pmt::pmt_t d_new_waveform;
+
 
     /**
      * @brief Transmit the data in the tx buffer until 
