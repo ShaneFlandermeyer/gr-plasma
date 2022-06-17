@@ -100,12 +100,13 @@ private:
                  sigmf::Capture<core::DescrT>,
                  sigmf::Annotation<core::DescrT, signal::DescrT>>
         d_sigmf_meta;
-    sigmf::Capture<core::DescrT> d_capture;
-    sigmf::Annotation<core::DescrT, signal::DescrT> d_annotation;
+    // sigmf::Capture<core::DescrT> d_capture;
+    // sigmf::Annotation<core::DescrT, signal::DescrT> d_annotation;
 
     std::string get_datatype_string();
 
     void update_global_fields();
+    void parse_meta(const pmt::pmt_t& dict);
 
 
 public:
