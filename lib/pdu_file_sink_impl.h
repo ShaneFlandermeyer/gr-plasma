@@ -111,9 +111,19 @@ private:
                  sigmf::Annotation<core::DescrT, signal::DescrT>>
         d_sigmf_meta;
 
+    /**
+     * @brief Use the data type parameter and system endianness to fill the
+     * SigMF datatype field
+     * 
+     * @return std::string 
+     */
     std::string get_datatype_string();
 
-    void update_global_fields();
+    /**
+     * @brief Parse an input PMT dictionary for SigMF metadata
+     * 
+     * @param dict 
+     */
     void parse_meta(const pmt::pmt_t& dict);
 
 
