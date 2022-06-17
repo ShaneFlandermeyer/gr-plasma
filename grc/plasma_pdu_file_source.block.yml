@@ -20,6 +20,7 @@ parameters:
 - id: meta_filename
   label: Meta File
   dtype: file_save
+  default: 'FIELD NOT YET IMPLEMENTED'
 - id: offset
   label: Offset
   dtype: int
