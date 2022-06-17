@@ -33,7 +33,8 @@ list(APPEND plasma_python_files
     usrp_radar_python.cc
     pdu_file_sink_python.cc
     pdu_head_python.cc
-    pcfm_source_python.cc python_bindings.cc)
+    pcfm_source_python.cc
+    pdu_file_source_python.cc python_bindings.cc)
 
 GR_PYBIND_MAKE_OOT(plasma
    ../../..

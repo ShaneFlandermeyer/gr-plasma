@@ -27,6 +27,7 @@ namespace py = pybind11;
     void bind_pdu_file_sink(py::module& m);
     void bind_pdu_head(py::module& m);
     void bind_pcfm_source(py::module& m);
+    void bind_pdu_file_source(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -61,5 +62,6 @@ PYBIND11_MODULE(plasma_python, m)
     bind_pdu_file_sink(m);
     bind_pdu_head(m);
     bind_pcfm_source(m);
+    bind_pdu_file_source(m);
     // ) END BINDING_FUNCTION_CALLS
 }

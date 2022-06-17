@@ -16,8 +16,10 @@ nsamp_cpi = int(npulse_cpi*pri*samp_rate)
 # Format the rx data as pulses
 # x = np.fromfile('/media/shane/Tony/long_collect.dat',
 #                 dtype=np.complex64, offset=8*(82+100*int(nsamp_cpi)), count=int(nsamp_cpi))
-x = np.fromfile('/home/shane/pdu_file_sink.dat',
+x = np.fromfile('/home/shane/test.dat',
                 dtype=np.complex64, offset=8*(82+0*int(nsamp_cpi)), count=int(nsamp_cpi))
+plt.plot(x)
+plt.show()
 x = np.reshape(x, (-1, npulse_cpi), order='F')
 mf = np.fromfile('/home/shane/mf.dat', dtype=np.complex64)
 
