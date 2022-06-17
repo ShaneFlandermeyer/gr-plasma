@@ -4,9 +4,17 @@ category: '[plasma]/PDU'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.pdu_file_sink(${data_filename}, ${meta_filename})
+  make: plasma.pdu_file_sink(${type.size},${data_filename}, ${meta_filename})
 
 parameters:
+- id: type
+  label: Type
+  dtype: enum
+  options: [complex, float, short, byte]
+  option_attributes:
+      size: [gr.sizeof_gr_complex, gr.sizeof_float, gr.sizeof_short,
+          gr.sizeof_char]
+  hide: part
 - id: data_filename
   label: Data filename
   dtype: file_save

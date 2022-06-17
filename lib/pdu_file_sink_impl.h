@@ -25,6 +25,11 @@ class pdu_file_sink_impl : public pdu_file_sink
 {
 private:
     /**
+     * @brief Size of each data sample, determined by the type input parameter
+     *
+     */
+    size_t d_itemsize;
+    /**
      * @brief Name of the data file
      *
      */
@@ -96,12 +101,15 @@ private:
      */
     pmt::pmt_t d_meta_dict;
 
+
+    /**
+     * @brief SigMF metadata object
+     *
+     */
     sigmf::SigMF<sigmf::Global<core::DescrT>,
                  sigmf::Capture<core::DescrT>,
                  sigmf::Annotation<core::DescrT, signal::DescrT>>
         d_sigmf_meta;
-    // sigmf::Capture<core::DescrT> d_capture;
-    // sigmf::Annotation<core::DescrT, signal::DescrT> d_annotation;
 
     std::string get_datatype_string();
 
@@ -110,7 +118,9 @@ private:
 
 
 public:
-    pdu_file_sink_impl(std::string& data_filename, std::string& meta_filename);
+    pdu_file_sink_impl(size_t itemsize,
+                       std::string& data_filename,
+                       std::string& meta_filename);
     ~pdu_file_sink_impl();
 
     /**

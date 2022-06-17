@@ -7,25 +7,49 @@
 
 #include "pdu_file_sink_impl.h"
 #include <gnuradio/io_signature.h>
+#include <bit>
 
 namespace gr {
 namespace plasma {
 
-pdu_file_sink::sptr pdu_file_sink::make(std::string& data_filename,
+/**
+ * @brief Check if the system is big or little endian for the datatype string
+ *
+ * Shamelessly stolen from stackoverflow
+ *
+ * @return true
+ * @return false
+ */
+bool is_big_endian(void)
+{
+    union {
+        uint32_t i;
+        char c[4];
+    } bint = { 0x01020304 };
+
+    return bint.c[0] == 1;
+}
+
+
+pdu_file_sink::sptr pdu_file_sink::make(size_t itemsize,
+                                        std::string& data_filename,
                                         std::string& meta_filename)
 {
-    return gnuradio::make_block_sptr<pdu_file_sink_impl>(data_filename, meta_filename);
+    return gnuradio::make_block_sptr<pdu_file_sink_impl>(
+        itemsize, data_filename, meta_filename);
 }
 
 
 /*
  * The private constructor
  */
-pdu_file_sink_impl::pdu_file_sink_impl(std::string& data_filename,
+pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
+                                       std::string& data_filename,
                                        std::string& meta_filename)
     : gr::block("pdu_file_sink",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
+      d_itemsize(itemsize),
       d_data_filename(data_filename),
       d_meta_filename(meta_filename)
 {
@@ -95,8 +119,7 @@ void pdu_file_sink_impl::run()
             d_meta_queue.pop();
         }
         size_t n = pmt::length(d_data);
-        d_data_file.write((char*)pmt::c32vector_writable_elements(d_data, n),
-                          n * sizeof(gr_complex));
+        d_data_file.write((char*)pmt::blob_data(d_data), n * d_itemsize);
         // If the user wants metadata and we have some, save it
         if (d_meta_file.is_open() and pmt::length(pmt::dict_keys(d_meta_dict)) > 0) {
             parse_meta(d_meta_dict);
@@ -133,7 +156,7 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
     // Update capture object
     if (not pmt::is_null(frequency)) {
         cap.get<core::DescrT>().frequency = pmt::to_double(frequency);
-        if (not pmt::is_null(sample_start)) 
+        if (not pmt::is_null(sample_start))
             cap.get<core::DescrT>().sample_start = pmt::to_uint64(sample_start);
     }
 
@@ -165,8 +188,32 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
 
 std::string pdu_file_sink_impl::get_datatype_string()
 {
-#pragma message("TODO: Don't hardcode the datatype string")
-    return "cf32_le";
+    std::string outstr;
+    switch (d_itemsize) {
+    case sizeof(gr_complex):
+        outstr = "cf";
+        break;
+    case sizeof(float):
+        outstr = "f";
+        break;
+    case sizeof(short):
+        outstr = "i";
+        break;
+    case sizeof(char):
+        outstr += "u";
+        break;
+    default:
+        break;
+    }
+    outstr += std::to_string(8 * d_itemsize);
+    if (is_big_endian()) {
+        outstr += "_be";
+    } else {
+        outstr += "_le";
+    }
+
+
+    return outstr;
 }
 
 

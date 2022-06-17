@@ -33,7 +33,8 @@ public:
      * class. plasma::pdu_file_sink::make is the public interface for
      * creating new instances.
      */
-    static sptr make(std::string& data_filename, std::string& meta_filename);
+    static sptr
+    make(size_t itemsize, std::string& data_filename, std::string& meta_filename);
 };
 
 } // namespace plasma
