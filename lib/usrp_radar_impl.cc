@@ -95,7 +95,7 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         // Append additional metadata to the pmt object
         d_meta =
             pmt::dict_add(d_meta, pmt::intern("frequency"), pmt::from_double(d_tx_freq));
-        size_t io(0);
+        // size_t io(0);
         d_armed = true;
         gr::thread::scoped_lock lock(d_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -304,7 +304,7 @@ bool usrp_radar_impl::stop()
 {
     d_finished = true;
     d_main_thread.join();
-    d_usrp.reset();
+    // d_usrp.reset();
 
     return block::stop();
 }

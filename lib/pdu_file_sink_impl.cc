@@ -131,8 +131,12 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
             pmt::to_double(sample_rate);
 
     // Update capture object
-    if (not pmt::is_null(frequency))
+    if (not pmt::is_null(frequency)) {
         cap.get<core::DescrT>().frequency = pmt::to_double(frequency);
+        if (not pmt::is_null(sample_start)) 
+            cap.get<core::DescrT>().sample_start = pmt::to_uint64(sample_start);
+    }
+
 
     // Update annotation object
     if (not pmt::is_null(sample_start))
@@ -142,20 +146,18 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
     if (not pmt::is_null(label))
         anno.get<core::DescrT>().label = pmt::symbol_to_string(label);
     if (not pmt::is_null(bandwidth)) {
-    double bw = pmt::to_double(bandwidth);
-    if (pmt::is_null(frequency)) {
-        // Center frequency not specified. Specify the bandwidth at complex
-        // baseband 
-        anno.get<core::DescrT>().freq_lower_edge = -bw / 2;
-        anno.get<core::DescrT>().freq_upper_edge = bw / 2;
-    } else {
-        // Center frequency specified. Save the frequency at RF
-        double center_freq = pmt::to_double(frequency);
-        anno.get<core::DescrT>().freq_lower_edge =
-            -bw / 2 + center_freq;
-        anno.get<core::DescrT>().freq_upper_edge =
-            bw / 2 + center_freq;
-    }
+        double bw = pmt::to_double(bandwidth);
+        if (pmt::is_null(frequency)) {
+            // Center frequency not specified. Specify the bandwidth at complex
+            // baseband
+            anno.get<core::DescrT>().freq_lower_edge = -bw / 2;
+            anno.get<core::DescrT>().freq_upper_edge = bw / 2;
+        } else {
+            // Center frequency specified. Save the frequency at RF
+            double center_freq = pmt::to_double(frequency);
+            anno.get<core::DescrT>().freq_lower_edge = -bw / 2 + center_freq;
+            anno.get<core::DescrT>().freq_upper_edge = bw / 2 + center_freq;
+        }
     }
     d_sigmf_meta.captures.emplace_back(cap);
     d_sigmf_meta.annotations.emplace_back(anno);
