@@ -15,8 +15,7 @@ usrp_radar::sptr usrp_radar::make(double samp_rate,
                                   double rx_gain,
                                   double tx_freq,
                                   double rx_freq,
-                                  double tx_start_time,
-                                  double rx_start_time,
+                                  double start_time,
                                   const std::string& tx_args,
                                   const std::string& rx_args,
                                   size_t num_pulse_cpi)
@@ -26,8 +25,7 @@ usrp_radar::sptr usrp_radar::make(double samp_rate,
                                                       rx_gain,
                                                       tx_freq,
                                                       rx_freq,
-                                                      tx_start_time,
-                                                      rx_start_time,
+                                                      start_time,
                                                       tx_args,
                                                       rx_args,
                                                       num_pulse_cpi);
@@ -42,8 +40,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
                                  double rx_gain,
                                  double tx_freq,
                                  double rx_freq,
-                                 double tx_start_time,
-                                 double rx_start_time,
+                                 double start_time,
                                  const std::string& tx_args,
                                  const std::string& rx_args,
                                  size_t num_pulse_cpi)
@@ -54,8 +51,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
       d_rx_gain(rx_gain),
       d_tx_freq(tx_freq),
       d_rx_freq(rx_freq),
-      d_tx_start_time(tx_start_time),
-      d_rx_start_time(rx_start_time),
+      d_start_time(start_time),
       d_tx_args(tx_args),
       d_rx_args(rx_args),
       d_num_pulse_cpi(num_pulse_cpi)
@@ -129,6 +125,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     tx_md.end_of_burst = false;
     tx_md.has_time_spec = (start_time.get_real_secs() > 0 ? true : false);
     tx_md.time_spec = start_time;
+
     // Send the transmit buffer continuously. Note that this cannot be done in
     // bursts because there is a bug on the X310 that chops off part of the
     // waveform at the beginning of each burst
@@ -177,9 +174,9 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 
     uhd::rx_metadata_t md;
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
-    // stream_cmd.num_samps = num_samp_cpi;
-    stream_cmd.time_spec = start_time;
+
     stream_cmd.stream_now = (start_time.get_real_secs() > 0 ? false : true);
+    stream_cmd.time_spec = start_time;
     rx_stream->issue_stream_cmd(stream_cmd);
 
     size_t max_num_samps = rx_stream->get_max_num_samps();
@@ -202,8 +199,10 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 
         num_samps_total += num_rx_samps;
         // Account for the inherent delay in the USRPs (the number of samples is
-        // pulled from the calibration file)
-        if (d_delay_samps > 0) {
+        // pulled from the calibration file). This delay is only deterministic
+        // if the transmit and receive operations were started with a timed
+        // command, so don't apply them if the user decides to start streaming ASAP.
+        if (not stream_cmd.stream_now and d_delay_samps > 0) {
             num_samps_total -= d_delay_samps;
             d_delay_samps = 0;
         }
@@ -335,12 +334,16 @@ void usrp_radar_impl::run()
     rx_buffs.push_back(d_rx_buff);
 
     // Start the transmit and receive threads
-    uhd::time_spec_t time_now = d_usrp->get_time_now();
+    // If a time in the future is given
+    uhd::time_spec_t time_now = uhd::time_spec_t(0.0);
+    if (d_start_time.get_real_secs() != 0) {
+        time_now = d_usrp->get_time_now();
+    }
     d_tx_thread = gr::thread::thread([this, tx_buff_ptrs, time_now] {
-        transmit(d_usrp, tx_buff_ptrs, d_tx_buff.size(), time_now + d_tx_start_time);
+        transmit(d_usrp, tx_buff_ptrs, d_tx_buff.size(), time_now + d_start_time);
     });
     d_rx_thread = gr::thread::thread([this, rx_buffs, time_now] {
-        receive(d_usrp, rx_buffs, time_now + d_rx_start_time);
+        receive(d_usrp, rx_buffs, time_now + d_start_time);
     });
 
     // Do nothing while the transmit and receive threads are running
@@ -349,31 +352,31 @@ void usrp_radar_impl::run()
 }
 
 void usrp_radar_impl::read_calibration_json()
-    {
-        const std::string homedir = getenv("HOME");
-        std::ifstream file(homedir + "/.uhd/delay_calibration.json");
-        nlohmann::json json;
-        d_delay_samps = 0;
-        if (file) {
-            file >> json;
-            std::string radio_type = d_usrp->get_mboard_name();
-            for (auto& config : json[radio_type]) {
-                if (config["samp_rate"] == d_usrp->get_tx_rate() and
-                    config["master_clock_rate"] == d_usrp->get_master_clock_rate()) {
-                    d_delay_samps = config["delay"];
-                    break;
-                }
+{
+    const std::string homedir = getenv("HOME");
+    std::ifstream file(homedir + "/.uhd/delay_calibration.json");
+    nlohmann::json json;
+    d_delay_samps = 0;
+    if (file) {
+        file >> json;
+        std::string radio_type = d_usrp->get_mboard_name();
+        for (auto& config : json[radio_type]) {
+            if (config["samp_rate"] == d_usrp->get_tx_rate() and
+                config["master_clock_rate"] == d_usrp->get_master_clock_rate()) {
+                d_delay_samps = config["delay"];
+                break;
             }
-            if (d_delay_samps == 0)
-                UHD_LOG_INFO("RadarWindow",
-                             "Calibration file found, but no data exists for this "
-                             "combination of radio, master clock rate, and sample rate");
-        } else {
-            UHD_LOG_INFO("RadarWindow", "No calibration file found");
         }
-
-        file.close();
+        if (d_delay_samps == 0)
+            UHD_LOG_INFO("RadarWindow",
+                         "Calibration file found, but no data exists for this "
+                         "combination of radio, master clock rate, and sample rate");
+    } else {
+        UHD_LOG_INFO("RadarWindow", "No calibration file found");
     }
+
+    file.close();
+}
 
 } /* namespace plasma */
 } /* namespace gr */

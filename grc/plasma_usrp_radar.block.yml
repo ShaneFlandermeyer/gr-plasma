@@ -4,7 +4,7 @@ category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.usrp_radar(${samp_rate},${tx_gain},${rx_gain},${tx_freq},${rx_freq},${tx_start_time},${rx_start_time},${tx_args},${rx_args},${num_pulse_cpi})
+  make: plasma.usrp_radar(${samp_rate},${tx_gain},${rx_gain},${tx_freq},${rx_freq},${start_time},${tx_args},${rx_args},${num_pulse_cpi})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
@@ -33,14 +33,10 @@ parameters:
   label: Rx Center Frequency
   dtype: float
   default: 'center_freq'
-- id: tx_start_time
-  label: Tx Start Time
+- id: start_time
+  label: Start Time
   dtype: float
-  default: 0
-- id: rx_start_time
-  label: Rx Start Time
-  dtype: float
-  default: 0
+  default: 0.0
 - id: tx_args
   label: Tx Args
   dtype: string

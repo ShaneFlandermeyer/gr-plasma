@@ -27,8 +27,7 @@ private:
     double d_rx_gain;
     double d_tx_freq;
     double d_rx_freq;
-    uhd::time_spec_t d_tx_start_time;
-    uhd::time_spec_t d_rx_start_time;
+    uhd::time_spec_t d_start_time;
     std::string d_tx_args, d_rx_args;
     gr::thread::thread d_main_thread;
     gr::thread::thread d_pdu_thread;
@@ -91,8 +90,7 @@ public:
                     double rx_gain,
                     double tx_freq,
                     double rx_freq,
-                    double tx_start_time,
-                    double rx_start_time,
+                    double start_time,
                     const std::string& tx_args,
                     const std::string& rx_args,
                     size_t num_pulse_cpi);

@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(usrp_radar.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(4a8cdc93cab638b11b4195fb3c773499)                     */
+/* BINDTOOL_HEADER_FILE_HASH(18b7d2776c329ff12c22481501bdff51)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -30,40 +30,24 @@ namespace py = pybind11;
 void bind_usrp_radar(py::module& m)
 {
 
-    using usrp_radar    = ::gr::plasma::usrp_radar;
+    using usrp_radar = ::gr::plasma::usrp_radar;
 
 
-    py::class_<usrp_radar, gr::block, gr::basic_block,
-        std::shared_ptr<usrp_radar>>(m, "usrp_radar", D(usrp_radar))
+    py::class_<usrp_radar, gr::block, gr::basic_block, std::shared_ptr<usrp_radar>>(
+        m, "usrp_radar", D(usrp_radar))
 
         .def(py::init(&usrp_radar::make),
-           py::arg("samp_rate"),
-           py::arg("tx_gain"),
-           py::arg("rx_gain"),
-           py::arg("tx_freq"),
-           py::arg("rx_freq"),
-           py::arg("tx_start_time"),
-           py::arg("rx_start_time"),
-           py::arg("tx_args"),
-           py::arg("rx_args"),
-           py::arg("num_pulse_cpi"),
-           D(usrp_radar,make)
-        )
-        
-
+             py::arg("samp_rate"),
+             py::arg("tx_gain"),
+             py::arg("rx_gain"),
+             py::arg("tx_freq"),
+             py::arg("rx_freq"),
+             py::arg("start_time"),
+             py::arg("tx_args"),
+             py::arg("rx_args"),
+             py::arg("num_pulse_cpi"),
+             D(usrp_radar, make))
 
 
         ;
-
-
-
-
 }
-
-
-
-
-
-
-
-
