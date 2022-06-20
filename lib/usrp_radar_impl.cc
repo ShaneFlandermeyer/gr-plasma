@@ -95,18 +95,21 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
             pmt::dict_add(d_meta, pmt::intern("frequency"), pmt::from_double(d_tx_freq));
         // size_t io(0);
         d_armed = true;
-        gr::thread::scoped_lock lock(d_mutex);
+        gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
     }
 }
 
-inline void usrp_radar_impl::send_pdu(const std::vector<gr_complex>& data)
+void usrp_radar_impl::process_pdus()
 {
-    d_pdu_data = pmt::init_c32vector(data.size(), data.data());
-    pmt::pmt_t pdu = pmt::cons(d_meta, d_pdu_data);
-    message_port_pub(pmt::mp("out"), pdu);
-    // Reset the metadata
-    d_meta = pmt::make_dict();
+    while (true) {
+        gr::thread::scoped_lock lock(d_queue_mutex);
+        d_cond.wait(lock, [this] { return not d_data_queue.empty() || d_finished; });
+        if (d_finished)
+            return;
+        message_port_pub(pmt::mp("out"), d_data_queue.front());
+        d_data_queue.pop();
+    }
 }
 
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
@@ -135,7 +138,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
             d_armed = false;
             d_meta = pmt::dict_add(
                 d_meta, pmt::intern("sample_start"), pmt::from_uint64(d_sample_count));
-            gr::thread::scoped_lock lock(d_mutex);
+            gr::thread::scoped_lock lock(d_tx_buff_mutex);
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
             }
@@ -212,15 +215,22 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             break;
         if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
             break;
-        // Send the pdu for the entire CPI
+        // Send the pdu for the PRI
         if (num_samps_total == num_samps_pri) {
-            d_pdu_thread.join();
-            d_pdu_thread = gr::thread::thread([this, buffs] { send_pdu(buffs[0]); });
+            {
+                // Add the new pulse data to the internal queue 
+                gr::thread::scoped_lock lock(d_queue_mutex);
+                pmt::pmt_t pdu =
+                    pmt::cons(d_meta, pmt::init_c32vector(num_samps_pri, buffs[0]));
+                d_data_queue.push(pdu);
+                // Reset the metadata
+                d_meta = pmt::make_dict();
+            }
             num_samps_total = 0;
             // If the PRF has changed, resize the buffers
             size_t tx_buff_size;
             {
-                gr::thread::scoped_lock lock(d_mutex);
+                gr::thread::scoped_lock lock(d_tx_buff_mutex);
                 tx_buff_size = d_tx_buff.size();
             }
             if (tx_buff_size != num_samps_pri) {
@@ -288,8 +298,8 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             break;
         // Send the pdu for the entire CPI
         if (num_samps_total == num_samp_cpi) {
-            d_pdu_thread.join();
-            d_pdu_thread = gr::thread::thread([this] { send_pdu(d_rx_buff); });
+            // d_pdu_thread.join();
+            // d_pdu_thread = gr::thread::thread([this] { process_pdus(d_rx_buff); });
             num_samps_total = 0;
         }
     }
@@ -346,7 +356,17 @@ void usrp_radar_impl::run()
         receive(d_usrp, rx_buffs, time_now + d_start_time);
     });
 
-    // Do nothing while the transmit and receive threads are running
+    // Use the main thread to send received data over the message port until the
+    // block is told to stop. Even after the block stops, continue sending
+    // messages until the queue is empty
+    while (not d_finished or not d_data_queue.empty()) {
+        gr::thread::scoped_lock lock(d_queue_mutex);
+        if (not d_data_queue.empty()) {
+            message_port_pub(pmt::mp("out"), d_data_queue.front());
+            d_data_queue.pop();
+        } 
+    }
+    // Wait for Tx and Rx to finish the current pulse
     d_tx_thread.join();
     d_rx_thread.join();
 }

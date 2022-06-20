@@ -14,6 +14,7 @@
 #include <uhd/utils/thread.hpp>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <queue>
 
 namespace gr {
 namespace plasma {
@@ -30,12 +31,8 @@ private:
     uhd::time_spec_t d_start_time;
     std::string d_tx_args, d_rx_args;
     gr::thread::thread d_main_thread;
-    gr::thread::thread d_pdu_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::thread d_rx_thread;
-    gr::thread::mutex d_mutex;
-    std::atomic<bool> d_finished;
-    std::atomic<bool> d_armed;
     std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
     double d_prf;
@@ -46,6 +43,12 @@ private:
     pmt::pmt_t d_meta;
     pmt::pmt_t d_pdu_data;
     pmt::pmt_t d_new_waveform;
+    std::queue<pmt::pmt_t> d_data_queue;
+    gr::thread::condition_variable d_cond;
+    gr::thread::mutex d_queue_mutex;
+    gr::thread::mutex d_tx_buff_mutex;
+    std::atomic<bool> d_finished;
+    std::atomic<bool> d_armed;
 
 
     /**
@@ -108,7 +111,7 @@ public:
      *
      * @param data IQ data for the CPI
      */
-    void send_pdu(const std::vector<gr_complex>& data);
+    void process_pdus();
 
     /**
      * @brief Initialize all buffers and set up the transmit and recieve threads
