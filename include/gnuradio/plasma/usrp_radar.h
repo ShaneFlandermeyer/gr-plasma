@@ -39,8 +39,7 @@ public:
                      double rx_freq,
                      double start_time,
                      const std::string& tx_args,
-                     const std::string& rx_args,
-                     size_t num_pulse_cpi);
+                     const std::string& rx_args);
 };
 
 } // namespace plasma

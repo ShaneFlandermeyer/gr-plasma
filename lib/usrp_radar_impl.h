@@ -36,7 +36,6 @@ private:
     std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
     double d_prf;
-    size_t d_num_pulse_cpi;
     size_t d_delay_samps;
     size_t d_pulse_count;
     size_t d_sample_count;
@@ -95,8 +94,7 @@ public:
                     double rx_freq,
                     double start_time,
                     const std::string& tx_args,
-                    const std::string& rx_args,
-                    size_t num_pulse_cpi);
+                    const std::string& rx_args);
     ~usrp_radar_impl();
 
     /**

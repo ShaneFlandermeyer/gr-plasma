@@ -17,8 +17,7 @@ usrp_radar::sptr usrp_radar::make(double samp_rate,
                                   double rx_freq,
                                   double start_time,
                                   const std::string& tx_args,
-                                  const std::string& rx_args,
-                                  size_t num_pulse_cpi)
+                                  const std::string& rx_args)
 {
     return gnuradio::make_block_sptr<usrp_radar_impl>(samp_rate,
                                                       tx_gain,
@@ -27,8 +26,7 @@ usrp_radar::sptr usrp_radar::make(double samp_rate,
                                                       rx_freq,
                                                       start_time,
                                                       tx_args,
-                                                      rx_args,
-                                                      num_pulse_cpi);
+                                                      rx_args);
 }
 
 
@@ -42,8 +40,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
                                  double rx_freq,
                                  double start_time,
                                  const std::string& tx_args,
-                                 const std::string& rx_args,
-                                 size_t num_pulse_cpi)
+                                 const std::string& rx_args)
     : gr::block(
           "usrp_radar", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
       d_samp_rate(samp_rate),
@@ -53,8 +50,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
       d_rx_freq(rx_freq),
       d_start_time(start_time),
       d_tx_args(tx_args),
-      d_rx_args(rx_args),
-      d_num_pulse_cpi(num_pulse_cpi)
+      d_rx_args(rx_args)
 {
     message_port_register_in(pmt::mp("in"));
     message_port_register_out(pmt::mp("out"));
@@ -336,7 +332,7 @@ void usrp_radar_impl::run()
     tx_buff_ptrs.push_back(&d_tx_buff.front());
 
     // Set up Rx buffer
-    size_t num_samp_rx = d_tx_buff.size() * d_num_pulse_cpi;
+    size_t num_samp_rx = d_tx_buff.size();
     std::vector<gr_complex*> rx_buff_ptrs;
     d_rx_buff = std::vector<gr_complex>(num_samp_rx, 0);
     rx_buff_ptrs.push_back(&d_rx_buff.front());
