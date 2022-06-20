@@ -18,11 +18,11 @@ parameters:
   dtype: float
   default: 'samp_rate'
 - id: tx_gain
-  label: Tx Gain
+  label: Tx Gain (dB)
   dtype: float
   default: 0
 - id: rx_gain
-  label: Rx Gain
+  label: Rx Gain (dB)
   dtype: float
   default: 0
 - id: tx_freq

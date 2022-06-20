@@ -28,6 +28,7 @@ add_library(gnuradio-plasma SHARED ${plasma_sources})
 target_link_libraries(gnuradio-plasma 
     gnuradio::gnuradio-runtime
     plasma_dsp
+    nlohmann_json::nlohmann_json
     ${UHD_LIBRARIES})
 
 target_include_directories(gnuradio-plasma

@@ -65,7 +65,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
     set_msg_handler(pmt::mp("in"),
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     // Initialize the USRP device
-    d_usrp.reset();
+    // d_usrp.reset();
     d_usrp = uhd::usrp::multi_usrp::make(d_tx_args);
     d_usrp->set_tx_freq(d_tx_freq);
     d_usrp->set_rx_freq(d_rx_freq);
@@ -80,6 +80,8 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
 
     d_pulse_count = 0;
     d_meta = pmt::make_dict();
+
+    read_calibration_json();
 }
 
 /*
@@ -199,6 +201,12 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         timeout = 0.5;
 
         num_samps_total += num_rx_samps;
+        // Account for the inherent delay in the USRPs (the number of samples is
+        // pulled from the calibration file)
+        if (d_delay_samps > 0) {
+            num_samps_total -= d_delay_samps;
+            d_delay_samps = 0;
+        }
 
         // TODO: Handle errors
         if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
@@ -304,7 +312,6 @@ bool usrp_radar_impl::stop()
 {
     d_finished = true;
     d_main_thread.join();
-    // d_usrp.reset();
 
     return block::stop();
 }
@@ -332,9 +339,6 @@ void usrp_radar_impl::run()
     d_tx_thread = gr::thread::thread([this, tx_buff_ptrs, time_now] {
         transmit(d_usrp, tx_buff_ptrs, d_tx_buff.size(), time_now + d_tx_start_time);
     });
-    // d_rx_thread = gr::thread::thread([this, rx_buff_ptrs, num_samp_rx, time_now] {
-    //     receive(d_usrp, rx_buff_ptrs, num_samp_rx, time_now + d_rx_start_time);
-    // });
     d_rx_thread = gr::thread::thread([this, rx_buffs, time_now] {
         receive(d_usrp, rx_buffs, time_now + d_rx_start_time);
     });
@@ -343,6 +347,33 @@ void usrp_radar_impl::run()
     d_tx_thread.join();
     d_rx_thread.join();
 }
+
+void usrp_radar_impl::read_calibration_json()
+    {
+        const std::string homedir = getenv("HOME");
+        std::ifstream file(homedir + "/.uhd/delay_calibration.json");
+        nlohmann::json json;
+        d_delay_samps = 0;
+        if (file) {
+            file >> json;
+            std::string radio_type = d_usrp->get_mboard_name();
+            for (auto& config : json[radio_type]) {
+                if (config["samp_rate"] == d_usrp->get_tx_rate() and
+                    config["master_clock_rate"] == d_usrp->get_master_clock_rate()) {
+                    d_delay_samps = config["delay"];
+                    break;
+                }
+            }
+            if (d_delay_samps == 0)
+                UHD_LOG_INFO("RadarWindow",
+                             "Calibration file found, but no data exists for this "
+                             "combination of radio, master clock rate, and sample rate");
+        } else {
+            UHD_LOG_INFO("RadarWindow", "No calibration file found");
+        }
+
+        file.close();
+    }
 
 } /* namespace plasma */
 } /* namespace gr */
