@@ -111,6 +111,8 @@ CPMAddPackage(
 )
 find_package(libsigmf REQUIRED)
 endif()
+find_package(nlohmann_json REQUIRED)
+
 ########################################################################
 # Setup doxygen option
 ########################################################################
