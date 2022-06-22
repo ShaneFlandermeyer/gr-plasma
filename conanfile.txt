@@ -1,0 +1,8 @@
+[requires]
+plasma_dsp/0.1
+
+[generators]
+cmake
+
+[options]
+plasma_dsp:shared=True

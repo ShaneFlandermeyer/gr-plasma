@@ -53,6 +53,11 @@ include(GrMinReq)
 
 include(GrCompilerSettings)
 
+# ##############################################################################
+# Build options
+# ##############################################################################
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
 ########################################################################
 # Install directories
 ########################################################################
@@ -94,11 +99,13 @@ endif(APPLE)
 ########################################################################
 # Find gnuradio build dependencies
 ########################################################################
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
 include(cmake/CPM.cmake)
 find_package(Doxygen)
-find_package(Eigen3 3.4 REQUIRED)
+# find_package(Eigen3 3.4 REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(plasma_dsp REQUIRED)
+# find_package(plasma_dsp REQUIRED)
 find_package(UHD 4.0.0 REQUIRED)
 # UHD Radar dependencies
 find_package(libsigmf)
@@ -165,3 +172,6 @@ configure_package_config_file(
     INSTALL_DESTINATION ${GR_CMAKE_DIR}
 )
 
+# Install shared dependency libraries
+install(DIRECTORY ${CONAN_LIB_DIRS}/
+  DESTINATION ${CMAKE_INSTALL_PREFIX})
