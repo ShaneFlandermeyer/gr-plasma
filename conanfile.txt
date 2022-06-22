@@ -1,5 +1,6 @@
 [requires]
 plasma_dsp/0.1
+nlohmann_json/3.10.5
 
 [generators]
 cmake

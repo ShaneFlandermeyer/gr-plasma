@@ -44,7 +44,7 @@ GR_PYBIND_MAKE_OOT(plasma
 add_custom_target(
   copy_bindings_for_tests ALL
   COMMAND
-    ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/*.so"
+    ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib/*.so"
     ${CMAKE_BINARY_DIR}/test_modules/gnuradio/plasma/
   DEPENDS plasma_python)
 

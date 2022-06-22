@@ -28,7 +28,6 @@ add_library(gnuradio-plasma ${plasma_sources})
 target_link_libraries(gnuradio-plasma 
     PUBLIC
     gnuradio::gnuradio-runtime
-    nlohmann_json::nlohmann_json
     ${UHD_LIBRARIES}
     ${CONAN_LIBS})
 

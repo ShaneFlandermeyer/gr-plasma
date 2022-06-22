@@ -101,10 +101,10 @@ endif(APPLE)
 ########################################################################
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
-include(cmake/CPM.cmake)
+# include(cmake/CPM.cmake)
 find_package(Doxygen)
 # find_package(Eigen3 3.4 REQUIRED)
-find_package(OpenMP REQUIRED)
+# find_package(OpenMP REQUIRED)
 # find_package(plasma_dsp REQUIRED)
 find_package(UHD 4.0.0 REQUIRED)
 # UHD Radar dependencies
@@ -118,7 +118,7 @@ find_package(UHD 4.0.0 REQUIRED)
 # )
 # find_package(libsigmf REQUIRED)
 # endif()
-find_package(nlohmann_json REQUIRED)
+# find_package(nlohmann_json REQUIRED)
 
 ########################################################################
 # Setup doxygen option
