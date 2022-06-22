@@ -9,10 +9,10 @@
 #define INCLUDED_PLASMA_PDU_FILE_SINK_IMPL_H
 
 #include <gnuradio/plasma/pdu_file_sink.h>
+#include <nlohmann/json.hpp>
 #include <uhd/utils/thread.hpp>
 #include <fstream>
 #include <queue>
-#include <nlohmann/json.hpp>
 
 namespace gr {
 namespace plasma {
@@ -103,19 +103,22 @@ private:
      *
      */
     nlohmann::json d_meta;
+    nlohmann::json d_global;
+    nlohmann::json d_capture;
+    nlohmann::json d_annotation;
 
     /**
      * @brief Use the data type parameter and system endianness to fill the
      * SigMF datatype field
-     * 
-     * @return std::string 
+     *
+     * @return std::string
      */
     std::string get_datatype_string();
 
     /**
      * @brief Parse an input PMT dictionary for SigMF metadata
-     * 
-     * @param dict 
+     *
+     * @param dict
      */
     void parse_meta(const pmt::pmt_t& dict);
 
