@@ -12,11 +12,7 @@
 #include <uhd/utils/thread.hpp>
 #include <fstream>
 #include <queue>
-
-// #include <sigmf/sigmf.h>
-// #include <sigmf/sigmf_antenna_generated.h>
-// #include <sigmf/sigmf_core_generated.h>
-// #include <sigmf/sigmf_signal_generated.h>
+#include <nlohmann/json.hpp>
 
 namespace gr {
 namespace plasma {
@@ -106,10 +102,7 @@ private:
      * @brief SigMF metadata object
      *
      */
-    // sigmf::SigMF<sigmf::Global<core::DescrT>,
-    //              sigmf::Capture<core::DescrT>,
-    //              sigmf::Annotation<core::DescrT, signal::DescrT>>
-    //     d_sigmf_meta;
+    nlohmann::json d_meta;
 
     /**
      * @brief Use the data type parameter and system endianness to fill the

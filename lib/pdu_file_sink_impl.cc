@@ -61,7 +61,7 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
     if (not d_meta_filename.empty()) {
         d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
         // Initialize the global metadata fields
-        // d_sigmf_meta.global.access<core::GlobalT>().datatype = get_datatype_string();
+        d_meta["global"]["core:datatype"] = get_datatype_string();
     }
 }
 
@@ -70,9 +70,8 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
  */
 pdu_file_sink_impl::~pdu_file_sink_impl()
 {
-    // Write the metadata to a file
-    // d_sigmf_meta.annotations.emplace_back(anno);
-    // d_meta_file << json(d_sigmf_meta).dump(4) << std::endl;
+    // Write the metadata to a file and close both files
+    d_meta_file << d_meta.dump(4) << std::endl;
     d_data_file.close();
     d_meta_file.close();
 }
@@ -122,69 +121,77 @@ void pdu_file_sink_impl::run()
         d_data_file.write((char*)pmt::blob_data(d_data), n * d_itemsize);
         // If the user wants metadata and we have some, save it
         if (d_meta_file.is_open() and pmt::length(pmt::dict_keys(d_meta_dict)) > 0) {
-            // parse_meta(d_meta_dict);
+            parse_meta(d_meta_dict);
         }
     }
 }
 
-// void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
-// {
-//     // sigmf::Capture<core::DescrT> cap;
-//     // sigmf::Annotation<core::DescrT, signal::DescrT>
-//     sigmf::Capture<core::DescrT> cap;
-//     sigmf::Annotation<core::DescrT, signal::DescrT> anno;
+void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
+{
+    //     // sigmf::Capture<core::DescrT> cap;
+    //     // sigmf::Annotation<core::DescrT, signal::DescrT>
+    //     sigmf::Capture<core::DescrT> cap;
+    //     sigmf::Annotation<core::DescrT, signal::DescrT> anno;
 
-//     // Global object fields
-//     pmt::pmt_t sample_rate =
-//         pmt::dict_ref(dict, pmt::intern("sample_rate"), pmt::PMT_NIL);
-//     // Capture object fields
-//     pmt::pmt_t frequency = pmt::dict_ref(dict, pmt::intern("frequency"), pmt::PMT_NIL);
-//     // Annotation object fields
-//     pmt::pmt_t sample_start =
-//         pmt::dict_ref(dict, pmt::intern("sample_start"), pmt::PMT_NIL);
-//     pmt::pmt_t sample_count =
-//         pmt::dict_ref(dict, pmt::intern("sample_count"), pmt::PMT_NIL);
-//     pmt::pmt_t bandwidth = pmt::dict_ref(dict, pmt::intern("bandwidth"), pmt::PMT_NIL);
-//     pmt::pmt_t label = pmt::dict_ref(dict, pmt::intern("label"), pmt::PMT_NIL);
-
-
-//     // Update global object
-//     if (not pmt::is_null(sample_rate))
-//         d_sigmf_meta.global.access<core::GlobalT>().sample_rate =
-//             pmt::to_double(sample_rate);
-
-//     // Update capture object
-//     if (not pmt::is_null(frequency)) {
-//         cap.get<core::DescrT>().frequency = pmt::to_double(frequency);
-//         if (not pmt::is_null(sample_start))
-//             cap.get<core::DescrT>().sample_start = pmt::to_uint64(sample_start);
-//     }
+    // Global object fields
+    pmt::pmt_t sample_rate =
+        pmt::dict_ref(dict, pmt::intern("sample_rate"), pmt::PMT_NIL);
+    // Capture object fields
+    pmt::pmt_t frequency = pmt::dict_ref(dict, pmt::intern("frequency"), pmt::PMT_NIL);
+    // Annotation object fields
+    pmt::pmt_t sample_start =
+        pmt::dict_ref(dict, pmt::intern("sample_start"), pmt::PMT_NIL);
+    pmt::pmt_t sample_count =
+        pmt::dict_ref(dict, pmt::intern("sample_count"), pmt::PMT_NIL);
+    pmt::pmt_t bandwidth = pmt::dict_ref(dict, pmt::intern("bandwidth"), pmt::PMT_NIL);
+    pmt::pmt_t label = pmt::dict_ref(dict, pmt::intern("label"), pmt::PMT_NIL);
 
 
-//     // Update annotation object
-//     if (not pmt::is_null(sample_start))
-//         anno.get<core::DescrT>().sample_start = pmt::to_uint64(sample_start);
-//     if (not pmt::is_null(sample_count))
-//         anno.get<core::DescrT>().sample_count = pmt::to_uint64(sample_count);
-//     if (not pmt::is_null(label))
-//         anno.get<core::DescrT>().label = pmt::symbol_to_string(label);
-//     if (not pmt::is_null(bandwidth)) {
-//         double bw = pmt::to_double(bandwidth);
-//         if (pmt::is_null(frequency)) {
-//             // Center frequency not specified. Specify the bandwidth at complex
-//             // baseband
-//             anno.get<core::DescrT>().freq_lower_edge = -bw / 2;
-//             anno.get<core::DescrT>().freq_upper_edge = bw / 2;
-//         } else {
-//             // Center frequency specified. Save the frequency at RF
-//             double center_freq = pmt::to_double(frequency);
-//             anno.get<core::DescrT>().freq_lower_edge = -bw / 2 + center_freq;
-//             anno.get<core::DescrT>().freq_upper_edge = bw / 2 + center_freq;
-//         }
-//     }
-//     d_sigmf_meta.captures.emplace_back(cap);
-//     d_sigmf_meta.annotations.emplace_back(anno);
-// }
+    // Update global object
+    if (not pmt::is_null(sample_rate))
+        d_meta["global"]["core:sample_rate"] = pmt::to_double(sample_rate);
+
+    // Update capture object
+    if (not pmt::is_null(frequency)) {
+        d_meta["captures"]["core:frequency"] = pmt::to_double(frequency);
+    }
+
+
+    // Update annotation object
+    if (not pmt::is_null(sample_start))
+        d_meta["annotations"]["core:sample_start"] = pmt::to_uint64(sample_start);
+    if (not pmt::is_null(sample_count))
+        d_meta["annotations"]["core:sample_count"] = pmt::to_uint64(sample_count);
+    if (not pmt::is_null(label))
+        d_meta["annotations"]["core:label"] = pmt::symbol_to_string(label);
+    if (not pmt::is_null(bandwidth)) {
+        double lower = -pmt::to_double(bandwidth) / 2;
+        double upper = pmt::to_double(bandwidth) / 2;
+        if (not pmt::is_null(frequency)) {
+            lower += pmt::to_double(frequency);
+            upper += pmt::to_double(frequency);
+        }
+        d_meta["annotations"]["core:freq_lower_edge"] = lower;
+        d_meta["annotations"]["core:freq_upper_edge"] = upper;
+    }
+    //         anno.get<core::DescrT>().label = pmt::symbol_to_string(label);
+    //     if (not pmt::is_null(bandwidth)) {
+    //         double bw = pmt::to_double(bandwidth);
+    //         if (pmt::is_null(frequency)) {
+    //             // Center frequency not specified. Specify the bandwidth at complex
+    //             // baseband
+    //             anno.get<core::DescrT>().freq_lower_edge = -bw / 2;
+    //             anno.get<core::DescrT>().freq_upper_edge = bw / 2;
+    //         } else {
+    //             // Center frequency specified. Save the frequency at RF
+    //             double center_freq = pmt::to_double(frequency);
+    //             anno.get<core::DescrT>().freq_lower_edge = -bw / 2 + center_freq;
+    //             anno.get<core::DescrT>().freq_upper_edge = bw / 2 + center_freq;
+    //         }
+    //     }
+    //     d_sigmf_meta.captures.emplace_back(cap);
+    //     d_sigmf_meta.annotations.emplace_back(anno);
+}
 
 std::string pdu_file_sink_impl::get_datatype_string()
 {
