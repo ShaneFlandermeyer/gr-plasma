@@ -24,14 +24,12 @@ if(NOT plasma_sources)
     return()
 endif(NOT plasma_sources)
 
-add_library(gnuradio-plasma SHARED ${plasma_sources})
+add_library(gnuradio-plasma ${plasma_sources})
 target_link_libraries(gnuradio-plasma 
     PUBLIC
-    Eigen3::Eigen
     gnuradio::gnuradio-runtime
-    plasma_dsp
-    nlohmann_json::nlohmann_json
-    ${UHD_LIBRARIES})
+    ${UHD_LIBRARIES}
+    ${CONAN_LIBS})
 
 target_include_directories(gnuradio-plasma
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
