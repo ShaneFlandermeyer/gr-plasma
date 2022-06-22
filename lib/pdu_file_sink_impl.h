@@ -13,10 +13,10 @@
 #include <fstream>
 #include <queue>
 
-#include <sigmf/sigmf.h>
-#include <sigmf/sigmf_antenna_generated.h>
-#include <sigmf/sigmf_core_generated.h>
-#include <sigmf/sigmf_signal_generated.h>
+// #include <sigmf/sigmf.h>
+// #include <sigmf/sigmf_antenna_generated.h>
+// #include <sigmf/sigmf_core_generated.h>
+// #include <sigmf/sigmf_signal_generated.h>
 
 namespace gr {
 namespace plasma {
@@ -106,10 +106,10 @@ private:
      * @brief SigMF metadata object
      *
      */
-    sigmf::SigMF<sigmf::Global<core::DescrT>,
-                 sigmf::Capture<core::DescrT>,
-                 sigmf::Annotation<core::DescrT, signal::DescrT>>
-        d_sigmf_meta;
+    // sigmf::SigMF<sigmf::Global<core::DescrT>,
+    //              sigmf::Capture<core::DescrT>,
+    //              sigmf::Annotation<core::DescrT, signal::DescrT>>
+    //     d_sigmf_meta;
 
     /**
      * @brief Use the data type parameter and system endianness to fill the

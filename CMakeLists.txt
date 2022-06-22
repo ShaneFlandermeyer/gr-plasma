@@ -108,16 +108,16 @@ find_package(OpenMP REQUIRED)
 # find_package(plasma_dsp REQUIRED)
 find_package(UHD 4.0.0 REQUIRED)
 # UHD Radar dependencies
-find_package(libsigmf)
-if (NOT ${libsigmf_FOUND})
-message(STATUS "libsigmf not found. Installing stable version from github repository.")
-CPMAddPackage(
-    NAME libsigmf
-    VERSION 1.0.0-rc1
-    GITHUB_REPOSITORY deepsig/libsigmf
-)
-find_package(libsigmf REQUIRED)
-endif()
+# find_package(libsigmf)
+# if (NOT ${libsigmf_FOUND})
+# message(STATUS "libsigmf not found. Installing stable version from github repository.")
+# CPMAddPackage(
+#     NAME libsigmf
+#     VERSION 1.0.0-rc1
+#     GITHUB_REPOSITORY deepsig/libsigmf
+# )
+# find_package(libsigmf REQUIRED)
+# endif()
 find_package(nlohmann_json REQUIRED)
 
 ########################################################################
