@@ -16,5 +16,6 @@ install(FILES
     usrp_radar.h
     pdu_file_sink.h
     pdu_head.h
-    pcfm_source.h DESTINATION include/gnuradio/plasma
+    pcfm_source.h
+    DESTINATION include/gnuradio/plasma
 )

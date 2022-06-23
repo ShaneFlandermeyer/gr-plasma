@@ -19,14 +19,8 @@ usrp_radar::sptr usrp_radar::make(double samp_rate,
                                   const std::string& tx_args,
                                   const std::string& rx_args)
 {
-    return gnuradio::make_block_sptr<usrp_radar_impl>(samp_rate,
-                                                      tx_gain,
-                                                      rx_gain,
-                                                      tx_freq,
-                                                      rx_freq,
-                                                      start_time,
-                                                      tx_args,
-                                                      rx_args);
+    return gnuradio::make_block_sptr<usrp_radar_impl>(
+        samp_rate, tx_gain, rx_gain, tx_freq, rx_freq, start_time, tx_args, rx_args);
 }
 
 
@@ -96,24 +90,12 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
     }
 }
 
-void usrp_radar_impl::process_pdus()
-{
-    while (true) {
-        gr::thread::scoped_lock lock(d_queue_mutex);
-        d_cond.wait(lock, [this] { return not d_data_queue.empty() || d_finished; });
-        if (d_finished)
-            return;
-        message_port_pub(pmt::mp("out"), d_data_queue.front());
-        d_data_queue.pop();
-    }
-}
-
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
                                std::vector<std::complex<float>*> buff_ptrs,
                                size_t num_samp_pulse,
                                uhd::time_spec_t start_time)
 {
-    uhd::set_thread_priority_safe(1);
+    uhd::set_thread_priority_safe();
     uhd::stream_args_t tx_stream_args("fc32", "sc16");
     uhd::tx_streamer::sptr tx_stream;
     tx_stream_args.channels.push_back(0);
@@ -141,7 +123,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
             num_samp_pulse = d_tx_buff.size();
         }
         boost::this_thread::disable_interruption disable_interrupt;
-        tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 1.0);
+        tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 0.5);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
@@ -158,7 +140,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
                               std::vector<std::vector<gr_complex>> buffs,
                               uhd::time_spec_t start_time)
 {
-    uhd::set_thread_priority_safe();
+    // uhd::set_thread_priority_safe();
     size_t channels = buffs.size();
     std::vector<size_t> channel_vec;
     uhd::stream_args_t stream_args("fc32", "sc16");
@@ -182,6 +164,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
     size_t num_samps_total = 0;
     size_t num_samps_pri = buffs[0].size();
     std::vector<gr_complex*> buff_ptrs2(buffs.size());
+    d_rx_data = pmt::make_c32vector(num_samps_pri, 0);
     double timeout = 0.5 + start_time.get_real_secs();
     while (!d_finished) {
         // Move storing pointer to correct location
@@ -194,7 +177,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
 
-        timeout = 0.5;
+        timeout = 0.1;
 
         num_samps_total += num_rx_samps;
         // Account for the inherent delay in the USRPs (the number of samples is
@@ -213,15 +196,12 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             break;
         // Send the pdu for the PRI
         if (num_samps_total == num_samps_pri) {
-            {
-                // Add the new pulse data to the internal queue 
-                gr::thread::scoped_lock lock(d_queue_mutex);
-                pmt::pmt_t pdu =
-                    pmt::cons(d_meta, pmt::init_c32vector(num_samps_pri, buffs[0]));
-                d_data_queue.push(pdu);
-                // Reset the metadata
-                d_meta = pmt::make_dict();
-            }
+            // Copy the received data into the message PDU and send it
+            gr_complex* ptr = pmt::c32vector_writable_elements(d_rx_data, num_samps_pri);
+            std::copy(buffs[0].begin(), buffs[0].end(), ptr);
+            message_port_pub(pmt::intern("out"), pmt::cons(d_meta, d_rx_data));
+            // Reset the metadata
+            d_meta = pmt::make_dict();
             num_samps_total = 0;
             // If the PRF has changed, resize the buffers
             size_t tx_buff_size;
@@ -237,68 +217,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             }
         }
     }
-    // Shut down the stream
-    stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
-    stream_cmd.stream_now = true;
-    rx_stream->issue_stream_cmd(stream_cmd);
-}
 
-void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
-                              std::vector<gr_complex*> buff_ptrs,
-                              size_t num_samp_cpi,
-                              uhd::time_spec_t start_time)
-{
-    uhd::set_thread_priority_safe();
-    size_t channels = buff_ptrs.size();
-    std::vector<size_t> channel_vec;
-    uhd::stream_args_t stream_args("fc32", "sc16");
-    uhd::rx_streamer::sptr rx_stream;
-    if (channel_vec.size() == 0) {
-        for (size_t i = 0; i < channels; i++) {
-            channel_vec.push_back(i);
-        }
-    }
-    stream_args.channels = channel_vec;
-    rx_stream = usrp->get_rx_stream(stream_args);
-
-    uhd::rx_metadata_t md;
-    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
-    // stream_cmd.num_samps = num_samp_cpi;
-    stream_cmd.time_spec = start_time;
-    stream_cmd.stream_now = (start_time.get_real_secs() > 0 ? false : true);
-    rx_stream->issue_stream_cmd(stream_cmd);
-
-    size_t max_num_samps = rx_stream->get_max_num_samps();
-    size_t num_samps_total = 0;
-    std::vector<gr_complex*> buff_ptrs2(buff_ptrs.size());
-    double timeout = 0.5 + start_time.get_real_secs();
-    while (!d_finished) {
-        // Move storing pointer to correct location
-        for (size_t i = 0; i < channels; i++)
-            buff_ptrs2[i] = &(buff_ptrs[i][num_samps_total]);
-
-        // Sampling data
-        size_t samps_to_recv = std::min(num_samp_cpi - num_samps_total, max_num_samps);
-        boost::this_thread::disable_interruption disable_interrupt;
-        size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
-        boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
-
-        timeout = 0.5;
-
-        num_samps_total += num_rx_samps;
-
-        // TODO: Handle errors
-        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
-            break;
-        if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
-            break;
-        // Send the pdu for the entire CPI
-        if (num_samps_total == num_samp_cpi) {
-            // d_pdu_thread.join();
-            // d_pdu_thread = gr::thread::thread([this] { process_pdus(d_rx_buff); });
-            num_samps_total = 0;
-        }
-    }
     // Shut down the stream
     stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
     stream_cmd.stream_now = true;
@@ -323,6 +242,7 @@ bool usrp_radar_impl::stop()
 
 void usrp_radar_impl::run()
 {
+    uhd::set_thread_priority_safe();
     while (d_tx_buff.size() == 0) {
         // Wait for data to arrive
         boost::this_thread::sleep(boost::posix_time::microseconds(1));
@@ -342,34 +262,23 @@ void usrp_radar_impl::run()
     // Start the transmit and receive threads
     // If a time in the future is given
     uhd::time_spec_t time_now = uhd::time_spec_t(0.0);
+    const pmt::pmt_t outport = pmt::intern("out");
     if (d_start_time.get_real_secs() != 0) {
         time_now = d_usrp->get_time_now();
     }
     d_tx_thread = gr::thread::thread([this, tx_buff_ptrs, time_now] {
         transmit(d_usrp, tx_buff_ptrs, d_tx_buff.size(), time_now + d_start_time);
     });
-    d_rx_thread = gr::thread::thread([this, rx_buffs, time_now] {
-        receive(d_usrp, rx_buffs, time_now + d_start_time);
-    });
-
-    // Use the main thread to send received data over the message port until the
-    // block is told to stop. Even after the block stops, continue sending
-    // messages until the queue is empty
-    while (not d_finished or not d_data_queue.empty()) {
-        gr::thread::scoped_lock lock(d_queue_mutex);
-        if (not d_data_queue.empty()) {
-            message_port_pub(pmt::mp("out"), d_data_queue.front());
-            d_data_queue.pop();
-        } 
-    }
+    // Start receiving in the main thread
+    receive(d_usrp, rx_buffs, time_now + d_start_time);
     // Wait for Tx and Rx to finish the current pulse
     d_tx_thread.join();
-    d_rx_thread.join();
 }
 
 void usrp_radar_impl::read_calibration_json()
 {
-    const std::string homedir = getenv("HOME");
+    // const std::string homedir = getenv("HOME");
+    const std::string homedir = "/home/shane";
     std::ifstream file(homedir + "/.uhd/delay_calibration.json");
     nlohmann::json json;
     d_delay_samps = 0;

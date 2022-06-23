@@ -11,5 +11,6 @@ install(FILES
     plasma_usrp_radar.block.yml
     plasma_pdu_file_sink.block.yml
     plasma_pdu_head.block.yml
-    plasma_pcfm_source.block.yml DESTINATION share/gnuradio/grc/blocks
+    plasma_pcfm_source.block.yml
+    DESTINATION share/gnuradio/grc/blocks
 )
