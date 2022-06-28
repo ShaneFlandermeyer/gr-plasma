@@ -102,7 +102,7 @@ endif(APPLE)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
-
+find_package(Qwt REQUIRED)
 ########################################################################
 # PyBind11 Related
 ########################################################################
@@ -144,6 +144,10 @@ add_custom_target(uninstall
 ########################################################################
 # Add subdirectories
 ########################################################################
+set(CMAKE_AUTOMOC ON)
+# set(CMAKE_AUTORCC ON)
+# set(CMAKE_AUTOUIC ON)
+
 add_subdirectory(include/gnuradio/plasma)
 add_subdirectory(lib)
 add_subdirectory(apps)

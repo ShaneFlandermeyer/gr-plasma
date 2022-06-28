@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_RANGE_DOPPLER_SINK_IMPL_H
 
 #include <gnuradio/plasma/range_doppler_sink.h>
+#include "window.h"
 
 namespace gr {
 namespace plasma {
@@ -19,7 +20,11 @@ private:
     int d_argc;
     char* d_argv;
     // TODO: Replace this with a custom widget
-    QWidget* widget;
+    Window* d_win;
+    // double xData[plotDataSize];
+	// double yData[plotDataSize];
+
+	// long count = 0;
 
 public:
     range_doppler_sink_impl(QWidget* parent);
@@ -33,6 +38,7 @@ public:
     #else
         void* pyqwidget();
     #endif
+    void handle_pdu(pmt::pmt_t pdu);
 
     // Where all the action really happens
     // void forecast(int noutput_items, gr_vector_int& ninput_items_required);

@@ -18,6 +18,8 @@ list(APPEND plasma_sources
     pdu_head_impl.cc
     pcfm_source_impl.cc
     range_doppler_sink_impl.cc
+    window.cc
+    window.h
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
@@ -31,6 +33,7 @@ target_link_libraries(gnuradio-plasma
     PUBLIC
     gnuradio::gnuradio-runtime
     Qt5::Widgets
+    qwt::qwt
     # Python::Python
     ${UHD_LIBRARIES}
     ${CONAN_LIBS})
