@@ -35,6 +35,8 @@ add_library(gnuradio-plasma ${plasma_sources})
 target_link_libraries(gnuradio-plasma 
     PUBLIC
     gnuradio::gnuradio-runtime
+    gnuradio::gnuradio-fft
+    gnuradio::gnuradio-filter
     Qt5::Widgets
     qwt::qwt
     # Python::Python

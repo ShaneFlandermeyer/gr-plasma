@@ -33,14 +33,19 @@ bool RangeDopplerWindow::is_closed() const { return d_closed; }
 
 void RangeDopplerWindow::customEvent(QEvent* e)
 {
-    RangeDopplerUpdateEvent* event = (RangeDopplerUpdateEvent*)e;
-    auto *data = event->data();
-    memcpy(yData, data, 100*sizeof(data[0]));
-    for (size_t i = 0; i < 100; i++) {
-        yData[i] = data[i];
+    if (e->type() == RangeDopplerUpdateEvent::Type()) {
+        RangeDopplerUpdateEvent* event = (RangeDopplerUpdateEvent*)e;
+        auto* data = event->data();
+        size_t n = event->numPoints();
+        std::vector<double> x(n);
+        std::vector<double> y(n);
+        for (size_t i = 0; i < n; i++)
+            x[i] = i;
+        memcpy(y.data(), data, n * sizeof(data[0]));
+        d_debug_curve->setSamples(x.data(), y.data(), n);
+        d_debug_plot->replot();
     }
-    d_debug_curve->setSamples(xData, yData, 100);
-    d_debug_plot->replot();
+
 
     // double pulse_width = 20e-6;
     // double samp_rate = 40e6;
