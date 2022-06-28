@@ -101,7 +101,25 @@ endif(APPLE)
 ########################################################################
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
+########################################################################
+# PyBind11 Related
+########################################################################
+find_package(PythonLibs 3)
+find_package(pybind11 REQUIRED)
+include(GrPython)
+GR_PYTHON_CHECK_MODULE("PyQt5" PyQt5 True PYQT5_FOUND)
+
+
+include(GrComponent)
+GR_REGISTER_COMPONENT("python-support" ENABLE_PYTHON
+    PYTHONLIBS_FOUND
+    pybind11_FOUND
+)
+if(ENABLE_PYTHON)
+    add_definitions(-DENABLE_PYTHON)
+endif()
 ########################################################################
 # Setup doxygen option
 ########################################################################
@@ -130,7 +148,6 @@ add_subdirectory(include/gnuradio/plasma)
 add_subdirectory(lib)
 add_subdirectory(apps)
 add_subdirectory(docs)
-# NOTE: manually update below to use GRC to generate C++ flowgraphs w/o python
 if(ENABLE_PYTHON)
   message(STATUS "PYTHON and GRC components are enabled")
   add_subdirectory(python/plasma)

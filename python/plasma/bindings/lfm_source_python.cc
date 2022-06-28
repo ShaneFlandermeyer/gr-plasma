@@ -30,33 +30,18 @@ namespace py = pybind11;
 void bind_lfm_source(py::module& m)
 {
 
-    using lfm_source    = ::gr::plasma::lfm_source;
+    using lfm_source = ::gr::plasma::lfm_source;
 
 
-    py::class_<lfm_source, gr::block, gr::basic_block,
-        std::shared_ptr<lfm_source>>(m, "lfm_source", D(lfm_source))
+    py::class_<lfm_source, gr::block, gr::basic_block, std::shared_ptr<lfm_source>>(
+        m, "lfm_source", D(lfm_source))
 
         .def(py::init(&lfm_source::make),
-           py::arg("bandwidth"),
-           py::arg("pulse_width"),
-           py::arg("samp_rate"),
-           D(lfm_source,make)
-        )
-        
-
+             py::arg("bandwidth"),
+             py::arg("pulse_width"),
+             py::arg("samp_rate"),
+             D(lfm_source, make))
 
 
         ;
-
-
-
-
 }
-
-
-
-
-
-
-
-

@@ -27,6 +27,17 @@ include(GrPybind)
 ########################################################################
 # Python Bindings
 ########################################################################
+message(STATUS "Extra includes: ${Qt5Widgets_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} ")
+set(extra_includes ${Qt5Widgets_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+get_directory_property( DirDefs COMPILE_DEFINITIONS )
+message(STATUS "COMPILE_DEFINITIONS = ${DirDefs}" )
+set(define_symbols ${DirDefs};__PIC__)
+message(STATUS "OLd defines: $CACHE{OLD_DEFINES}" )
+message(STATUS "Definitions = ${define_symbols}" )
+string(COMPARE NOTEQUAL "$CACHE{OLD_DEFINES}" "${define_symbols}" FORCE_REBUILD )
+set(OLD_DEFINES "${define_symbols}" CACHE STRING "Save old defines" FORCE)
+message(STATUS "Bindings rebuild forced ${FORCE_REBUILD}")
+
 list(APPEND plasma_python_files
     lfm_source_python.cc
     waveform_controller_python.cc
@@ -35,6 +46,7 @@ list(APPEND plasma_python_files
     pdu_head_python.cc
     pcfm_source_python.cc
     python_bindings.cc
+    range_doppler_sink_python.cc
 )
 
 GR_PYBIND_MAKE_OOT(plasma
