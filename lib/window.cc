@@ -1,6 +1,6 @@
 #include "window.h"
 #include <cmath> // for sine stuff
-
+#include <iostream>
 
 Window::Window(QWidget* parent) : QWidget(parent)
 {
@@ -43,9 +43,7 @@ Window::Window(QWidget* parent) : QWidget(parent)
     setLayout(hLayout);
 }
 
-bool Window::isClosed() const {
-	return d_isClosed;
-}
+bool Window::isClosed() const { return d_isClosed; }
 
 void Window::reset()
 {
@@ -56,6 +54,21 @@ void Window::reset()
     }
 }
 
+void Window::customEvent(QEvent* e)
+{
+		// std::cout << "Event Received" << std::endl;
+    double inVal = gain * sin(M_PI * count / 50.0);
+    ++count;
+
+    // add the new input to the plot
+    std::move(yData, yData + plotDataSize - 1, yData + 1);
+    yData[0] = inVal;
+    curve->setSamples(xData, yData, plotDataSize);
+    plot->replot();
+
+    // set the thermometer value
+    thermo->setValue(fabs(inVal));
+}
 
 void Window::timerEvent(QTimerEvent*)
 {

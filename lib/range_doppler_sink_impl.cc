@@ -74,18 +74,7 @@ void* range_doppler_sink_impl::pyqwidget() { return nullptr; }
 
 void range_doppler_sink_impl::handle_pdu(pmt::pmt_t pdu)
 {
-    double inVal = sin(M_PI * d_win->count / 50.0);
-    ++d_win->count;
-
-    // add the new input to the plot
-    std::move(d_win->yData, d_win->yData + d_win->plotDataSize - 1, d_win->yData + 1);
-    d_win->yData[0] = inVal;
-    d_win->curve->setSamples(d_win->xData, d_win->yData, d_win->plotDataSize);
-    d_win->plot->replot();
-    d_win->plot->update();
-
-    // set the thermometer value
-    d_win->thermo->setValue(fabs(inVal));
+    d_qapp->postEvent(d_win, new QEvent(QEvent::Type(10005)));
 }
 } /* namespace plasma */
 } /* namespace gr */

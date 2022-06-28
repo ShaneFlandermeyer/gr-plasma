@@ -4,6 +4,7 @@
 #include <qwt_plot_curve.h>
 #include <qwt_thermo.h>
 #include <QBoxLayout>
+#include <QEvent>
 #include <QPushButton>
 #include <QWidget>
 
@@ -21,7 +22,7 @@ public:
     ~Window() { d_isClosed = true; };
 
     void timerEvent(QTimerEvent*);
-		bool isClosed() const;
+    bool isClosed() const;
 
     // internal variables for the window class
     // private:
@@ -45,6 +46,8 @@ public:
     long count = 0;
 
     void reset();
+public slots:
+    void customEvent(QEvent* e) override;
 };
 
 #endif /* CB6C2392_70FE_4AAA_953F_BA548572BCC6 */
