@@ -17,6 +17,7 @@ install(FILES
     pdu_file_sink.h
     pdu_head.h
     pcfm_source.h
+    qt_update_events.h
     range_doppler_sink.h 
     DESTINATION include/gnuradio/plasma
 )

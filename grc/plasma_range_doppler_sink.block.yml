@@ -31,7 +31,9 @@ parameters:
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
 inputs:
 - domain: message
-  id: pdu
+  id: tx
+- domain: message
+  id: rx
   # optional: true
 
 # outputs:

@@ -35,16 +35,16 @@ range_doppler_sink_impl::range_doppler_sink_impl(QWidget* parent)
         d_qapp = new QApplication(d_argc, &d_argv);
 
     // TODO: Substitute a range doppler QWidget
-    d_win = new Window(parent);
-    for (int index = 0; index < d_win->plotDataSize; ++index) {
-        d_win->xData[index] = index;
-        d_win->yData[index] = 0;
-    }
+    d_main_gui = new RangeDopplerWindow(parent);
+
+    // d_magbufs = volk::vector<double>();
+    // d_residbufs = volk::vector<gr_complex>();
 
     // TODO: Add a function to handle input PDUs
-    message_port_register_in(pmt::mp("pdu"));
-    set_msg_handler(pmt::mp("pdu"), [this](pmt::pmt_t msg) { handle_pdu(msg); });
-    GR_LOG_DEBUG(d_logger, "End of constructor reached!");
+    message_port_register_in(pmt::mp("tx"));
+    message_port_register_in(pmt::mp("rx"));
+    set_msg_handler(pmt::mp("tx"), [this](pmt::pmt_t msg) { handle_tx_msg(msg); });
+    set_msg_handler(pmt::mp("rx"), [this](pmt::pmt_t msg) { handle_rx_msg(msg); });
 }
 
 /*
@@ -53,18 +53,18 @@ range_doppler_sink_impl::range_doppler_sink_impl(QWidget* parent)
 range_doppler_sink_impl::~range_doppler_sink_impl()
 {
     delete d_argv;
-    if (not d_win->isClosed())
-        d_win->close();
+    if (not d_main_gui->is_closed())
+        d_main_gui->close();
 }
 
 void range_doppler_sink_impl::exec_() { d_qapp->exec(); };
 
-QWidget* range_doppler_sink_impl::qwidget() { return (QWidget*)d_win; }
+QWidget* range_doppler_sink_impl::qwidget() { return (QWidget*)d_main_gui; }
 
 #ifdef ENABLE_PYTHON
 PyObject* range_doppler_sink_impl::pyqwidget()
 {
-    PyObject* w = PyLong_FromVoidPtr((void*)d_win);
+    PyObject* w = PyLong_FromVoidPtr((void*)d_main_gui);
     PyObject* retarg = Py_BuildValue("N", w);
     return retarg;
 }
@@ -72,9 +72,25 @@ PyObject* range_doppler_sink_impl::pyqwidget()
 void* range_doppler_sink_impl::pyqwidget() { return nullptr; }
 #endif
 
-void range_doppler_sink_impl::handle_pdu(pmt::pmt_t pdu)
+void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
 {
-    d_qapp->postEvent(d_win, new QEvent(QEvent::Type(10005)));
+    GR_LOG_DEBUG(d_logger, "Tx message received");
+    if (pmt::is_pdu(msg)) {
+        // Get the transmit data
+        pmt::pmt_t samples = pmt::cdr(msg);
+        size_t n = pmt::length(samples);
+        gr_complex* in = (gr_complex*)pmt::c32vector_elements(samples, n);
+        Eigen::ArrayXcf invec = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(in, n);
+        d_magbufs = invec.real().cast<double>();
+        d_qapp->postEvent(d_main_gui, new RangeDopplerUpdateEvent(d_magbufs));
+    }
+}
+
+void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
+{
+    // GR_LOG_DEBUG(d_logger, "Rx message received");
+    // TODO: Pass the data to the GUI via a QEvent subclass object
+    // d_qapp->postEvent(d_main_gui, new QEvent(QEvent::Type(10000)));
 }
 } /* namespace plasma */
 } /* namespace gr */

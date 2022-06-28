@@ -9,7 +9,9 @@
 #define INCLUDED_PLASMA_RANGE_DOPPLER_SINK_IMPL_H
 
 #include <gnuradio/plasma/range_doppler_sink.h>
-#include "window.h"
+#include "range_doppler_window.h"
+#include <volk/volk_alloc.hh>
+
 
 namespace gr {
 namespace plasma {
@@ -20,7 +22,7 @@ private:
     int d_argc;
     char* d_argv;
     // TODO: Replace this with a custom widget
-    Window* d_win;
+    RangeDopplerWindow* d_main_gui;
     // double xData[plotDataSize];
 	// double yData[plotDataSize];
 
@@ -38,7 +40,12 @@ public:
     #else
         void* pyqwidget();
     #endif
-    void handle_pdu(pmt::pmt_t pdu);
+    void handle_tx_msg(pmt::pmt_t msg);
+    void handle_rx_msg(pmt::pmt_t msg);
+
+    // volk::vector<gr_complex> d_residbufs;
+    // volk::vector<double> d_magbufs;
+    Eigen::ArrayXd d_magbufs;
 
     // Where all the action really happens
     // void forecast(int noutput_items, gr_vector_int& ninput_items_required);
