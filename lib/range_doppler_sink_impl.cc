@@ -75,6 +75,9 @@ void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
 {
     GR_LOG_DEBUG(d_logger, "Tx message received");
     if (pmt::is_pdu(msg)) {
+        // TODO: We will not be able to pre-compute the frequency-domain
+        // waveform vector since the PRF could change at the input
+
         // Get the transmit data
         pmt::pmt_t samples = pmt::cdr(msg);
         size_t n = pmt::length(samples);
@@ -97,29 +100,20 @@ void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
         for (i = 0; i < n; i++)
             d_xformed_taps[i] = out[i];
 
+        
+
         // Get the data that will be used for plotting
         d_magbuf = Eigen::ArrayXd(n);
-        for (size_t i = 0; i < n; i++) {
-            d_magbuf[i] = 20 * log10(abs(d_xformed_taps[i]));
+        for (i = 0; i < n; i++) {
+            // d_magbuf[i] = 20 * log10(abs(d_xformed_taps[i]));
+            d_magbuf[i] = taps[i].real();
+            
         }
 
         d_qapp->postEvent(d_main_gui,
                           new RangeDopplerUpdateEvent(d_magbuf, d_magbuf.size()));
     }
 }
-
-// void range_doppler_sink_impl::fft(float* data_out, const gr_complex* data_in, int size)
-// {
-//     d_fft = std::make_unique<fft::fft_complex_fwd>(size);
-//     memcpy(d_fft->get_inbuf(), data_in, sizeof(gr_complex) * size);
-
-//     d_fft->execute(); // compute the fft
-
-//     volk_32fc_s32f_x2_power_spectral_density_32f(
-//         data_out, d_fft->get_outbuf(), size, 1.0, size);
-
-//     d_fft_shift.shift(data_out, size);
-// }
 
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
