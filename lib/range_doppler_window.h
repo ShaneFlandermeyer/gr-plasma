@@ -8,10 +8,11 @@
 #include <plasma_dsp/file.h>
 #include <plasma_dsp/filter.h>
 #include <plasma_dsp/linear_fm_waveform.h>
+#include <qwt_color_map.h>
+#include <qwt_matrix_raster_data.h>
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
 #include <qwt_plot_spectrogram.h>
-#include <qwt_matrix_raster_data.h>
 #include <QBoxLayout>
 #include <QWidget>
 #include <complex>

@@ -1,13 +1,25 @@
 #include "range_doppler_window.h"
 #include <iostream>
 
+class ColorMap : public QwtLinearColorMap
+{
+public:
+    ColorMap() : QwtLinearColorMap(Qt::darkBlue, Qt::darkRed)
+    {
+        addColorStop(0.2, Qt::blue);
+        addColorStop(0.4, Qt::cyan);
+        addColorStop(0.6, Qt::yellow);
+        addColorStop(0.8, Qt::red);
+    }
+};
+
 RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 {
     // Debug Plot
-    d_debug_curve = new QwtPlotCurve();
-    d_debug_plot = new QwtPlot();
+    // d_debug_curve = new QwtPlotCurve();
+    // d_debug_plot = new QwtPlot();
     // d_debug_curve->setSamples(xData, yData, 100);
-    d_debug_curve->attach(d_debug_plot);
+    // d_debug_curve->attach(d_debug_plot);
 
     // Spectrogram
     d_spectro = new QwtPlotSpectrogram();
@@ -18,7 +30,7 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 
     // GUI layout
     vLayout = new QVBoxLayout();
-    vLayout->addWidget(d_debug_plot);
+    // vLayout->addWidget(d_debug_plot);
     vLayout->addWidget(d_plot);
     setLayout(vLayout);
 
@@ -33,7 +45,7 @@ void RangeDopplerWindow::customEvent(QEvent* e)
 {
     if (e->type() == RangeDopplerUpdateEvent::Type()) {
         RangeDopplerUpdateEvent* event = (RangeDopplerUpdateEvent*)e;
-        auto* data = event->data();
+        double* data = event->data();
         auto rows = event->rows();
         auto cols = event->cols();
 
@@ -48,6 +60,16 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         d_data->setInterval(Qt::ZAxis, QwtInterval(tmp.minCoeff(), tmp.maxCoeff()));
         d_data->setValueMatrix(vec, cols);
         d_spectro->setData(d_data);
+
+        // const QwtInterval zInterval = d_spectrogram->data()->interval(Qt::ZAxis);
+        // QwtScaleWidget* rightAxis = axisWidget(QwtPlot::yRight);
+        // rightAxis->setTitle("Intensity");
+        // rightAxis->setColorBarEnabled(true);
+        // rightAxis->setColorMap(zInterval, new ColorMap());
+        // setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
+        // enableAxis(QwtPlot::yRight);
+
+        d_plot->replot();
     }
 
 
