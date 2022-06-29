@@ -8,16 +8,24 @@
 #include <plasma_dsp/file.h>
 #include <plasma_dsp/filter.h>
 #include <plasma_dsp/linear_fm_waveform.h>
+#include <qwt/qwt_plot.h>
+#include <qwt/qwt_thermo.h>
 #include <qwt_color_map.h>
 #include <qwt_matrix_raster_data.h>
 #include <qwt_plot.h>
+#include <qwt_plot_canvas.h>
 #include <qwt_plot_curve.h>
+#include <qwt_plot_layout.h>
+#include <qwt_plot_panner.h>
+#include <qwt_plot_renderer.h>
 #include <qwt_plot_spectrogram.h>
+#include <qwt_plot_zoomer.h>
+#include <qwt_scale_draw.h>
+#include <qwt_scale_widget.h>
 #include <QBoxLayout>
 #include <QWidget>
 #include <complex>
 #include <vector>
-#include <qwt_scale_widget.h>
 
 class RangeDopplerWindow : public QWidget
 {
@@ -29,6 +37,9 @@ public:
 
     bool is_closed() const;
 
+    void xlim(double x1, double x2);
+    void ylim(double y1, double y2);
+
 public slots:
     void customEvent(QEvent* e) override;
 
@@ -39,6 +50,8 @@ private:
     QwtPlot* d_plot;
     QwtPlotCurve* d_debug_curve;
     QwtMatrixRasterData* d_data;
+    QwtPlotZoomer* d_zoomer;
+    QwtPlotPanner* d_panner;
 
     QVBoxLayout* vLayout;
     QHBoxLayout* hLayout;

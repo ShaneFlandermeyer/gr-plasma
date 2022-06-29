@@ -18,6 +18,10 @@ parameters:
   label: Pulses per CPI
   dtype: int
   default: 128
+- id: center_freq
+  label: Center Frequency
+  dtype: float
+  default: 'center_freq'
 - id: gui_hint
   label: GUI Hint
   dtype: gui_hint
@@ -61,7 +65,7 @@ templates:
     <%
       win = 'self._%s_win'%id
     %>\
-    plasma.range_doppler_sink(${samp_rate}, ${num_pulse_cpi})
+    plasma.range_doppler_sink(${samp_rate}, ${num_pulse_cpi}, ${center_freq})
     ${win} = sip.wrapinstance(self.${id}.pyqwidget(), Qt.QWidget)
     ${gui_hint() % win}
 
