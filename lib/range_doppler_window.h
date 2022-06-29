@@ -17,6 +17,7 @@
 #include <QWidget>
 #include <complex>
 #include <vector>
+#include <qwt_scale_widget.h>
 
 class RangeDopplerWindow : public QWidget
 {

@@ -22,10 +22,11 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
     // d_debug_curve->attach(d_debug_plot);
 
     // Spectrogram
-    d_spectro = new QwtPlotSpectrogram();
-    d_data = new QwtMatrixRasterData();
     d_plot = new QwtPlot();
+    d_spectro = new QwtPlotSpectrogram();
+    d_spectro->setColorMap(new ColorMap());
     d_spectro->attach(d_plot);
+    d_data = new QwtMatrixRasterData();
     d_plot->setAutoReplot();
 
     // GUI layout
@@ -61,13 +62,13 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         d_data->setValueMatrix(vec, cols);
         d_spectro->setData(d_data);
 
-        // const QwtInterval zInterval = d_spectrogram->data()->interval(Qt::ZAxis);
-        // QwtScaleWidget* rightAxis = axisWidget(QwtPlot::yRight);
-        // rightAxis->setTitle("Intensity");
-        // rightAxis->setColorBarEnabled(true);
-        // rightAxis->setColorMap(zInterval, new ColorMap());
-        // setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
-        // enableAxis(QwtPlot::yRight);
+        const QwtInterval zInterval = d_spectro->data()->interval(Qt::ZAxis);
+        QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
+        rightAxis->setTitle("Intensity");
+        rightAxis->setColorBarEnabled(true);
+        rightAxis->setColorMap(zInterval, new ColorMap());
+        d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
+        d_plot->enableAxis(QwtPlot::yRight);
 
         d_plot->replot();
     }
