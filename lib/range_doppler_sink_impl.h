@@ -11,8 +11,8 @@
 #include "range_doppler_window.h"
 #include <gnuradio/fft/fft.h>
 #include <gnuradio/fft/fft_shift.h>
-#include <gnuradio/filter/fft_filter_ccc.h>
 #include <gnuradio/filter/fft_filter.h>
+#include <gnuradio/filter/fft_filter_ccc.h>
 #include <gnuradio/plasma/range_doppler_sink.h>
 #include <volk/volk_alloc.hh>
 
@@ -23,32 +23,23 @@ namespace plasma {
 class range_doppler_sink_impl : public range_doppler_sink
 {
 private:
+    double d_samp_rate;
+    size_t d_num_pulse_cpi;
+    fft::fft_shift<gr_complex> d_shift;
     int d_argc;
     char* d_argv;
     RangeDopplerWindow* d_main_gui;
-    // filter::kernel::fft_filter_ccc d_filter;
-    // kernel::fft_filter_ccc d_filter;
-    std::unique_ptr<fft::fft_complex_fwd> d_fwd;
+    std::unique_ptr<fft::fft_complex_fwd> d_conv_fwd;
     std::unique_ptr<fft::fft_complex_fwd> d_doppler_fft;
-    std::unique_ptr<fft::fft_complex_rev> d_inv;
-    fft::fft_shift<gr_complex> d_shift;
+    std::unique_ptr<fft::fft_complex_rev> d_conv_inv;
     Eigen::ArrayXcf d_matched_filter;
     Eigen::ArrayXXcf d_fast_time_slow_time;
     Eigen::ArrayXXcf d_range_slow_time;
     Eigen::ArrayXXcf d_range_doppler;
-    // TODO: These parameters should be block arguments or messages
-    size_t d_num_pulse_cpi;
-    double d_prf;
-    double d_samp_rate;
     size_t d_count;
-    // volk::vector<gr_complex> d_xformed_taps;
-
-    // std::unique_ptr<fft::fft_complex_fwd> d_fft;
-    // std::unique_ptr<fft::fft_complex_rev> d_ifft;
-    // fft::fft_shift<float> d_fft_shift;
 
 public:
-    range_doppler_sink_impl(QWidget* parent);
+    range_doppler_sink_impl(double samp_rate, size_t num_pulse_cpi, QWidget* parent);
     ~range_doppler_sink_impl();
 
     void exec_();
@@ -61,12 +52,6 @@ public:
 #endif
     void handle_tx_msg(pmt::pmt_t msg);
     void handle_rx_msg(pmt::pmt_t msg);
-    // void fft(float* data_out, const gr_complex* data_in, int size);
-
-    // volk::vector<gr_complex> d_residbufs;
-    // volk::vector<double> d_magbufs;
-    Eigen::ArrayXd d_magbuf;
-    Eigen::ArrayXcf d_test;
 };
 
 } // namespace plasma
