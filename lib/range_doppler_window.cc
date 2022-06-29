@@ -36,19 +36,38 @@ void RangeDopplerWindow::customEvent(QEvent* e)
     if (e->type() == RangeDopplerUpdateEvent::Type()) {
         RangeDopplerUpdateEvent* event = (RangeDopplerUpdateEvent*)e;
         auto* data = event->data();
-        size_t n = event->numPoints();
-        std::vector<double> x(n);
-        std::vector<double> y(n);
-        for (size_t i = 0; i < n; i++)
-            x[i] = i;
+        auto nrow = event->nrow();
+        auto ncol = event->ncol();
         
-        memcpy(y.data(), data, n * sizeof(data[0]));
-        d_debug_curve->setSamples(x.data(), y.data(), n);
-        d_debug_plot->setAutoReplot();
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> tmp(nrow,ncol);
+        // std::copy(tmp.data(), data, tmp.size()*sizeof(std::complex<float>));
+        for (auto i = 0; i < tmp.size(); i++) {
+            tmp.data()[i] = abs(data[i]);
+        //     // std::cout << tmp.data()[i];
+        }
+        tmp.transposeInPlace();
         
+        QVector<double> vec(tmp.size());
+        std::copy(tmp.data(), tmp.data() + tmp.size(), vec.data());
+        QwtMatrixRasterData* mrd = new QwtMatrixRasterData();
+        mrd->setInterval(Qt::XAxis, QwtInterval(0, tmp.cols()));
+        mrd->setInterval(Qt::YAxis, QwtInterval(0, tmp.rows()));
+        mrd->setInterval(Qt::ZAxis, QwtInterval(tmp.minCoeff(), tmp.maxCoeff()));
+        mrd->setValueMatrix(vec, ncol);
+        d_spectro->setData(mrd);
+        d_plot->replot();
+        // size_t n = event->numPoints();
+        // std::vector<double> x(n);
+        // std::vector<double> y(n);
+        // for (size_t i = 0; i < n; i++)
+        //     x[i] = i;
+
+        // memcpy(y.data(), data, n * sizeof(data[0]));
+        // d_debug_curve->setSamples(x.data(), y.data(), n);
+        // d_debug_plot->setAutoReplot();
+
         // d_debug_plot->replot();
         // d_debug_plot->axisAutoScale(QwtPlot::yLeft);
-        
     }
 
 

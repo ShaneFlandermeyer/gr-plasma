@@ -24,7 +24,8 @@ range_doppler_sink::sptr range_doppler_sink::make(QWidget* parent)
 range_doppler_sink_impl::range_doppler_sink_impl(QWidget* parent)
     : gr::block("range_doppler_sink",
                 gr::io_signature::make(0, 0, 0),
-                gr::io_signature::make(0, 0, 0))
+                gr::io_signature::make(0, 0, 0)),
+      d_shift(1)
 
 {
     // Initialize the QApplication
@@ -44,6 +45,7 @@ range_doppler_sink_impl::range_doppler_sink_impl(QWidget* parent)
     d_count = 0;
     d_fast_time_slow_time =
         Eigen::ArrayXXcf((int)round(d_samp_rate / d_prf), d_num_pulse_cpi);
+    // d_shift = fft::fft_shift<gr_complex>(1);
 
     // Initialize message ports
     message_port_register_in(pmt::mp("tx"));
@@ -141,6 +143,9 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
             // Initialize the FFT objects
             int fftsize = n + d_matched_filter.size() - 1;
 
+            // TODO: Move this somewhere else
+            d_range_slow_time = Eigen::ArrayXXcf(fftsize, d_num_pulse_cpi);
+
             // d_matched_filter = d_matched_filter * scale_factor;
             d_fwd = std::make_unique<fft::fft_complex_fwd>(fftsize);
             d_doppler_fft = std::make_unique<fft::fft_complex_fwd>(d_num_pulse_cpi);
@@ -180,12 +185,29 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
             d_magbuf = Eigen::ArrayXd(n);
             d_magbuf = 20 * log10(abs(d)).cast<double>();
 
-            std::cout << d_magbuf.maxCoeff() << std::endl;
+            // TODO: Used for debugging range doppler plot. Remove
+            for (size_t i = 0; i < d_num_pulse_cpi; i++) {
+                d_range_slow_time.col(i) = d;
+            }
+            // Do a slow-time FFT to get a range-doppler map
+            d_range_doppler = Eigen::ArrayXXcf(fftsize, d_num_pulse_cpi);
+            for (size_t i = 0; i < fftsize; i++) {
+                Eigen::ArrayXcf tmp = d_range_slow_time.row(i);
+                memcpy(d_doppler_fft->get_inbuf(),
+                       tmp.data(),
+                       tmp.size() * sizeof(gr_complex));
+                d_doppler_fft->execute();
+                d_shift.shift(d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
+                d_range_doppler.row(i) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
+                    d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
+            }
         }
 
 
         d_qapp->postEvent(d_main_gui,
-                          new RangeDopplerUpdateEvent(d_magbuf, d_magbuf.size()));
+                          new RangeDopplerUpdateEvent(d_range_doppler,
+                                                      d_range_doppler.rows(),
+                                                      d_range_doppler.cols()));
     }
 }
 } /* namespace plasma */

@@ -31,8 +31,11 @@ private:
     std::unique_ptr<fft::fft_complex_fwd> d_fwd;
     std::unique_ptr<fft::fft_complex_fwd> d_doppler_fft;
     std::unique_ptr<fft::fft_complex_rev> d_inv;
+    fft::fft_shift<gr_complex> d_shift;
     Eigen::ArrayXcf d_matched_filter;
     Eigen::ArrayXXcf d_fast_time_slow_time;
+    Eigen::ArrayXXcf d_range_slow_time;
+    Eigen::ArrayXXcf d_range_doppler;
     // TODO: These parameters should be block arguments or messages
     size_t d_num_pulse_cpi;
     double d_prf;
