@@ -29,8 +29,16 @@ private:
     // filter::kernel::fft_filter_ccc d_filter;
     // kernel::fft_filter_ccc d_filter;
     std::unique_ptr<fft::fft_complex_fwd> d_fwd;
+    std::unique_ptr<fft::fft_complex_fwd> d_doppler_fft;
     std::unique_ptr<fft::fft_complex_rev> d_inv;
-    volk::vector<gr_complex> d_xformed_taps;
+    Eigen::ArrayXcf d_matched_filter;
+    Eigen::ArrayXXcf d_fast_time_slow_time;
+    // TODO: These parameters should be block arguments or messages
+    size_t d_num_pulse_cpi;
+    double d_prf;
+    double d_samp_rate;
+    size_t d_count;
+    // volk::vector<gr_complex> d_xformed_taps;
 
     // std::unique_ptr<fft::fft_complex_fwd> d_fft;
     // std::unique_ptr<fft::fft_complex_rev> d_ifft;

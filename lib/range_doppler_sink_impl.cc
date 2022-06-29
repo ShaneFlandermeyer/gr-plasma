@@ -37,9 +37,15 @@ range_doppler_sink_impl::range_doppler_sink_impl(QWidget* parent)
         d_qapp = new QApplication(d_argc, &d_argv);
     d_main_gui = new RangeDopplerWindow(parent);
 
-    // d_filter = filter::kernel::fft_filter_ccc(1, std::vector<gr_complex>());
+    // TODO: Hard-coding these for debugging purposes
+    d_num_pulse_cpi = 128;
+    d_prf = 1 / 10e-6;
+    d_samp_rate = 10e6;
+    d_count = 0;
+    d_fast_time_slow_time =
+        Eigen::ArrayXXcf((int)round(d_samp_rate / d_prf), d_num_pulse_cpi);
 
-
+    // Initialize message ports
     message_port_register_in(pmt::mp("tx"));
     message_port_register_in(pmt::mp("rx"));
     set_msg_handler(pmt::mp("tx"), [this](pmt::pmt_t msg) { handle_tx_msg(msg); });
@@ -81,60 +87,106 @@ void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
         // Get the transmit data
         pmt::pmt_t samples = pmt::cdr(msg);
         size_t n = pmt::length(samples);
-        std::vector<gr_complex> taps = pmt::c32vector_elements(samples);
+        gr_complex* data = pmt::c32vector_writable_elements(samples, n);
+        d_matched_filter = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(data, n);
+        d_matched_filter = d_matched_filter.conjugate().reverse();
+
 
         // Store the frequency domain matched filter data
-        d_fwd = std::make_unique<fft::fft_complex_fwd>(n);
+        // d_fwd = std::make_unique<fft::fft_complex_fwd>(n);
         // d_inv = std::make_unique<fft::fft_complex_rev>(n);
-        d_xformed_taps.resize(n);
-        gr_complex* in = d_fwd->get_inbuf();
-        gr_complex* out = d_fwd->get_outbuf();
-        float scale = 1.0 / n;
-        size_t i = 0;
-        for (i = 0; i < taps.size(); i++) {
-            in[i] = taps[i] * scale;
-        }
-        for (; i < n; i++)
-            in[i] = 0;
-        d_fwd->execute();
-        for (i = 0; i < n; i++)
-            d_xformed_taps[i] = out[i];
+        // d_xformed_taps.resize(n);
+        // gr_complex* in = d_fwd->get_inbuf();
+        // gr_complex* out = d_fwd->get_outbuf();
+        // float scale = 1.0 / n;
+        // size_t i = 0;
+        // for (i = 0; i < taps.size(); i++) {
+        //     in[i] = taps[i] * scale;
+        // }
+        // for (; i < n; i++)
+        //     in[i] = 0;
+        // d_fwd->execute();
+        // for (i = 0; i < n; i++)
+        //     d_xformed_taps[i] = out[i];
 
-        
 
         // Get the data that will be used for plotting
-        d_magbuf = Eigen::ArrayXd(n);
-        for (i = 0; i < n; i++) {
-            // d_magbuf[i] = 20 * log10(abs(d_xformed_taps[i]));
-            d_magbuf[i] = taps[i].real();
-            
-        }
+        // d_magbuf = Eigen::ArrayXd(n);
+        // d_magbuf = d_matched_filter.real().cast<double>();
 
-        d_qapp->postEvent(d_main_gui,
-                          new RangeDopplerUpdateEvent(d_magbuf, d_magbuf.size()));
+
+        // d_qapp->postEvent(d_main_gui,
+        //                   new RangeDopplerUpdateEvent(d_magbuf, d_magbuf.size()));
     }
 }
 
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
     GR_LOG_DEBUG(d_logger, "Rx message received");
-    // // TODO: Pass the data to the GUI via a QEvent subclass object
-    // // d_qapp->postEvent(d_main_gui, new QEvent(QEvent::Type(10000)));
-    // while (d_xformed_taps.size() == 0) {
-    //     std::this_thread::sleep_for(std::chrono::microseconds(100));
-    // }
-    // if (pmt::is_pdu(msg)) {
-    //     pmt::pmt_t samples = pmt::cdr(msg);
-    //     int n = pmt::length(samples);
-    //     int fftsize = n + d_xformed_taps.size() - 1;
-    //     if (fftsize != d_fwd->inbuf_length()) {
-    //         GR_LOG_DEBUG(d_logger, "Resizing");
-    //         d_fwd = std::make_unique<fft::fft_complex_fwd>(fftsize);
-    //         d_inv = std::make_unique<fft::fft_complex_rev>(fftsize);
-    //     }
+    if (pmt::is_pdu(msg)) {
+        pmt::pmt_t samples = pmt::cdr(msg);
+        size_t n = pmt::length(samples);
+        gr_complex* data = pmt::c32vector_writable_elements(samples, n);
+        d_fast_time_slow_time.col(d_count) =
+            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(data, n);
+        // TODO: Used for debugging convolution. Remove this
+        d_matched_filter = d_fast_time_slow_time.col(d_count).reverse().conjugate();
+        d_count++;
 
-    //     // vol
-    // }
+        if (d_matched_filter.size() == 0) {
+            GR_LOG_DEBUG(d_logger, "Matched filter not yet received")
+        } else {
+            GR_LOG_DEBUG(d_logger, "Performing matched filter operation")
+            // Do a matched filter operation for the current pulse
+            // Initialize the FFT objects
+            int fftsize = n + d_matched_filter.size() - 1;
+
+            // d_matched_filter = d_matched_filter * scale_factor;
+            d_fwd = std::make_unique<fft::fft_complex_fwd>(fftsize);
+            d_doppler_fft = std::make_unique<fft::fft_complex_fwd>(d_num_pulse_cpi);
+            d_inv = std::make_unique<fft::fft_complex_rev>(fftsize);
+
+            // Zero-pad the input and transform
+            memcpy(d_fwd->get_inbuf(),
+                   d_fast_time_slow_time.col(d_count - 1).data(),
+                   d_fast_time_slow_time.rows() * sizeof(gr_complex));
+            d_fwd->execute();
+            for (auto i = d_fast_time_slow_time.size(); i < d_fwd->inbuf_length(); i++) {
+                d_fwd->get_inbuf()[i] = 0;
+            }
+            gr_complex* out = d_fwd->get_outbuf();
+            gr_complex* a = new gr_complex[fftsize];
+            memcpy(a, out, fftsize * sizeof(gr_complex));
+
+            // Zero-pad the matched filter and transform
+            memcpy(d_fwd->get_inbuf(),
+                   d_matched_filter.data(),
+                   d_matched_filter.size() * sizeof(gr_complex));
+            for (auto i = d_matched_filter.size(); i < d_fwd->inbuf_length(); i++) {
+                d_fwd->get_inbuf()[i] = 0;
+            }
+            d_fwd->execute();
+            gr_complex* b = d_fwd->get_outbuf();
+
+            // Set the IFFT input to the result of an element-wise
+            // multiplication in the frequency domain
+            gr_complex* c = d_inv->get_inbuf();
+            volk_32fc_x2_multiply_32fc_a(c, a, b, fftsize);
+            d_inv->execute();
+
+            Eigen::ArrayXcf d =
+                Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(d_inv->get_outbuf(), fftsize);
+            d *= 1 / (float)fftsize;
+            d_magbuf = Eigen::ArrayXd(n);
+            d_magbuf = 20 * log10(abs(d)).cast<double>();
+
+            std::cout << d_magbuf.maxCoeff() << std::endl;
+        }
+
+
+        d_qapp->postEvent(d_main_gui,
+                          new RangeDopplerUpdateEvent(d_magbuf, d_magbuf.size()));
+    }
 }
 } /* namespace plasma */
 } /* namespace gr */

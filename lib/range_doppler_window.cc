@@ -4,13 +4,13 @@
 RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 {
     // Debug Plot
-    for (int index = 0; index < 100; ++index) {
-        xData[index] = index;
-        yData[index] = 0;
-    }
+    // for (int index = 0; index < 100; ++index) {
+    //     xData[index] = index;
+    //     yData[index] = 50;
+    // }
     d_debug_curve = new QwtPlotCurve();
     d_debug_plot = new QwtPlot();
-    d_debug_curve->setSamples(xData, yData, 100);
+    // d_debug_curve->setSamples(xData, yData, 100);
     d_debug_curve->attach(d_debug_plot);
 
     // Spectrogram
@@ -41,9 +41,14 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         std::vector<double> y(n);
         for (size_t i = 0; i < n; i++)
             x[i] = i;
+        
         memcpy(y.data(), data, n * sizeof(data[0]));
         d_debug_curve->setSamples(x.data(), y.data(), n);
-        d_debug_plot->replot();
+        d_debug_plot->setAutoReplot();
+        
+        // d_debug_plot->replot();
+        // d_debug_plot->axisAutoScale(QwtPlot::yLeft);
+        
     }
 
 
