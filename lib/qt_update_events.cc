@@ -1,17 +1,17 @@
 #include <gnuradio/plasma/qt_update_events.h>
 
-RangeDopplerUpdateEvent::RangeDopplerUpdateEvent(const Eigen::ArrayXXcf data, size_t nrow, size_t ncol)
+RangeDopplerUpdateEvent::RangeDopplerUpdateEvent(const double* data, size_t rows, size_t cols)
     : QEvent(QEvent::Type(RadarUpdateEventType))
 {
     d_data = data;
-    d_num_row = nrow;
-    d_num_col = ncol;
+    d_rows = rows;
+    d_cols = cols;
 }
 
 RangeDopplerUpdateEvent::~RangeDopplerUpdateEvent() {}
 
-const size_t RangeDopplerUpdateEvent::ncol() { return d_num_col; }
+const size_t RangeDopplerUpdateEvent::cols() { return d_cols; }
 
-const size_t RangeDopplerUpdateEvent::nrow() { return d_num_row; }
+const size_t RangeDopplerUpdateEvent::rows() { return d_rows; }
 
-const std::complex<float>* RangeDopplerUpdateEvent::data() const { return d_data.data(); }
+const double* RangeDopplerUpdateEvent::data() const { return d_data; }

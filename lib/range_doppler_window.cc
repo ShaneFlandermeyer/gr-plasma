@@ -4,10 +4,6 @@
 RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 {
     // Debug Plot
-    // for (int index = 0; index < 100; ++index) {
-    //     xData[index] = index;
-    //     yData[index] = 50;
-    // }
     d_debug_curve = new QwtPlotCurve();
     d_debug_plot = new QwtPlot();
     // d_debug_curve->setSamples(xData, yData, 100);
@@ -15,8 +11,10 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 
     // Spectrogram
     d_spectro = new QwtPlotSpectrogram();
+    d_data = new QwtMatrixRasterData();
     d_plot = new QwtPlot();
     d_spectro->attach(d_plot);
+    d_plot->setAutoReplot();
 
     // GUI layout
     vLayout = new QVBoxLayout();
@@ -36,38 +34,20 @@ void RangeDopplerWindow::customEvent(QEvent* e)
     if (e->type() == RangeDopplerUpdateEvent::Type()) {
         RangeDopplerUpdateEvent* event = (RangeDopplerUpdateEvent*)e;
         auto* data = event->data();
-        auto nrow = event->nrow();
-        auto ncol = event->ncol();
-        
-        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> tmp(nrow,ncol);
-        // std::copy(tmp.data(), data, tmp.size()*sizeof(std::complex<float>));
-        for (auto i = 0; i < tmp.size(); i++) {
-            tmp.data()[i] = abs(data[i]);
-        //     // std::cout << tmp.data()[i];
-        }
-        tmp.transposeInPlace();
-        
-        QVector<double> vec(tmp.size());
-        std::copy(tmp.data(), tmp.data() + tmp.size(), vec.data());
-        QwtMatrixRasterData* mrd = new QwtMatrixRasterData();
-        mrd->setInterval(Qt::XAxis, QwtInterval(0, tmp.cols()));
-        mrd->setInterval(Qt::YAxis, QwtInterval(0, tmp.rows()));
-        mrd->setInterval(Qt::ZAxis, QwtInterval(tmp.minCoeff(), tmp.maxCoeff()));
-        mrd->setValueMatrix(vec, ncol);
-        d_spectro->setData(mrd);
-        d_plot->replot();
-        // size_t n = event->numPoints();
-        // std::vector<double> x(n);
-        // std::vector<double> y(n);
-        // for (size_t i = 0; i < n; i++)
-        //     x[i] = i;
+        auto rows = event->rows();
+        auto cols = event->cols();
 
-        // memcpy(y.data(), data, n * sizeof(data[0]));
-        // d_debug_curve->setSamples(x.data(), y.data(), n);
-        // d_debug_plot->setAutoReplot();
-
-        // d_debug_plot->replot();
-        // d_debug_plot->axisAutoScale(QwtPlot::yLeft);
+        // Create a new vector
+        QVector<double> vec(rows * cols);
+        std::copy(data, data + vec.size(), vec.data());
+        // Also map the vector to an Eigen array to easily compute the minimum
+        // and maximum values
+        Eigen::ArrayXd tmp = Eigen::Map<Eigen::ArrayXd>(vec.data(), vec.size());
+        d_data->setInterval(Qt::XAxis, QwtInterval(0, cols));
+        d_data->setInterval(Qt::YAxis, QwtInterval(0, rows));
+        d_data->setInterval(Qt::ZAxis, QwtInterval(tmp.minCoeff(), tmp.maxCoeff()));
+        d_data->setValueMatrix(vec, cols);
+        d_spectro->setData(d_data);
     }
 
 

@@ -36,6 +36,7 @@ private:
     QwtPlot* d_debug_plot;
     QwtPlot* d_plot;
     QwtPlotCurve* d_debug_curve;
+    QwtMatrixRasterData* d_data;
 
     QVBoxLayout* vLayout;
     QHBoxLayout* hLayout;

@@ -191,23 +191,26 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
             }
             // Do a slow-time FFT to get a range-doppler map
             d_range_doppler = Eigen::ArrayXXcf(fftsize, d_num_pulse_cpi);
-            for (size_t i = 0; i < fftsize; i++) {
+            for (auto i = 0; i < fftsize; i++) {
                 Eigen::ArrayXcf tmp = d_range_slow_time.row(i);
                 memcpy(d_doppler_fft->get_inbuf(),
                        tmp.data(),
                        tmp.size() * sizeof(gr_complex));
                 d_doppler_fft->execute();
-                d_shift.shift(d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
+                d_shift.shift(d_doppler_fft->get_outbuf(),
+                              d_doppler_fft->outbuf_length());
                 d_range_doppler.row(i) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
                     d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
             }
         }
 
+        Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
+            abs(d_range_doppler).cast<double>();
+
 
         d_qapp->postEvent(d_main_gui,
-                          new RangeDopplerUpdateEvent(d_range_doppler,
-                                                      d_range_doppler.rows(),
-                                                      d_range_doppler.cols()));
+                          new RangeDopplerUpdateEvent(
+                              plot_data.data(), plot_data.rows(), plot_data.cols()));
     }
 }
 } /* namespace plasma */
