@@ -2,10 +2,6 @@ id: plasma_usrp_radar
 label: 'UHD: USRP Radar'
 category: '[plasma]'
 
-templates:
-  imports: from gnuradio import plasma
-  make: plasma.usrp_radar(${samp_rate},${tx_gain},${rx_gain},${tx_freq},${rx_freq},${start_time},${tx_args},${rx_args})
-
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:
 #     * id (makes the value accessible as keyname, e.g. in the make entry)
@@ -45,6 +41,21 @@ parameters:
   label: Rx Args
   dtype: string
   default: '""'
+- id: tx_priority
+  label: Tx Thread Priority
+  dtype: float
+  options: [0.0, 1.0]
+  option_labels: ["Normal", "High"]
+  default: 0.0
+  hide: ${ ('part' if tx_priority == 0 else 'none') }
+- id: rx_priority
+  label: Rx Thread Priority
+  dtype: float
+  options: [0.0, 1.0]
+  option_labels: ["Normal", "High"]
+  default: 0.0
+  hide: ${ ('part' if rx_priority == 0 else 'none') }
+  
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
 #  Keys include:
@@ -61,7 +72,13 @@ outputs:
   - id: out
     domain: message
     optional: true
-
+templates:
+  imports: from gnuradio import plasma
+  make: |-
+    plasma.usrp_radar(${samp_rate},${tx_gain},${rx_gain},${tx_freq},${rx_freq},${start_time},${tx_args},${rx_args})
+    self.${id}.set_tx_thread_priority(${tx_priority})
+    self.${id}.set_rx_thread_priority(${rx_priority})
+  
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.
 file_format: 1

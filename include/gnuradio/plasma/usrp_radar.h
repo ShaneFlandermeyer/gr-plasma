@@ -40,6 +40,9 @@ public:
                      double start_time,
                      const std::string& tx_args,
                      const std::string& rx_args);
+
+    virtual void set_tx_thread_priority(const double) = 0;
+    virtual void set_rx_thread_priority(const double) = 0;
 };
 
 } // namespace plasma
