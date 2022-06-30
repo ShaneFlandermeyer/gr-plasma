@@ -40,20 +40,20 @@ private:
     Eigen::ArrayXcf d_matched_filter;
     Eigen::ArrayXcf d_matched_filter_freq;
     Eigen::ArrayXXcf d_fast_time_slow_time;
-    Eigen::ArrayXXcf d_range_slow_time;
-    Eigen::ArrayXXcf d_range_doppler;
     std::atomic<size_t> d_count;
     std::atomic<bool> d_finished;
     gr::thread::thread d_processing_thread;
-    
+
     size_t d_fftsize;
     void fftresize(size_t size);
-    void process_data();
-    void conv();
+    void process_data(const Eigen::ArrayXXcf);
     gr_complex* conv(const gr_complex* x, const gr_complex* h, size_t nx, size_t nh);
 
 public:
-    range_doppler_sink_impl(double samp_rate, size_t num_pulse_cpi, double center_freq, QWidget* parent);
+    range_doppler_sink_impl(double samp_rate,
+                            size_t num_pulse_cpi,
+                            double center_freq,
+                            QWidget* parent);
     ~range_doppler_sink_impl();
 
     bool start() override;
@@ -69,6 +69,9 @@ public:
 #endif
     void handle_tx_msg(pmt::pmt_t msg);
     void handle_rx_msg(pmt::pmt_t msg);
+
+    void set_dynamic_range(const double) override;
+    void set_num_fft_thread(const int) override;
 };
 
 } // namespace plasma
