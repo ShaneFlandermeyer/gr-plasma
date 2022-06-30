@@ -53,6 +53,7 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
     d_main_gui = new RangeDopplerWindow(parent);
 
     d_count = 0;
+    d_working = false;
 
     // Initialize message ports
     message_port_register_in(pmt::mp("tx"));
@@ -155,7 +156,7 @@ void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    if (d_finished or d_matched_filter.size() == 0) {
+    if (d_working or d_finished or d_matched_filter.size() == 0) {
         return;
     }
     // GR_LOG_DEBUG(d_logger, "Rx message received");
@@ -185,7 +186,8 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 }
 
 void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time)
-{
+{   
+    d_working = true;
     auto nfft = fast_slow_time.rows() + d_matched_filter.size() - 1;
     Eigen::ArrayXXcf range_slow_time = Eigen::ArrayXXcf(nfft, fast_slow_time.cols());
     for (size_t i = 0; i < range_slow_time.cols(); i++) {
@@ -226,6 +228,7 @@ void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time
     d_qapp->postEvent(d_main_gui,
                       new RangeDopplerUpdateEvent(
                           plot_data.data(), plot_data.rows(), plot_data.cols()));
+    d_working = false;
 }
 
 

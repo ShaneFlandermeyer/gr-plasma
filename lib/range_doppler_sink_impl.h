@@ -42,6 +42,7 @@ private:
     Eigen::ArrayXXcf d_fast_time_slow_time;
     std::atomic<size_t> d_count;
     std::atomic<bool> d_finished;
+    std::atomic<bool> d_working;
     gr::thread::thread d_processing_thread;
 
     size_t d_fftsize;
