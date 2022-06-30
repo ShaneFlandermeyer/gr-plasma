@@ -44,6 +44,8 @@ private:
     gr::thread::mutex d_tx_buff_mutex;
     std::atomic<bool> d_finished;
     std::atomic<bool> d_armed;
+    double d_tx_thread_priority;
+    double d_rx_thread_priority;
 
 
     /**
@@ -120,6 +122,10 @@ public:
      * 
      */
     void read_calibration_json();
+
+    void set_tx_thread_priority(const double) override;
+
+    void set_rx_thread_priority(const double) override;
 };
 
 } // namespace plasma

@@ -27,6 +27,7 @@ namespace py = pybind11;
     void bind_pdu_file_sink(py::module& m);
     void bind_pdu_head(py::module& m);
     void bind_pcfm_source(py::module& m);
+    void bind_range_doppler_sink(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -48,7 +49,7 @@ PYBIND11_MODULE(plasma_python, m)
 
     // Allow access to base block methods
     py::module::import("gnuradio.gr");
-
+    py::module::import("gnuradio.qtgui.qtgui_python");
     /**************************************/
     // The following comment block is used for
     // gr_modtool to insert binding function calls
@@ -61,5 +62,6 @@ PYBIND11_MODULE(plasma_python, m)
     bind_pdu_file_sink(m);
     bind_pdu_head(m);
     bind_pcfm_source(m);
+    bind_range_doppler_sink(m);
     // ) END BINDING_FUNCTION_CALLS
 }

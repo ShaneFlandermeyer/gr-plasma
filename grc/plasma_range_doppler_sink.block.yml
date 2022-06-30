@@ -1,0 +1,57 @@
+id: plasma_range_doppler_sink
+label: Range Doppler Sink
+category: "[plasma]"
+flags: [python]
+
+parameters:
+  - id: samp_rate
+    label: Sample Rate
+    dtype: float
+    default: "samp_rate"
+  - id: num_pulse_cpi
+    label: Pulses per CPI
+    dtype: int
+    default: 128
+  - id: center_freq
+    label: Center Frequency
+    dtype: float
+    default: "center_freq"
+  - id: dynamic_range
+    label: Dynamic Range (dB)
+    dtype: float
+    default: 60
+    hide: part
+  - id: num_fft_thread
+    label: Num FFT threads
+    dtype: int
+    default: 1
+    hide: part
+  - id: gui_hint
+    label: GUI Hint
+    dtype: gui_hint
+    hide: part
+  
+inputs:
+  - domain: message
+    id: tx
+  - domain: message
+    id: rx
+
+templates:
+  imports: |-
+    from PyQt5 import Qt
+    from gnuradio import plasma
+    import sip
+  make: |-
+    <%
+      win = 'self._%s_win'%id
+    %>\
+    plasma.range_doppler_sink(${samp_rate}, ${num_pulse_cpi}, ${center_freq})
+    self.${id}.set_dynamic_range(${dynamic_range})
+    self.${id}.set_num_fft_thread(${num_fft_thread})
+    ${win} = sip.wrapinstance(self.${id}.pyqwidget(), Qt.QWidget)
+    ${gui_hint() % win}
+
+#  'file_format' specifies the version of the GRC yml format used in the file
+#  and should usually not be changed.
+file_format: 1

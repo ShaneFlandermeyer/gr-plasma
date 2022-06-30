@@ -29,7 +29,7 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 # Make sure our local CMake Modules path comes first
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/Modules)
 # Find gnuradio to get access to the cmake modules
-find_package(Gnuradio "3.10" REQUIRED COMPONENTS uhd)
+find_package(Gnuradio "3.10" REQUIRED COMPONENTS uhd fft filter blocks)
 
 # Set the version information here
 set(VERSION_MAJOR 1)
@@ -101,7 +101,25 @@ endif(APPLE)
 ########################################################################
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qwt REQUIRED)
+########################################################################
+# PyBind11 Related
+########################################################################
+find_package(PythonLibs 3)
+find_package(pybind11 REQUIRED)
+include(GrPython)
+GR_PYTHON_CHECK_MODULE("PyQt5" PyQt5 True PYQT5_FOUND)
 
+
+include(GrComponent)
+GR_REGISTER_COMPONENT("python-support" ENABLE_PYTHON
+    PYTHONLIBS_FOUND
+    pybind11_FOUND
+)
+if(ENABLE_PYTHON)
+    add_definitions(-DENABLE_PYTHON)
+endif()
 ########################################################################
 # Setup doxygen option
 ########################################################################
@@ -126,11 +144,14 @@ add_custom_target(uninstall
 ########################################################################
 # Add subdirectories
 ########################################################################
+set(CMAKE_AUTOMOC ON)
+# set(CMAKE_AUTORCC ON)
+# set(CMAKE_AUTOUIC ON)
+
 add_subdirectory(include/gnuradio/plasma)
 add_subdirectory(lib)
 add_subdirectory(apps)
 add_subdirectory(docs)
-# NOTE: manually update below to use GRC to generate C++ flowgraphs w/o python
 if(ENABLE_PYTHON)
   message(STATUS "PYTHON and GRC components are enabled")
   add_subdirectory(python/plasma)

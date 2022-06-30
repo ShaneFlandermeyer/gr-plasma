@@ -95,7 +95,9 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
                                size_t num_samp_pulse,
                                uhd::time_spec_t start_time)
 {
-    uhd::set_thread_priority_safe();
+    if (d_tx_thread_priority != 0) {
+        uhd::set_thread_priority_safe(d_tx_thread_priority);
+    }
     uhd::stream_args_t tx_stream_args("fc32", "sc16");
     uhd::tx_streamer::sptr tx_stream;
     tx_stream_args.channels.push_back(0);
@@ -140,7 +142,9 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
                               std::vector<std::vector<gr_complex>> buffs,
                               uhd::time_spec_t start_time)
 {
-    // uhd::set_thread_priority_safe();
+    if (d_rx_thread_priority != 0) {
+        uhd::set_thread_priority_safe(d_tx_thread_priority);
+    }
     size_t channels = buffs.size();
     std::vector<size_t> channel_vec;
     uhd::stream_args_t stream_args("fc32", "sc16");
@@ -242,7 +246,6 @@ bool usrp_radar_impl::stop()
 
 void usrp_radar_impl::run()
 {
-    uhd::set_thread_priority_safe();
     while (d_tx_buff.size() == 0) {
         // Wait for data to arrive
         boost::this_thread::sleep(boost::posix_time::microseconds(1));
@@ -301,6 +304,16 @@ void usrp_radar_impl::read_calibration_json()
     }
 
     file.close();
+}
+
+void usrp_radar_impl::set_tx_thread_priority(const double priority)
+{
+    d_tx_thread_priority = priority;
+}
+
+void usrp_radar_impl::set_rx_thread_priority(const double priority)
+{
+    d_rx_thread_priority = priority;
 }
 
 } /* namespace plasma */

@@ -6,5 +6,3 @@ doxygen/1.9.4
 [generators]
 cmake
 
-[options]
-plasma_dsp:shared=True
