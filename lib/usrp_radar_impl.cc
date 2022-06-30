@@ -99,6 +99,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         uhd::set_thread_priority_safe(d_tx_thread_priority);
     }
     uhd::stream_args_t tx_stream_args("fc32", "sc16");
+    tx_stream_args.args["streamer"] = "replay_buffered";
     uhd::tx_streamer::sptr tx_stream;
     tx_stream_args.channels.push_back(0);
     tx_stream = usrp->get_tx_stream(tx_stream_args);
@@ -112,6 +113,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     // Send the transmit buffer continuously. Note that this cannot be done in
     // bursts because there is a bug on the X310 that chops off part of the
     // waveform at the beginning of each burst
+    boost::this_thread::disable_interruption disable_interrupt;
     while (!d_finished) {
         // Update the waveform data if it has changed
         if (d_armed) {
@@ -124,14 +126,15 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
             }
             num_samp_pulse = d_tx_buff.size();
         }
-        boost::this_thread::disable_interruption disable_interrupt;
+
         tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 0.5);
-        boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
+
         tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
         d_pulse_count++;
         d_sample_count += num_samp_pulse;
     }
+    boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
     // Send a mini EOB to tell the USRP that we're done
     tx_md.has_time_spec = false;
     tx_md.end_of_burst = true;
@@ -170,6 +173,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
     std::vector<gr_complex*> buff_ptrs2(buffs.size());
     d_rx_data = pmt::make_c32vector(num_samps_pri, 0);
     double timeout = 0.5 + start_time.get_real_secs();
+    boost::this_thread::disable_interruption disable_interrupt;
     while (!d_finished) {
         // Move storing pointer to correct location
         for (size_t i = 0; i < channels; i++)
@@ -177,9 +181,9 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 
         // Sampling data
         size_t samps_to_recv = std::min(num_samps_pri - num_samps_total, max_num_samps);
-        boost::this_thread::disable_interruption disable_interrupt;
+        
         size_t num_rx_samps = rx_stream->recv(buff_ptrs2, samps_to_recv, md, timeout);
-        boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
+        
 
         timeout = 0.1;
 
@@ -221,6 +225,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             }
         }
     }
+    boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
 
     // Shut down the stream
     stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
