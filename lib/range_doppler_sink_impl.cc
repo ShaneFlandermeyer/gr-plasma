@@ -7,8 +7,11 @@
 
 #include "range_doppler_sink_impl.h"
 #include <gnuradio/io_signature.h>
+#include <chrono>
 #include <thread>
 
+// TODO: Delete
+using namespace std::chrono;
 namespace gr {
 namespace plasma {
 
@@ -51,6 +54,10 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
 
     d_count = 0;
 
+    // TODO: Make this a block parameter
+    d_num_fft_thread = 10;
+    d_dynamic_range_db = 60;
+
     // Initialize message ports
     message_port_register_in(pmt::mp("tx"));
     message_port_register_in(pmt::mp("rx"));
@@ -63,9 +70,25 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
  */
 range_doppler_sink_impl::~range_doppler_sink_impl()
 {
-    delete d_argv;
+    // GR_LOG_DEBUG(d_logger, "Destroying")
+    // delete d_argv;
+    // delete d_main_gui;
+}
+
+bool range_doppler_sink_impl::start()
+{
+    d_finished = false;
+    return block::start();
+}
+
+bool range_doppler_sink_impl::stop()
+{
+
+    d_finished = true;
+    d_processing_thread.join();
     if (not d_main_gui->is_closed())
         d_main_gui->close();
+    return block::stop();
 }
 
 void range_doppler_sink_impl::exec_() { d_qapp->exec(); };
@@ -93,6 +116,11 @@ void range_doppler_sink_impl::fftresize(size_t size)
         d_conv_fwd = std::make_unique<fft::fft_complex_fwd>(size);
         d_doppler_fft = std::make_unique<fft::fft_complex_fwd>(d_num_pulse_cpi);
         d_conv_inv = std::make_unique<fft::fft_complex_rev>(size);
+        // Set the number of threads used for the FFT computations
+        d_conv_fwd->set_nthreads(d_num_fft_thread);
+        d_conv_inv->set_nthreads(d_num_fft_thread);
+        d_doppler_fft->set_nthreads(d_num_fft_thread);
+
 
         d_shift.resize(d_num_pulse_cpi);
 
@@ -122,7 +150,6 @@ void range_doppler_sink_impl::fftresize(size_t size)
 
 void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
 {
-    GR_LOG_DEBUG(d_logger, "Tx message received");
     if (pmt::is_pdu(msg)) {
         // Get the transmit data
         pmt::pmt_t samples = pmt::cdr(msg);
@@ -135,7 +162,7 @@ void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    if (d_matched_filter.size() == 0) {
+    if (d_finished or d_matched_filter.size() == 0) {
         // GR_LOG_INFO(d_logger, "Matched filter PDU not yet received");
         return;
     }
@@ -154,6 +181,59 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     }
     d_fast_time_slow_time.col(d_count) =
         Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(in, n);
+
+    if (d_count < d_num_pulse_cpi - 1) {
+        d_count++;
+    } else {
+        d_processing_thread.join();
+        d_processing_thread = gr::thread::thread([this] { process_data(); });
+        d_count = 0;
+    }
+}
+
+void range_doppler_sink_impl::process_data()
+{
+    auto nfft = d_fast_time_slow_time.rows() + d_matched_filter.size() - 1;
+    for (int i = 0; i < d_fast_time_slow_time.cols(); i++) {
+        gr_complex* mfresp = conv(d_fast_time_slow_time.col(i).data(),
+                                  d_matched_filter.data(),
+                                  d_fast_time_slow_time.rows(),
+                                  d_matched_filter.size());
+        // d_range_slow_time.col(i) =
+        //     Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(mfresp, nfft);
+        memcpy(d_range_slow_time.col(i).data(), mfresp, nfft * sizeof(gr_complex));
+        delete[] mfresp;
+    }
+    d_range_slow_time *= 1 / (float)nfft;
+
+    // Do doppler processing
+    for (auto i = 0; i < d_range_slow_time.rows(); i++) {
+        Eigen::ArrayXcf tmp = d_range_slow_time.row(i);
+        memcpy(d_doppler_fft->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
+        d_doppler_fft->execute();
+        d_shift.shift(d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
+        d_range_doppler.row(i) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
+            d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
+    }
+
+
+    // Convert the data to a form that can be plotted and send it to the GUI
+    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
+        20 * log10(abs(d_range_doppler)).cast<double>();
+    // Normalize the plot data and clip it to fit the dynamic range
+    plot_data = plot_data - plot_data.maxCoeff();
+    for (int i = 0; i < plot_data.size(); i++) {
+        if (plot_data.data()[i] < -d_dynamic_range_db)
+            plot_data.data()[i] = -d_dynamic_range_db;
+    }
+    d_qapp->postEvent(d_main_gui,
+                      new RangeDopplerUpdateEvent(
+                          plot_data.data(), plot_data.rows(), plot_data.cols()));
+}
+
+
+void range_doppler_sink_impl::conv()
+{
     int fftsize = d_fast_time_slow_time.rows() + d_matched_filter.size() - 1;
     fftresize(fftsize);
     // Zero-pad the input and transform
@@ -163,9 +243,9 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     d_conv_fwd->execute();
     for (auto i = d_fast_time_slow_time.size(); i < d_conv_fwd->inbuf_length(); i++)
         d_conv_fwd->get_inbuf()[i] = 0;
-    gr_complex* out = d_conv_fwd->get_outbuf();
+    // gr_complex* out = d_conv_fwd->get_outbuf();
     gr_complex* a = new gr_complex[fftsize];
-    memcpy(a, out, fftsize * sizeof(gr_complex));
+    memcpy(a, d_conv_fwd->get_outbuf(), fftsize * sizeof(gr_complex));
 
     // Zero-pad the matched filter and transform
     memcpy(d_conv_fwd->get_inbuf(),
@@ -175,53 +255,54 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
         d_conv_fwd->get_inbuf()[i] = 0;
     d_conv_fwd->execute();
     gr_complex* b = d_conv_fwd->get_outbuf();
-    // gr_complex* b = d_matched_filter_freq.data();
 
+    // Hadamard product and IFFT
     gr_complex* c = d_conv_inv->get_inbuf();
     volk_32fc_x2_multiply_32fc_a(c, a, b, fftsize);
     d_conv_inv->execute();
 
+    // Scale the result by the FFT size to make it mathematically correct
     d_range_slow_time.col(d_count) =
         Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(d_conv_inv->get_outbuf(), fftsize);
     d_range_slow_time.col(d_count) *= 1 / (float)fftsize;
-    if (d_count < d_num_pulse_cpi - 1) {
-        d_count++;
-    } else {
-        // Do doppler processing
 
-        for (auto i = 0; i < fftsize; i++) {
-            Eigen::ArrayXcf tmp = d_range_slow_time.row(i);
-            memcpy(
-                d_doppler_fft->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
-            d_doppler_fft->execute();
-            d_shift.shift(d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
-            d_range_doppler.row(i) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
-                d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
-        }
-
-
-        // Convert the data to a form that can be plotted and send it to the GUI
-        Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
-            20 * log10(abs(d_range_doppler)).cast<double>();
-        // Normalize the plot data and clip it to fit the dynamic range
-        // TODO: Make the dynamic range a parameter
-        plot_data = plot_data - plot_data.maxCoeff();
-        for (int i = 0; i < plot_data.size(); i++) {
-            if (plot_data.data()[i] < -60)
-                plot_data.data()[i] = -60;
-        }
-        // d_main_gui->d_data->setInterval(Qt::XAxis, QwtInterval(0, plot_data.cols()));
-        // d_main_gui->d_data->setInterval(Qt::YAxis, QwtInterval(0, plot_data.rows()));
-        // d_main_gui->d_data->setInterval(Qt::ZAxis,
-        // QwtInterval(plot_data.minCoeff(), plot_data.maxCoeff()));
-        d_qapp->postEvent(d_main_gui,
-                          new RangeDopplerUpdateEvent(
-                              plot_data.data(), plot_data.rows(), plot_data.cols()));
-
-        d_count = 0;
-    }
+    delete[] a;
 }
 
+gr_complex* range_doppler_sink_impl::conv(const gr_complex* x,
+                                          const gr_complex* h,
+                                          size_t nx,
+                                          size_t nh)
+{
+    int fftsize = nx + nh - 1;
+    fftresize(fftsize);
+    // Zero-pad the input and transform
+    memcpy(d_conv_fwd->get_inbuf(), x, nx * sizeof(gr_complex));
+    d_conv_fwd->execute();
+    for (int i = nx; i < fftsize; i++)
+        d_conv_fwd->get_inbuf()[i] = 0;
+    // gr_complex* out = d_conv_fwd->get_outbuf();
+    gr_complex* a = new gr_complex[fftsize];
+    memcpy(a, d_conv_fwd->get_outbuf(), fftsize * sizeof(gr_complex));
+
+    // Zero-pad the matched filter and transform
+    memcpy(d_conv_fwd->get_inbuf(), h, nh * sizeof(gr_complex));
+    for (int i = nh; i < fftsize; i++)
+        d_conv_fwd->get_inbuf()[i] = 0;
+    d_conv_fwd->execute();
+    gr_complex* b = new gr_complex[fftsize];
+    memcpy(b, d_conv_fwd->get_outbuf(), fftsize * sizeof(gr_complex));
+
+    // Hadamard product and IFFT
+    volk_32fc_x2_multiply_32fc_a(d_conv_inv->get_inbuf(), a, b, fftsize);
+    d_conv_inv->execute();
+    gr_complex* out = new gr_complex[fftsize];
+    memcpy(out, d_conv_inv->get_outbuf(), fftsize * sizeof(gr_complex));
+
+    delete[] a;
+    delete[] b;
+    return out;
+}
 
 } /* namespace plasma */
 } /* namespace gr */

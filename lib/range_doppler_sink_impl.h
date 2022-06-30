@@ -28,6 +28,8 @@ private:
     double d_samp_rate;
     size_t d_num_pulse_cpi;
     double d_center_freq;
+    size_t d_num_fft_thread;
+    double d_dynamic_range_db;
     fft::fft_shift<gr_complex> d_shift;
     int d_argc;
     char* d_argv;
@@ -41,13 +43,21 @@ private:
     Eigen::ArrayXXcf d_range_slow_time;
     Eigen::ArrayXXcf d_range_doppler;
     std::atomic<size_t> d_count;
+    std::atomic<bool> d_finished;
     gr::thread::thread d_processing_thread;
-    void fftresize(size_t size);
+    
     size_t d_fftsize;
+    void fftresize(size_t size);
+    void process_data();
+    void conv();
+    gr_complex* conv(const gr_complex* x, const gr_complex* h, size_t nx, size_t nh);
 
 public:
     range_doppler_sink_impl(double samp_rate, size_t num_pulse_cpi, double center_freq, QWidget* parent);
     ~range_doppler_sink_impl();
+
+    bool start() override;
+    bool stop() override;
 
     void exec_();
     QApplication* d_qapp;

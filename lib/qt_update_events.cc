@@ -1,6 +1,6 @@
 #include <gnuradio/plasma/qt_update_events.h>
 #include <iostream>
-RangeDopplerUpdateEvent::RangeDopplerUpdateEvent(double* data, size_t rows, size_t cols)
+RangeDopplerUpdateEvent::RangeDopplerUpdateEvent(const double* data, size_t rows, size_t cols)
     : QEvent(QEvent::Type(RadarUpdateEventType))
 {
     d_rows = rows;
@@ -9,7 +9,9 @@ RangeDopplerUpdateEvent::RangeDopplerUpdateEvent(double* data, size_t rows, size
     memcpy(d_data, data, rows * cols * sizeof(double));
 }
 
-RangeDopplerUpdateEvent::~RangeDopplerUpdateEvent() {}
+RangeDopplerUpdateEvent::~RangeDopplerUpdateEvent() {
+    delete[] d_data;
+}
 
 const size_t RangeDopplerUpdateEvent::cols() { return d_cols; }
 

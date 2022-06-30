@@ -10,7 +10,7 @@ static constexpr int RadarUpdateEventType = 4096;
 class RangeDopplerUpdateEvent : public QEvent
 {
 public:
-    RangeDopplerUpdateEvent(double* data, size_t rows, size_t cols);
+    RangeDopplerUpdateEvent(const double* data, size_t rows, size_t cols);
     ~RangeDopplerUpdateEvent() override;
     double* data();
     const size_t cols();

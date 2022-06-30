@@ -49,6 +49,12 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
     y = d_plot->axisWidget(QwtPlot::xBottom);
     y->setTitle("Velocity (m/s)");
 
+    // Colorbar setup
+    QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
+    rightAxis->setTitle("Intensity");
+    rightAxis->setColorBarEnabled(true);
+    d_plot->enableAxis(QwtPlot::yRight);
+
     // Plot zoomer setup
     d_zoomer = new MyZoomer(d_plot->canvas());
     d_zoomer->setMousePattern(
@@ -106,52 +112,11 @@ void RangeDopplerWindow::customEvent(QEvent* e)
 
         const QwtInterval zInterval = d_spectro->data()->interval(Qt::ZAxis);
         QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
-        rightAxis->setTitle("Intensity");
-        rightAxis->setColorBarEnabled(true);
         rightAxis->setColorMap(zInterval, new ColorMap());
-        d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
-        d_plot->enableAxis(QwtPlot::yRight);
+        d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(),
+        zInterval.maxValue());
 
         d_plot->replot();
     }
 
-
-    // double pulse_width = 20e-6;
-    // double samp_rate = 40e6;
-    // double bandwidth = 0.75 * samp_rate;
-    // double prf = 5e3;
-    // size_t num_pulse_cpi = 1024;
-    // size_t num_samp_pri = samp_rate / prf;
-    // size_t num_samp_cpi = num_samp_pri * num_pulse_cpi;
-    // plasma::LinearFMWaveform waveform(bandwidth, pulse_width, 0, samp_rate);
-    // Eigen::ArrayXcf mf = waveform.MatchedFilter().cast<std::complex<float>>();
-    // // Load the waveform received by the SDR
-    // std::vector<std::complex<float>> data =
-    //     plasma::read<std::complex<float>>("/home/shane/test.dat", 0, num_samp_cpi);
-    // // Reshape the data into pulses
-    // Eigen::ArrayXXcf fast_time_slow_time =
-    //     Eigen::Map<Eigen::ArrayXXcf>(data.data(), data.size(), 1);
-    // fast_time_slow_time.resize(fast_time_slow_time.rows() / num_pulse_cpi,
-    // num_pulse_cpi);
-
-    // // Do range processing
-    // int num_thread = 10;
-    // Eigen::ArrayXXcf range_pulse_map = plasma::conv(fast_time_slow_time, mf,
-    // num_thread);
-
-    // // Do doppler processing
-    // Eigen::ArrayXXcf range_dopp_map(range_pulse_map.rows(), range_pulse_map.cols());
-    // plasma::FFT<std::complex<float>, true> fft(range_pulse_map.cols(), num_thread);
-    // for (int i = 0; i < range_pulse_map.rows(); i++) {
-    //     Eigen::ArrayXcf row = range_pulse_map.row(i);
-    //     range_dopp_map.row(i) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
-    //         fft.execute(row.data()), row.size());
-    // }
-
-    // // Do an fftshift
-    // Eigen::ArrayXXcf rdm = plasma::fftshift(range_dopp_map, 1);
-    // Eigen::ArrayXXf rdm_db = 20 * log10(abs(rdm));
-    // rdm_db = rdm_db - rdm_db.maxCoeff();
-    // rdm_db = rdm_db.min(0).max(-80);
-    // std::cout << "Event processed" << std::endl;
 }
