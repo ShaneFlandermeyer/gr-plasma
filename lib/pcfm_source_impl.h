@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_PCFM_SOURCE_IMPL_H
 
 #include <gnuradio/plasma/pcfm_source.h>
+#include <gnuradio/plasma/pmt_dict_keys.h>
 #include <plasma_dsp/pcfm.h>
 #include <plasma_dsp/phase_code.h>
 
@@ -28,7 +29,9 @@ private:
     std::atomic<bool> d_finished;
 
 public:
-    pcfm_source_impl(std::vector<double>& code, std::vector<double>& filter, double samp_rate);
+    pcfm_source_impl(std::vector<double>& code,
+                     std::vector<double>& filter,
+                     double samp_rate);
     ~pcfm_source_impl();
 
     bool start() override;

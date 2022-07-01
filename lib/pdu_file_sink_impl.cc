@@ -138,17 +138,15 @@ void pdu_file_sink_impl::run()
 void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
 {
     // Global object fields
-    pmt::pmt_t sample_rate =
-        pmt::dict_ref(dict, pmt::intern("sample_rate"), pmt::PMT_NIL);
+    pmt::pmt_t sample_rate = pmt::dict_ref(dict, SAMPLE_RATE_KEY, pmt::PMT_NIL);
     // Capture object fields
-    pmt::pmt_t frequency = pmt::dict_ref(dict, pmt::intern("frequency"), pmt::PMT_NIL);
+    pmt::pmt_t frequency = pmt::dict_ref(dict, FREQUENCY_KEY, pmt::PMT_NIL);
     // Annotation object fields
-    pmt::pmt_t sample_start =
-        pmt::dict_ref(dict, pmt::intern("sample_start"), pmt::PMT_NIL);
+    pmt::pmt_t sample_start = pmt::dict_ref(dict, SAMPLE_START_KEY, pmt::PMT_NIL);
     pmt::pmt_t sample_count =
-        pmt::dict_ref(dict, pmt::intern("sample_count"), pmt::PMT_NIL);
-    pmt::pmt_t bandwidth = pmt::dict_ref(dict, pmt::intern("bandwidth"), pmt::PMT_NIL);
-    pmt::pmt_t label = pmt::dict_ref(dict, pmt::intern("label"), pmt::PMT_NIL);
+        pmt::dict_ref(dict,SAMPLE_COUNT_KEY , pmt::PMT_NIL);
+    pmt::pmt_t bandwidth = pmt::dict_ref(dict, BANDWIDTH_KEY, pmt::PMT_NIL);
+    pmt::pmt_t label = pmt::dict_ref(dict, LABEL_KEY, pmt::PMT_NIL);
 
 
     // Update global object
@@ -156,7 +154,7 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
         d_capture["core:sample_rate"] = pmt::to_double(sample_rate);
 
     // Update capture object
-    if (not pmt::is_null(frequency)) {        
+    if (not pmt::is_null(frequency)) {
         if (d_annotation.contains("core:sample_start")) {
             // If a new sample start is given on a frequency change, start a new
             // capture segment

@@ -10,6 +10,7 @@
 
 #include <gnuradio/plasma/waveform_controller.h>
 #include <uhd/usrp/multi_usrp.hpp>
+#include <gnuradio/plasma/pmt_dict_keys.h>
 
 namespace gr {
 namespace plasma {

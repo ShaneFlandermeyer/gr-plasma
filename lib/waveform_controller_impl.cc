@@ -66,7 +66,7 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
         // d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
         // Send the new waveform through the message port (with additional
         // metadata)
-        meta = pmt::dict_add(meta, pmt::intern("prf"), pmt::from_double(d_prf));
+        meta = pmt::dict_add(meta, PRF_KEY, pmt::from_double(d_prf));
         message_port_pub(
             pmt::mp("out"),
             pmt::cons(meta, pmt::init_c32vector(n, pmt::c32vector_elements(data, n))));

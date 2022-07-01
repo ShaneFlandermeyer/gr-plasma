@@ -9,10 +9,12 @@
 #define INCLUDED_PLASMA_LFM_SOURCE_IMPL_H
 
 #include <gnuradio/plasma/lfm_source.h>
+#include <gnuradio/plasma/pmt_dict_keys.h>
 #include <plasma_dsp/linear_fm_waveform.h>
 
 namespace gr {
 namespace plasma {
+
 
 class lfm_source_impl : public lfm_source
 {

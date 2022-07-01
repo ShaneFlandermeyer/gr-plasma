@@ -82,7 +82,7 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         d_meta = pmt::car(msg);
         // Parse the metadata to update waveform parameters
         pmt::pmt_t new_prf =
-            pmt::dict_ref(d_meta, pmt::intern("prf"), pmt::PMT_NIL);
+            pmt::dict_ref(d_meta, PRF_KEY, pmt::PMT_NIL);
         if (not pmt::is_null(new_prf)) {
             d_prf = pmt::to_double(new_prf);
         }
@@ -90,7 +90,7 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
 
         // Append additional metadata to the pmt object
         d_meta =
-            pmt::dict_add(d_meta, pmt::intern("frequency"), pmt::from_double(d_tx_freq));
+            pmt::dict_add(d_meta, FREQUENCY_KEY, pmt::from_double(d_tx_freq));
         d_armed = true;
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -126,7 +126,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         if (d_armed) {
             d_armed = false;
             d_meta = pmt::dict_add(
-                d_meta, pmt::intern("sample_start"), pmt::from_uint64(d_sample_count));
+                d_meta, SAMPLE_START_KEY, pmt::from_uint64(d_sample_count));
             gr::thread::scoped_lock lock(d_tx_buff_mutex);
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
@@ -236,6 +236,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             num_samps_total = 0;
             // If the PRF has changed, resize the buffers
             // size_t tx_buff_size;
+            // TODO: Account for this in the metadata
             // {
             //     gr::thread::scoped_lock lock(d_tx_buff_mutex);
             //     tx_buff_size = d_tx_buff.size();
