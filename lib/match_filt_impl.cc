@@ -123,6 +123,7 @@ void match_filt_impl::process_data()
         range_slow_time.col(ipulse) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
             conv(d_fast_slow_time.col(ipulse).data(), n).data(), nfft);
     }
+    range_slow_time *= 1 / (float)nfft;
 
     // Send the data
     pmt::pmt_t data = pmt::init_c32vector(range_slow_time.size(), range_slow_time.data());
