@@ -1,0 +1,25 @@
+id: plasma_match_filt
+label: Matched Filter
+category: '[plasma]'
+
+templates:
+  imports: from gnuradio import plasma
+  make: plasma.match_filt(${num_pulse_cpi})
+
+parameters:
+- id: num_pulse_cpi
+  label: Num Pulse per CPI
+  dtype: int
+  default: 128
+
+inputs:
+- id: tx
+  domain: message
+- id: rx
+  domain: message
+
+outputs:
+- id: out
+  domain: message
+
+file_format: 1

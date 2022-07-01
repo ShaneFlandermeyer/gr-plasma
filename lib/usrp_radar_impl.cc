@@ -159,11 +159,6 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         d_pulse_count++;
         d_sample_count += num_samp_pulse;
     }
-
-    // Send a mini EOB to tell the USRP that we're done
-    // tx_md.has_time_spec = false;
-    // tx_md.end_of_burst = true;
-    // tx_stream->send("", 0, tx_md);
 }
 
 void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
