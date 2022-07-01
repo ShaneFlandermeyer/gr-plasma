@@ -80,10 +80,17 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
     if (pmt::is_pdu(msg)) {
         // Maintain any metadata that was produced by upstream blocks
         d_meta = pmt::car(msg);
+        // Parse the metadata to update waveform parameters
+        pmt::pmt_t new_prf =
+            pmt::dict_ref(d_meta, pmt::intern("prf"), pmt::PMT_NIL);
+        if (not pmt::is_null(new_prf)) {
+            d_prf = pmt::to_double(new_prf);
+        }
+
+
         // Append additional metadata to the pmt object
         d_meta =
             pmt::dict_add(d_meta, pmt::intern("frequency"), pmt::from_double(d_tx_freq));
-        // size_t io(0);
         d_armed = true;
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -127,6 +134,10 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
             num_samp_pulse = d_tx_buff.size();
         }
         boost::this_thread::disable_interruption disable_interrupt;
+        // tx_stream->send("", 0, tx_md, 0.1);
+        // tx_md.start_of_burst = false;
+        // tx_md.end_of_burst = true;
+        // tx_md.has_time_spec = false;
         tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 0.1);
         // Send a mini EOB to tell the USRP that we're done
         tx_md.start_of_burst = false;
@@ -139,7 +150,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         tx_md.end_of_burst = false;
         tx_md.has_time_spec = true;
         // TODO: Don't hard-code the prf
-        tx_md.time_spec += 1 / 5e3;
+        tx_md.time_spec += 1 / d_prf;
 
 
         d_pulse_count++;
@@ -273,7 +284,7 @@ void usrp_radar_impl::run()
 
     // Set up Rx buffer
     // TODO: Don't hard-code the PRF
-    size_t num_samp_rx = round(d_samp_rate / 5e3);
+    size_t num_samp_rx = round(d_samp_rate / d_prf);
     std::vector<gr_complex*> rx_buff_ptrs;
     d_rx_buff = std::vector<gr_complex>(num_samp_rx, 0);
     rx_buff_ptrs.push_back(&d_rx_buff.front());

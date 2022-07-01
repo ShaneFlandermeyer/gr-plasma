@@ -59,31 +59,21 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
     if (pmt::is_pdu(msg)) {
         pmt::pmt_t meta = pmt::car(msg);
         pmt::pmt_t data = pmt::cdr(msg);
+        size_t n = pmt::length(data);
         d_num_samp_waveform = pmt::length(data);
         // Zero pad to the length of the PRI
-        d_data = c32vector_elements(data);
-        d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
+        // d_data = c32vector_elements(data);
+        // d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
         // Send the new waveform through the message port (with additional
         // metadata)
         meta = pmt::dict_add(meta, pmt::intern("prf"), pmt::from_double(d_prf));
         message_port_pub(
             pmt::mp("out"),
-            pmt::cons(meta, pmt::init_c32vector(d_data.size(), d_data.data())));
+            pmt::cons(meta, pmt::init_c32vector(n, pmt::c32vector_elements(data, n))));
 
 
-    } else if (pmt::is_pair(msg)) {
-        pmt::pmt_t key = pmt::car(msg);
-        pmt::pmt_t val = pmt::cdr(msg);
-        if (pmt::eq(key, pmt::mp("prf"))) {
-            double new_prf = pmt::to_double(val);
-            if (round(d_samp_rate / new_prf) > d_num_samp_waveform) {
-                d_prf = new_prf;
-                d_num_samp_pri = round(d_samp_rate / d_prf);
-                d_updated = true;
-            } else {
-                GR_LOG_ERROR(d_logger, "PRI is less than the waveform duration");
-            }
-        }
+    } else {
+        GR_LOG_ERROR(d_logger, "Waveform controller input must be a PDU")
     }
 }
 
