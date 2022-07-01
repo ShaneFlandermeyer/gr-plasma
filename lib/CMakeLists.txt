@@ -39,7 +39,7 @@ target_link_libraries(gnuradio-plasma
     gnuradio::gnuradio-filter
     Qt5::Widgets
     qwt::qwt
-    # Python::Python
+    Python::Python
     Volk::volk
     ${UHD_LIBRARIES}
     ${CONAN_LIBS})
