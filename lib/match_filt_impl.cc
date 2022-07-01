@@ -70,8 +70,8 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
     }
     size_t n = pmt::length(samples);
     std::vector<gr_complex> data = pmt::c32vector_elements(samples);
-    d_match_filt = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(data.data(), n);
-    d_match_filt = d_match_filt.conjugate().reverse();
+    Eigen::ArrayXcf mf = Eigen::Map<Eigen::ArrayXcf>(data.data(), n);
+    d_match_filt = mf.conjugate().reverse();
 }
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
@@ -126,7 +126,8 @@ void match_filt_impl::process_data()
     range_slow_time *= 1 / (float)nfft;
 
     // Send the data
-    pmt::pmt_t data = pmt::init_c32vector(range_slow_time.size(), range_slow_time.data());
+    pmt::pmt_t data = pmt::init_c32vector(range_slow_time.size(),
+    range_slow_time.data());
     pmt::pmt_t out = pmt::cons(pmt::make_dict(), data);
     message_port_pub(pmt::mp("out"), out);
 }
@@ -139,9 +140,9 @@ std::vector<gr_complex> match_filt_impl::conv(const gr_complex* x, size_t nx)
         d_fwd->get_inbuf()[i] = 0;
     d_fwd->execute();
     gr_complex* a = d_fwd->get_outbuf();
-
+    
     // Get the matched filter (already transformed and zero-padded)
-    gr_complex* b = d_match_filt_freq.data();
+    gr_complex *b = d_match_filt_freq.data();
 
     // Hadamard and IFFT
     volk_32fc_x2_multiply_32fc_a(d_inv->get_inbuf(), a, b, d_fftsize);
@@ -149,7 +150,6 @@ std::vector<gr_complex> match_filt_impl::conv(const gr_complex* x, size_t nx)
 
     // Copy the result to
     std::vector<gr_complex> out(d_fftsize);
-    // gr_complex* out = new gr_complex[d_fftsize];
     memcpy(out.data(), d_inv->get_outbuf(), d_fftsize * sizeof(gr_complex));
 
     return out;

@@ -13,5 +13,6 @@ install(FILES
     plasma_pdu_head.block.yml
     plasma_pcfm_source.block.yml
     plasma_range_doppler_sink.block.yml
-    plasma_match_filt.block.yml DESTINATION share/gnuradio/grc/blocks
+    plasma_match_filt.block.yml
+    plasma_doppler_processing.block.yml DESTINATION share/gnuradio/grc/blocks
 )

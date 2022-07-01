@@ -20,5 +20,6 @@ install(FILES
     range_doppler_sink.h 
     usrp_radar.h
     waveform_controller.h
-    match_filt.h DESTINATION include/gnuradio/plasma
+    match_filt.h
+    doppler_processing.h DESTINATION include/gnuradio/plasma
 )

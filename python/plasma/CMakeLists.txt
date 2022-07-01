@@ -47,3 +47,4 @@ GR_ADD_TEST(qa_pdu_head ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_
 GR_ADD_TEST(qa_pcfm_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pcfm_source.py)
 GR_ADD_TEST(qa_range_doppler_sink ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_range_doppler_sink.py)
 GR_ADD_TEST(qa_match_filt ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_match_filt.py)
+GR_ADD_TEST(qa_doppler_processing ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_doppler_processing.py)
