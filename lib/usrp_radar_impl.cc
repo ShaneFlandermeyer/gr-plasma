@@ -81,19 +81,22 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         // Maintain any metadata that was produced by upstream blocks
         d_meta = pmt::car(msg);
         // Parse the metadata to update waveform parameters
-        pmt::pmt_t new_prf =
-            pmt::dict_ref(d_meta, PRF_KEY, pmt::PMT_NIL);
+        pmt::pmt_t new_prf = pmt::dict_ref(d_meta, PRF_KEY, pmt::PMT_NIL);
         if (not pmt::is_null(new_prf)) {
             d_prf = pmt::to_double(new_prf);
         }
 
 
         // Append additional metadata to the pmt object
-        d_meta =
-            pmt::dict_add(d_meta, FREQUENCY_KEY, pmt::from_double(d_tx_freq));
+        d_meta = pmt::dict_add(d_meta, FREQUENCY_KEY, pmt::from_double(d_tx_freq));
         d_armed = true;
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
+        // Need to append some zeros to the front to account for the front of
+        // the waveform being cut off on the X310. This was found to be about
+        // 1.5us of data, regardless of the sample rate or master clock rate
+        std::vector<gr_complex> start_zeros(round(d_samp_rate * BURST_MODE_DELAY), 0);
+        d_tx_buff.insert(d_tx_buff.begin(), start_zeros.begin(), start_zeros.end());
     }
 }
 
@@ -125,8 +128,8 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         // Update the waveform data if it has changed
         if (d_armed) {
             d_armed = false;
-            d_meta = pmt::dict_add(
-                d_meta, SAMPLE_START_KEY, pmt::from_uint64(d_sample_count));
+            d_meta =
+                pmt::dict_add(d_meta, SAMPLE_START_KEY, pmt::from_uint64(d_sample_count));
             gr::thread::scoped_lock lock(d_tx_buff_mutex);
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
@@ -186,7 +189,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
 
     stream_cmd.stream_now = (start_time.get_real_secs() > 0 ? false : true);
-    stream_cmd.time_spec = start_time;
+    stream_cmd.time_spec = start_time + BURST_MODE_DELAY;
     rx_stream->issue_stream_cmd(stream_cmd);
 
     size_t max_num_samps = rx_stream->get_max_num_samps();
@@ -284,7 +287,6 @@ void usrp_radar_impl::run()
     tx_buff_ptrs.push_back(&d_tx_buff.front());
 
     // Set up Rx buffer
-    // TODO: Don't hard-code the PRF
     size_t num_samp_rx = round(d_samp_rate / d_prf);
     std::vector<gr_complex*> rx_buff_ptrs;
     d_rx_buff = std::vector<gr_complex>(num_samp_rx, 0);

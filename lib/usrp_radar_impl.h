@@ -19,7 +19,7 @@
 
 namespace gr {
 namespace plasma {
-
+static const double BURST_MODE_DELAY = 2e-6;
 class usrp_radar_impl : public usrp_radar
 {
 private:
