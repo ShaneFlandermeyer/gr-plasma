@@ -70,8 +70,7 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
     }
     size_t n = pmt::length(samples);
     std::vector<gr_complex> data = pmt::c32vector_elements(samples);
-    Eigen::ArrayXcf mf = Eigen::Map<Eigen::ArrayXcf>(data.data(), n);
-    d_match_filt = mf.conjugate().reverse();
+    d_match_filt = Eigen::Map<Eigen::ArrayXcf>(data.data(), n).conjugate().reverse();
 }
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
