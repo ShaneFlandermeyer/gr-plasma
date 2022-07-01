@@ -12,12 +12,13 @@
 install(FILES
     api.h
     lfm_source.h
-    waveform_controller.h
-    usrp_radar.h
+    pcfm_source.h
     pdu_file_sink.h
     pdu_head.h
-    pcfm_source.h
+    pmt_dict_keys.h
     qt_update_events.h
     range_doppler_sink.h 
+    usrp_radar.h
+    waveform_controller.h
     DESTINATION include/gnuradio/plasma
 )

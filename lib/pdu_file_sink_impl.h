@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_PDU_FILE_SINK_IMPL_H
 
 #include <gnuradio/plasma/pdu_file_sink.h>
+#include <gnuradio/plasma/pmt_dict_keys.h>
 #include <nlohmann/json.hpp>
 #include <uhd/utils/thread.hpp>
 #include <fstream>

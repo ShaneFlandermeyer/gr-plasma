@@ -53,7 +53,7 @@ bool pcfm_source_impl::start()
     d_finished = false;
     d_meta = pmt::make_dict();
     d_meta = pmt::dict_add(
-        d_meta, pmt::intern("samp_rate"), pmt::from_double(d_waveform.samp_rate()));
+        d_meta, SAMPLE_RATE_KEY, pmt::from_double(d_waveform.samp_rate()));
     pmt::pmt_t data = pmt::init_c32vector(d_data.size(), d_data.data());
     message_port_pub(d_out_port, pmt::cons(d_meta, data));
 
