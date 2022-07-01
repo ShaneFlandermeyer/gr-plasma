@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 #include <gnuradio/fft/fft.h>
 #include <gnuradio/fft/fft_shift.h>
+#include <plasma_dsp/fftshift.h>
 
 namespace gr {
 namespace plasma {
@@ -20,14 +21,24 @@ class doppler_processing_impl : public doppler_processing
 {
 private:
     size_t d_num_pulse_cpi;
-    size_t d_nfft;
-    Eigen::ArrayXcf d_in_data;
+    size_t d_fftsize;
+    // Eigen::ArrayXXcf d_in_mat;
+    std::unique_ptr<fft::fft_complex_fwd> d_fwd;
+    fft::fft_shift<gr_complex> d_shift;
+
+    std::atomic<bool> d_finished;
+    gr::thread::thread d_processing_thread;
 
     void handle_msg(pmt::pmt_t msg);
+    void process_data(const Eigen::ArrayXXcf&);
+    void fftresize(size_t);
 
 public:
     doppler_processing_impl(size_t num_pulse_cpi, size_t nfft);
     ~doppler_processing_impl();
+
+    bool start() override;
+    bool stop() override;
 };
 
 } // namespace plasma

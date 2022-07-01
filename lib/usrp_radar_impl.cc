@@ -137,10 +137,9 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
             num_samp_pulse = d_tx_buff.size();
         }
         boost::this_thread::disable_interruption disable_interrupt;
-        // tx_stream->send("", 0, tx_md, 0.1);
-        // tx_md.start_of_burst = false;
-        // tx_md.end_of_burst = true;
-        // tx_md.has_time_spec = false;
+        tx_md.start_of_burst = true;
+        tx_md.end_of_burst = false;
+        tx_md.has_time_spec = true;
         tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 0.1);
         // Send a mini EOB to tell the USRP that we're done
         tx_md.start_of_burst = false;
@@ -149,13 +148,8 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         tx_stream->send(zeros.data(), zeros.size(), tx_md);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
 
-        tx_md.start_of_burst = true;
-        tx_md.end_of_burst = false;
-        tx_md.has_time_spec = true;
-        // TODO: Don't hard-code the prf
+
         tx_md.time_spec += 1 / d_prf;
-
-
         d_pulse_count++;
         d_sample_count += num_samp_pulse;
     }

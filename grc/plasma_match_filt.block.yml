@@ -8,7 +8,7 @@ templates:
 
 parameters:
 - id: num_pulse_cpi
-  label: Num Pulse per CPI
+  label: Pulses per CPI
   dtype: int
   default: 128
 

@@ -30,25 +30,20 @@ private:
     double d_center_freq;
     size_t d_num_fft_thread;
     double d_dynamic_range_db;
-    fft::fft_shift<gr_complex> d_shift;
+    // fft::fft_shift<gr_complex> d_shift;
     int d_argc;
     char* d_argv;
     RangeDopplerWindow* d_main_gui;
-    std::unique_ptr<fft::fft_complex_fwd> d_conv_fwd;
-    std::unique_ptr<fft::fft_complex_fwd> d_doppler_fft;
-    std::unique_ptr<fft::fft_complex_rev> d_conv_inv;
-    Eigen::ArrayXcf d_matched_filter;
-    Eigen::ArrayXcf d_matched_filter_freq;
-    Eigen::ArrayXXcf d_fast_time_slow_time;
-    std::atomic<size_t> d_count;
+    // std::unique_ptr<fft::fft_complex_fwd> d_conv_fwd;
+    // std::unique_ptr<fft::fft_complex_fwd> d_doppler_fft;
+    // std::unique_ptr<fft::fft_complex_rev> d_conv_inv;
+    // Eigen::ArrayXcf d_matched_filter;
+    // Eigen::ArrayXcf d_matched_filter_freq;
+    // Eigen::ArrayXXcf d_fast_time_slow_time;
+    // std::atomic<size_t> d_count;
     std::atomic<bool> d_finished;
-    std::atomic<bool> d_working;
+    // std::atomic<bool> d_working;
     gr::thread::thread d_processing_thread;
-
-    size_t d_fftsize;
-    void fftresize(size_t size);
-    void process_data(const Eigen::ArrayXXcf);
-    gr_complex* conv(const gr_complex* x, const gr_complex* h, size_t nx, size_t nh);
 
 public:
     range_doppler_sink_impl(double samp_rate,
@@ -68,8 +63,9 @@ public:
 #else
     void* pyqwidget();
 #endif
-    void handle_tx_msg(pmt::pmt_t msg);
-    void handle_rx_msg(pmt::pmt_t msg);
+    // void handle_tx_msg(pmt::pmt_t msg);
+    // void handle_rx_msg(pmt::pmt_t msg);
+    void handle_msg(pmt::pmt_t msg);
 
     void set_dynamic_range(const double) override;
     void set_num_fft_thread(const int) override;

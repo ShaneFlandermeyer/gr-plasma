@@ -1,5 +1,5 @@
 id: plasma_doppler_processing
-label: Process Doppler
+label: Doppler Processing
 category: '[plasma]'
 
 templates:
