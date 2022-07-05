@@ -80,7 +80,7 @@ void doppler_processing_impl::process_data(const Eigen::ArrayXXcf& data)
     for (auto i = 0; i < data.rows(); i++) {
         Eigen::ArrayXcf tmp = data.row(i);
         memcpy(d_fwd->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
-        for (size_t i = tmp.size(); i < d_fwd->inbuf_length(); i++)
+        for (size_t i = tmp.size(); i < d_fftsize; i++)
             d_fwd->get_inbuf()[i] = 0;
         d_fwd->execute();
         d_shift.shift(d_fwd->get_outbuf(), d_fwd->outbuf_length());

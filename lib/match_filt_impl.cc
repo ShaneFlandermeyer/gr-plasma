@@ -123,15 +123,12 @@ void match_filt_impl::process_data()
     // fftresize(nfft);
 
     // Convolve each pulse with the matched filter
-    auto start = high_resolution_clock::now();
     Eigen::ArrayXXcf range_slow_time(nfft, d_num_pulse_cpi);
     for (size_t ipulse = 0; ipulse < d_num_pulse_cpi; ipulse++) {
         range_slow_time.col(ipulse) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
             conv(d_fast_slow_time.col(ipulse).data(), n).data(), nfft);
     }
     range_slow_time *= 1 / (float)nfft;
-    auto stop = high_resolution_clock::now();
-    GR_LOG_DEBUG(d_logger, duration_cast<microseconds>(stop - start).count())
 
     // Send the data
     pmt::pmt_t data = pmt::init_c32vector(range_slow_time.size(),

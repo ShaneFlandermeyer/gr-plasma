@@ -7,11 +7,8 @@
 
 #include "range_doppler_sink_impl.h"
 #include <gnuradio/io_signature.h>
-#include <chrono>
 #include <thread>
 
-// TODO: Delete
-using namespace std::chrono;
 namespace gr {
 namespace plasma {
 
@@ -125,7 +122,7 @@ void range_doppler_sink_impl::fftresize(size_t size)
         memcpy(d_conv_fwd->get_inbuf(),
                d_matched_filter.data(),
                d_matched_filter.size() * sizeof(gr_complex));
-        for (auto i = d_matched_filter.size(); i < d_conv_fwd->inbuf_length(); i++)
+        for (size_t i = d_matched_filter.size(); i < d_fftsize; i++)
             d_conv_fwd->get_inbuf()[i] = 0;
         d_conv_fwd->execute();
         d_matched_filter_freq =
@@ -186,20 +183,17 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 }
 
 void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time)
-{   
+{
     d_working = true;
     auto nfft = fast_slow_time.rows() + d_matched_filter.size() - 1;
     Eigen::ArrayXXcf range_slow_time = Eigen::ArrayXXcf(nfft, fast_slow_time.cols());
-    for (size_t i = 0; i < range_slow_time.cols(); i++) {
-        gr_complex* mfresp = conv(fast_slow_time.col(i).data(),
-                                  d_matched_filter.data(),
-                                  fast_slow_time.rows(),
-                                  d_matched_filter.size());
+    for (int i = 0; i < range_slow_time.cols(); i++) {
+        volk::vector<gr_complex> mfresp =
+            conv(fast_slow_time.col(i).data(), fast_slow_time.rows());
         range_slow_time.col(i) =
-            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(mfresp, nfft);
-        delete[] mfresp;
+            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(mfresp.data(), nfft);
     }
-    range_slow_time *= 1 / (float)nfft;
+    // range_slow_time *= 1 / (float)nfft;
 
     // Do doppler processing
     Eigen::Array<gr_complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
@@ -225,6 +219,7 @@ void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time
         if (plot_data.data()[i] < -d_dynamic_range_db)
             plot_data.data()[i] = -d_dynamic_range_db;
     }
+    // Update the axes
     d_qapp->postEvent(d_main_gui,
                       new RangeDopplerUpdateEvent(
                           plot_data.data(), plot_data.rows(), plot_data.cols()));
@@ -232,19 +227,15 @@ void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time
 }
 
 
-gr_complex* range_doppler_sink_impl::conv(const gr_complex* x,
-                                          const gr_complex* h,
-                                          size_t nx,
-                                          size_t nh)
+volk::vector<gr_complex> range_doppler_sink_impl::conv(const gr_complex* x, size_t nx)
 {
-    //
-    int fftsize = nx + nh - 1;
-    fftresize(fftsize);
-
+    auto nfft = nx + d_matched_filter.size() - 1;
+    // int nfft_pow2 = nfft;
+    fftresize(nfft);
     // Zero-pad the input and transform
     memcpy(d_conv_fwd->get_inbuf(), x, nx * sizeof(gr_complex));
-    // for (int i = nx; i < fftsize; i++)
-    //     d_conv_fwd->get_inbuf()[i] = 0;
+    for (size_t i = nx; i < d_fftsize; i++)
+        d_conv_fwd->get_inbuf()[i] = 0;
     d_conv_fwd->execute();
     gr_complex* a = d_conv_fwd->get_outbuf();
 
@@ -252,23 +243,26 @@ gr_complex* range_doppler_sink_impl::conv(const gr_complex* x,
     gr_complex* b = d_matched_filter_freq.data();
 
     // Hadamard and IFFT
-    volk_32fc_x2_multiply_32fc_a(d_conv_inv->get_inbuf(), a, b, fftsize);
+    volk_32fc_x2_multiply_32fc_a(d_conv_inv->get_inbuf(), a, b, d_fftsize);
     d_conv_inv->execute();
+    volk_32fc_s32fc_multiply_32fc_a(d_conv_inv->get_outbuf(),
+                                    d_conv_inv->get_outbuf(),
+                                    1 / (float)d_fftsize,
+                                    d_fftsize);
 
     // Copy the result to
-    gr_complex* out = new gr_complex[fftsize];
-    memcpy(out, d_conv_inv->get_outbuf(), fftsize * sizeof(gr_complex));
+    volk::vector<gr_complex> out(nfft);
+    memcpy(out.data(), d_conv_inv->get_outbuf(), out.size() * sizeof(gr_complex));
 
     return out;
 }
 
-void range_doppler_sink_impl::set_dynamic_range(const double r) {
+void range_doppler_sink_impl::set_dynamic_range(const double r)
+{
     d_dynamic_range_db = r;
 }
 
-void range_doppler_sink_impl::set_num_fft_thread(const int n) {
-    d_num_fft_thread = n;
-}
+void range_doppler_sink_impl::set_num_fft_thread(const int n) { d_num_fft_thread = n; }
 
 } /* namespace plasma */
 } /* namespace gr */

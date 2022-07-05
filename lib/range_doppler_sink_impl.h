@@ -48,7 +48,7 @@ private:
     size_t d_fftsize;
     void fftresize(size_t size);
     void process_data(const Eigen::ArrayXXcf);
-    gr_complex* conv(const gr_complex* x, const gr_complex* h, size_t nx, size_t nh);
+    volk::vector<gr_complex> conv(const gr_complex* x, size_t nx);
 
 public:
     range_doppler_sink_impl(double samp_rate,
