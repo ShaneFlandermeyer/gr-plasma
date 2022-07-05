@@ -7,6 +7,7 @@
 
 #include "match_filt_impl.h"
 #include <gnuradio/io_signature.h>
+#include <chrono>
 
 namespace gr {
 namespace plasma {
@@ -54,6 +55,10 @@ bool match_filt_impl::stop()
     d_finished = true;
     d_processing_thread.interrupt();
     return block::stop();
+}
+
+int nextpow2(int x) {
+    return pow(2, ceil(log(x)/log(2)));
 }
 
 void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
@@ -111,18 +116,22 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 
 void match_filt_impl::process_data()
 {
+    using namespace std::chrono;
     // Resize the FFT plans if necessary
     size_t n = d_fast_slow_time.rows();
     size_t nfft = n + d_match_filt.size() - 1;
-    fftresize(nfft);
+    // fftresize(nfft);
 
     // Convolve each pulse with the matched filter
+    auto start = high_resolution_clock::now();
     Eigen::ArrayXXcf range_slow_time(nfft, d_num_pulse_cpi);
     for (size_t ipulse = 0; ipulse < d_num_pulse_cpi; ipulse++) {
         range_slow_time.col(ipulse) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
             conv(d_fast_slow_time.col(ipulse).data(), n).data(), nfft);
     }
     range_slow_time *= 1 / (float)nfft;
+    auto stop = high_resolution_clock::now();
+    GR_LOG_DEBUG(d_logger, duration_cast<microseconds>(stop - start).count())
 
     // Send the data
     pmt::pmt_t data = pmt::init_c32vector(range_slow_time.size(),
@@ -133,6 +142,8 @@ void match_filt_impl::process_data()
 
 std::vector<gr_complex> match_filt_impl::conv(const gr_complex* x, size_t nx)
 {
+    auto nfft = nx + d_match_filt.size() - 1;
+    fftresize(nextpow2(nfft));
     // Zero-pad the input and transform
     memcpy(d_fwd->get_inbuf(), x, nx * sizeof(gr_complex));
     for (size_t i = nx; i < d_fftsize; i++)
@@ -148,8 +159,8 @@ std::vector<gr_complex> match_filt_impl::conv(const gr_complex* x, size_t nx)
     d_inv->execute();
 
     // Copy the result to
-    std::vector<gr_complex> out(d_fftsize);
-    memcpy(out.data(), d_inv->get_outbuf(), d_fftsize * sizeof(gr_complex));
+    std::vector<gr_complex> out(nfft);
+    memcpy(out.data(), d_inv->get_outbuf(), nfft * sizeof(gr_complex));
 
     return out;
 }

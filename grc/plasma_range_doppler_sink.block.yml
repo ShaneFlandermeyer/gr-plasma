@@ -33,7 +33,9 @@ parameters:
   
 inputs:
   - domain: message
-    id: in
+    id: tx
+  - domain: message
+    id: rx
 
 templates:
   imports: |-
