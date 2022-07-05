@@ -103,13 +103,15 @@ void* range_doppler_sink_impl::pyqwidget() { return nullptr; }
 void range_doppler_sink_impl::fftresize(size_t size)
 {
     gr::thread::scoped_lock lock(d_setlock);
+    // Make the fft a power of 2
+    size_t newsize = pow(2, log(size) / log(2));
 
-    if (size != d_fftsize) {
+    if (newsize != d_fftsize) {
         d_fftsize = size;
 
-        d_conv_fwd = std::make_unique<fft::fft_complex_fwd>(size);
+        d_conv_fwd = std::make_unique<fft::fft_complex_fwd>(newsize);
         d_doppler_fft = std::make_unique<fft::fft_complex_fwd>(d_num_pulse_cpi);
-        d_conv_inv = std::make_unique<fft::fft_complex_rev>(size);
+        d_conv_inv = std::make_unique<fft::fft_complex_rev>(newsize);
         // Set the number of threads used for the FFT computations
         d_conv_fwd->set_nthreads(d_num_fft_thread);
         d_conv_inv->set_nthreads(d_num_fft_thread);
@@ -126,7 +128,7 @@ void range_doppler_sink_impl::fftresize(size_t size)
             d_conv_fwd->get_inbuf()[i] = 0;
         d_conv_fwd->execute();
         d_matched_filter_freq =
-            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(d_conv_fwd->get_outbuf(), size);
+            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(d_conv_fwd->get_outbuf(), newsize);
         // Update the axes
         double prf = d_samp_rate / (double)(size - d_matched_filter.size() + 1);
         double c = ::plasma::physconst::c;
@@ -230,7 +232,6 @@ void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time
 volk::vector<gr_complex> range_doppler_sink_impl::conv(const gr_complex* x, size_t nx)
 {
     auto nfft = nx + d_matched_filter.size() - 1;
-    // int nfft_pow2 = nfft;
     fftresize(nfft);
     // Zero-pad the input and transform
     memcpy(d_conv_fwd->get_inbuf(), x, nx * sizeof(gr_complex));
