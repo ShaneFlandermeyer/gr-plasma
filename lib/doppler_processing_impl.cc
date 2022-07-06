@@ -7,6 +7,7 @@
 
 #include "doppler_processing_impl.h"
 #include <gnuradio/io_signature.h>
+#include <chrono>
 
 namespace gr {
 namespace plasma {
@@ -28,9 +29,13 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
       d_shift(nfft)
 {
     fftresize(nfft);
-    message_port_register_in(pmt::mp("in"));
-    message_port_register_out(pmt::mp("out"));
-    set_msg_handler(pmt::mp("in"), [this](pmt::pmt_t msg) { handle_msg(msg); });
+
+    d_in_port = pmt::intern("in");
+    d_out_port = pmt::intern("out");
+    d_meta = pmt::make_dict();
+    message_port_register_in(d_in_port);
+    message_port_register_out(d_out_port);
+    set_msg_handler(d_in_port, [this](pmt::pmt_t msg) { handle_msg(msg); });
 }
 
 /*
@@ -53,25 +58,44 @@ bool doppler_processing_impl::stop()
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
-    if (d_finished) {
+    auto start = std::chrono::high_resolution_clock::now();
+    if (this->nmsgs(pmt::intern("in")) >= d_queue_depth) {
         return;
     }
-    pmt::pmt_t samples;
+    
+    // Read the input PDU and map it to an eigen array
     if (pmt::is_pdu(msg)) {
-        samples = pmt::cdr(msg);
+        d_data = pmt::cdr(msg);
     } else if (pmt::is_uniform_vector(msg)) {
-        samples = msg;
+        d_data = msg;
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
         return;
     }
-    size_t n = pmt::length(samples);
-    gr_complex* inptr = pmt::c32vector_writable_elements(samples, n);
-    Eigen::ArrayXXcf in =
-        Eigen::Map<Eigen::ArrayXXcf>(inptr, n / d_num_pulse_cpi, d_num_pulse_cpi);
+    size_t n = pmt::length(d_data);
+    gr_complex* inptr = pmt::c32vector_writable_elements(d_data, n);
+    Eigen::Map<Eigen::Array<gr_complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        data(inptr, n / d_num_pulse_cpi, d_num_pulse_cpi);
+    
+    // Do an fft and fftshift
+    for (auto irow = 0; irow < data.rows(); irow++) {
+        Eigen::ArrayXcf tmp = data.row(irow);
+        memcpy(d_fwd->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
+        for (size_t i = tmp.size(); i < d_fftsize; i++)
+            d_fwd->get_inbuf()[i] = 0;
+        d_fwd->execute();
+        d_shift.shift(d_fwd->get_outbuf(), d_fwd->outbuf_length());
 
-    d_processing_thread.join();
-    d_processing_thread = gr::thread::thread([this, in] { process_data(in); });
+        memcpy(data.row(irow).data(),
+               d_fwd->get_outbuf(),
+               d_fwd->outbuf_length() * sizeof(gr_complex));
+    }
+    // Send the data as a message
+    message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
+    GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("in")))
 }
 
 void doppler_processing_impl::process_data(const Eigen::ArrayXXcf& data)
@@ -106,6 +130,10 @@ void doppler_processing_impl::fftresize(size_t size)
         d_fwd = std::make_unique<fft::fft_complex_fwd>(size);
         d_shift.resize(size);
     }
+}
+
+void doppler_processing_impl::set_msg_queue_depth(size_t depth) {
+    d_queue_depth = depth;
 }
 } /* namespace plasma */
 } /* namespace gr */

@@ -82,13 +82,12 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 {
     
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
     pmt::pmt_t samples;
 
-    if (d_match_filt.size() == 0 or this->nmsgs(pmt::intern("rx")) > d_msg_queue_depth) {
+    if (d_match_filt.size() == 0 or this->nmsgs(pmt::intern("rx")) >= d_msg_queue_depth) {
         return;
     }
-    GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
     // Get a copy of the input samples
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
@@ -106,9 +105,9 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
         d_pulse_count = 0;
     }
 
-    auto stop = std::chrono::high_resolution_clock::now();
+    // auto stop = std::chrono::high_resolution_clock::now();
     // GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
-    GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
+    // GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
 }
 
 void match_filt_impl::process_data(pmt::pmt_t data)

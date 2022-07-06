@@ -18,7 +18,13 @@
 static const char* __doc_gr_plasma_doppler_processing = R"doc()doc";
 
 
-static const char* __doc_gr_plasma_doppler_processing_doppler_processing = R"doc()doc";
+static const char* __doc_gr_plasma_doppler_processing_doppler_processing_0 = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_doppler_processing_doppler_processing_1 = R"doc()doc";
 
 
 static const char* __doc_gr_plasma_doppler_processing_make = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_doppler_processing_set_msg_queue_depth = R"doc()doc";

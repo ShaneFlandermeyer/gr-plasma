@@ -33,6 +33,8 @@ public:
      * creating new instances.
      */
     static sptr make(size_t num_pulse_cpi, size_t nfft);
+
+    virtual void set_msg_queue_depth(size_t) = 0;
 };
 
 } // namespace plasma

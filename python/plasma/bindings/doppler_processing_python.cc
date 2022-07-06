@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(doppler_processing.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(384c445cf568beda92d6532c6ffef816)                     */
+/* BINDTOOL_HEADER_FILE_HASH(b2c9b73ff88854048b3d06bbde3d110a)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -44,6 +44,11 @@ void bind_doppler_processing(py::module& m)
              py::arg("nfft"),
              D(doppler_processing, make))
 
+
+        .def("set_msg_queue_depth",
+             &doppler_processing::set_msg_queue_depth,
+             py::arg("arg0"),
+             D(doppler_processing, set_msg_queue_depth))
 
         ;
 }
