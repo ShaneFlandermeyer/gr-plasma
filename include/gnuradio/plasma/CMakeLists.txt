@@ -21,5 +21,6 @@ install(FILES
     usrp_radar.h
     waveform_controller.h
     match_filt.h
-    doppler_processing.h DESTINATION include/gnuradio/plasma
+    doppler_processing.h
+    pulse_to_cpi.h DESTINATION include/gnuradio/plasma
 )

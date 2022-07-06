@@ -30,6 +30,7 @@ namespace py = pybind11;
     void bind_range_doppler_sink(py::module& m);
     void bind_match_filt(py::module& m);
     void bind_doppler_processing(py::module& m);
+    void bind_pulse_to_cpi(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -67,5 +68,6 @@ PYBIND11_MODULE(plasma_python, m)
     bind_range_doppler_sink(m);
     bind_match_filt(m);
     bind_doppler_processing(m);
+    bind_pulse_to_cpi(m);
     // ) END BINDING_FUNCTION_CALLS
 }

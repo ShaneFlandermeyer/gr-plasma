@@ -49,6 +49,7 @@ list(APPEND plasma_python_files
     range_doppler_sink_python.cc
     match_filt_python.cc
     doppler_processing_python.cc
+    pulse_to_cpi_python.cc
 )
 
 GR_PYBIND_MAKE_OOT(plasma

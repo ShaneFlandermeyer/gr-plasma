@@ -23,6 +23,7 @@ list(APPEND plasma_sources
     range_doppler_window.h
     match_filt_impl.cc
     doppler_processing_impl.cc
+    pulse_to_cpi_impl.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
