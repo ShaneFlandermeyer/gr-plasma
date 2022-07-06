@@ -8,6 +8,7 @@
 #include "match_filt_impl.h"
 #include <gnuradio/io_signature.h>
 #include <chrono>
+#include <future>
 
 namespace gr {
 namespace plasma {
@@ -32,6 +33,8 @@ match_filt_impl::match_filt_impl(size_t num_pulse_cpi)
 {
     d_fftsize = 0;
     d_pulse_count = 0;
+    d_data = pmt::make_c32vector(1, 0);
+    d_meta = pmt::make_dict();
     message_port_register_in(pmt::mp("tx"));
     message_port_register_in(pmt::mp("rx"));
     message_port_register_out(pmt::mp("out"));
@@ -53,16 +56,14 @@ bool match_filt_impl::start()
 bool match_filt_impl::stop()
 {
     d_finished = true;
-    d_processing_thread.interrupt();
     return block::stop();
 }
 
-int nextpow2(int x) {
-    return pow(2, ceil(log(x)/log(2)));
-}
+int nextpow2(int x) { return pow(2, ceil(log(x) / log(2))); }
 
 void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
 {
+
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         // Get the transmit data
@@ -80,10 +81,15 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    if (d_finished or d_match_filt.size() == 0)
-        return;
-    // Get a copy of the input samples
+    
+    auto start = std::chrono::high_resolution_clock::now();
     pmt::pmt_t samples;
+
+    if (d_match_filt.size() == 0 or this->nmsgs(pmt::intern("rx")) > d_msg_queue_depth) {
+        return;
+    }
+    GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
+    // Get a copy of the input samples
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
     } else if (pmt::is_uniform_vector(msg)) {
@@ -92,74 +98,53 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
         GR_LOG_WARN(d_logger, "Invalid message type")
         return;
     }
-    size_t n = pmt::length(samples);
-    std::vector<gr_complex> in = pmt::c32vector_elements(samples);
-    if (d_fast_slow_time.size() == 0) {
-        // Initialize the fast-time/slow-time data matrix if it hasn't
-        // already been done
-        // TODO: This currently assumes a uniform PRF
-        d_fast_slow_time = Eigen::ArrayXXcf(n, d_num_pulse_cpi);
-    }
-    d_fast_slow_time.col(d_pulse_count) = Eigen::Map<Eigen::ArrayXcf>(in.data(), n);
-
-    if (d_pulse_count < d_num_pulse_cpi - 1) {
-        // Haven't collected a full CPI of data yet
-        d_pulse_count++;
-    } else {
-        // Do processing
-        d_processing_thread.join();
-        d_processing_thread = gr::thread::thread([this] { process_data(); });
-        // Reset the pulse counter
+    process_data(samples);
+    d_pulse_count++;
+    // Send the full CPI to the output port
+    if (d_pulse_count == d_num_pulse_cpi) {
+        message_port_pub(pmt::intern("out"), pmt::cons(d_meta, d_data));
         d_pulse_count = 0;
     }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    // GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
+    GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
 }
 
-void match_filt_impl::process_data()
+void match_filt_impl::process_data(pmt::pmt_t data)
 {
-    using namespace std::chrono;
-    // Resize the FFT plans if necessary
-    size_t n = d_fast_slow_time.rows();
-    size_t nfft = n + d_match_filt.size() - 1;
-    // fftresize(nfft);
+    size_t n = pmt::length(data);
+    gr_complex* in = pmt::c32vector_writable_elements(data, n);
+    Eigen::Map<Eigen::ArrayXcf> fast_slow_time(in, n);
+    // fast_slow_time.setZero();
 
-    // Convolve each pulse with the matched filter
-    Eigen::ArrayXXcf range_slow_time(nfft, d_num_pulse_cpi);
-    for (size_t ipulse = 0; ipulse < d_num_pulse_cpi; ipulse++) {
-        range_slow_time.col(ipulse) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
-            conv(d_fast_slow_time.col(ipulse).data(), n).data(), nfft);
-    }
-    range_slow_time *= 1 / (float)nfft;
-
-    // Send the data
-    pmt::pmt_t data = pmt::init_c32vector(range_slow_time.size(),
-    range_slow_time.data());
-    pmt::pmt_t out = pmt::cons(pmt::make_dict(), data);
-    message_port_pub(pmt::mp("out"), out);
-}
-
-std::vector<gr_complex> match_filt_impl::conv(const gr_complex* x, size_t nx)
-{
-    auto nfft = nx + d_match_filt.size() - 1;
+    auto nfft = n + d_match_filt.size() - 1;
     fftresize(nextpow2(nfft));
     // Zero-pad the input and transform
-    memcpy(d_fwd->get_inbuf(), x, nx * sizeof(gr_complex));
-    for (size_t i = nx; i < d_fftsize; i++)
+    memcpy(d_fwd->get_inbuf(), fast_slow_time.data(), n * sizeof(gr_complex));
+    for (size_t i = n; i < d_fftsize; i++)
         d_fwd->get_inbuf()[i] = 0;
     d_fwd->execute();
     gr_complex* a = d_fwd->get_outbuf();
-    
+
     // Get the matched filter (already transformed and zero-padded)
-    gr_complex *b = d_match_filt_freq.data();
+    gr_complex* b = d_match_filt_freq.data();
 
     // Hadamard and IFFT
     volk_32fc_x2_multiply_32fc_a(d_inv->get_inbuf(), a, b, d_fftsize);
     d_inv->execute();
 
-    // Copy the result to
-    std::vector<gr_complex> out(nfft);
-    memcpy(out.data(), d_inv->get_outbuf(), nfft * sizeof(gr_complex));
+    volk_32fc_s32fc_multiply_32fc_a(
+        d_inv->get_outbuf(), d_inv->get_outbuf(), 1 / (float)d_fftsize, d_fftsize);
 
-    return out;
+    // Copy the result to the output buffer
+    if (pmt::length(d_data) != nfft * d_num_pulse_cpi) {
+        d_data = pmt::make_c32vector(nfft * d_num_pulse_cpi, 0);
+    }
+    size_t io(0);
+    memcpy(pmt::c32vector_writable_elements(d_data, io) + nfft * d_pulse_count,
+           d_inv->get_outbuf(),
+           nfft * sizeof(gr_complex));
 }
 
 void match_filt_impl::fftresize(size_t size)
@@ -184,5 +169,9 @@ void match_filt_impl::fftresize(size_t size)
     }
 }
 
+void match_filt_impl::set_msg_queue_depth(size_t depth) {
+    d_msg_queue_depth = depth;
+
+}
 } /* namespace plasma */
 } /* namespace gr */

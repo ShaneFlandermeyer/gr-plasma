@@ -21,20 +21,24 @@ private:
     // Nothing to declare in this block.
     Eigen::ArrayXcf d_match_filt;
     Eigen::ArrayXcf d_match_filt_freq;
-    Eigen::ArrayXXcf d_fast_slow_time;
+    // Eigen::ArrayXXcf d_fast_slow_time;
+    // Eigen::Map<Eigen::ArrayXcf> d_fast_slow_time;
     size_t d_num_pulse_cpi;
     size_t d_fftsize;
     size_t d_pulse_count;
+    size_t d_msg_queue_depth;
     std::unique_ptr<fft::fft_complex_fwd> d_fwd;
     std::unique_ptr<fft::fft_complex_rev> d_inv;
     std::atomic<bool> d_finished;
-    gr::thread::thread d_processing_thread;
+    std::atomic<bool> d_working;
 
     void handle_tx_msg(pmt::pmt_t);
     void handle_rx_msg(pmt::pmt_t);
     void fftresize(size_t);
-    void process_data();
-    std::vector<gr_complex> conv(const gr_complex* x, size_t nx);
+    void process_data(pmt::pmt_t data);
+
+    pmt::pmt_t d_meta;
+    pmt::pmt_t d_data;
 
 public:
     match_filt_impl(size_t num_pulse_cpi);
@@ -51,6 +55,7 @@ public:
     //                  gr_vector_int& ninput_items,
     //                  gr_vector_const_void_star& input_items,
     //                  gr_vector_void_star& output_items);
+    void set_msg_queue_depth(size_t) override;
 };
 
 } // namespace plasma

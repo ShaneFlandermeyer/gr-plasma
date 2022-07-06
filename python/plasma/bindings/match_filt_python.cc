@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(match_filt.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(19768f62a646cdeed30f8f836855e8cc)                     */
+/* BINDTOOL_HEADER_FILE_HASH(28a7e4c17e35be2c3e0d9a8ff8d16297)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -38,6 +38,11 @@ void bind_match_filt(py::module& m)
 
         .def(py::init(&match_filt::make), py::arg("num_pulse_cpi"), D(match_filt, make))
 
+
+        .def("set_msg_queue_depth",
+             &match_filt::set_msg_queue_depth,
+             py::arg("depth"),
+             D(match_filt, set_msg_queue_depth))
 
         ;
 }

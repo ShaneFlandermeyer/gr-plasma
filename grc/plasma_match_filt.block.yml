@@ -2,15 +2,16 @@ id: plasma_match_filt
 label: Matched Filter
 category: '[plasma]'
 
-templates:
-  imports: from gnuradio import plasma
-  make: plasma.match_filt(${num_pulse_cpi})
-
 parameters:
 - id: num_pulse_cpi
   label: Pulses per CPI
   dtype: int
   default: 128
+- id: depth
+  label: Message Queue Depth
+  dtype: int
+  default: 1024
+  hide: part
 
 inputs:
 - id: tx
@@ -21,5 +22,11 @@ inputs:
 outputs:
 - id: out
   domain: message
+
+templates:
+  imports: from gnuradio import plasma
+  make: |-
+    plasma.match_filt(${num_pulse_cpi})
+    self.${id}.set_msg_queue_depth(${depth})
 
 file_format: 1
