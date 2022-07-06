@@ -25,7 +25,7 @@ private:
     // Eigen::Map<Eigen::ArrayXcf> d_fast_slow_time;
     size_t d_num_pulse_cpi;
     size_t d_fftsize;
-    size_t d_pulse_count;
+    // size_t d_pulse_count;
     size_t d_msg_queue_depth;
     std::unique_ptr<fft::fft_complex_fwd> d_fwd;
     std::unique_ptr<fft::fft_complex_rev> d_inv;
