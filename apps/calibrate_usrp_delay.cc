@@ -1,18 +1,15 @@
+#include <nlohmann/json.hpp>
 #include <plasma_dsp/filter.h>
 #include <plasma_dsp/linear_fm_waveform.h>
-// #include <qwt/qwt_plot.h>
-// #include <qwt/qwt_plot_curve.h>
-// #include <stdlib.h>
-
-// #include <QApplication>
-#include <nlohmann/json.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/utils/safe_main.hpp>
 #include <uhd/utils/thread.hpp>
+#include <boost/program_options.hpp>
 #include <boost/thread.hpp>
 #include <filesystem>
 #include <iostream>
 
+namespace po = boost::program_options;
 
 void transmit(uhd::usrp::multi_usrp::sptr usrp,
               std::vector<std::complex<float>*> buff_ptrs,
@@ -123,49 +120,99 @@ inline void handle_receive_errors(const uhd::rx_metadata_t& rx_meta)
     }
 }
 
-int main(int argc, char* argv[])
+int UHD_SAFE_MAIN(int argc, char* argv[])
 {
-    // TODO: These should be program option parameters
-    double mcr = 184.32e6;
-    std::vector<double> samp_rates(10);
-    for (size_t i = 0; i < samp_rates.size(); i++) {
-        samp_rates[i] = mcr / (i + 1);
-    }
+    // Save the calibration results to a json file
+    const std::string homedir = getenv("HOME");
+    // // Create uhd hidden folder if it doesn't already exist
+    // if (not std::filesystem::exists(homedir + "/.uhd")) {
+    //     std::filesystem::create_directory(homedir + "/.uhd");
+    // }
+    // // If data already exists in the file, keep it
+    // nlohmann::json json;
+    // std::ifstream prev_data(homedir + "/.uhd/delay_calibration.json");
+    // if (prev_data)
+    //     prev_data >> json;
+    // prev_data.close();
+    // // Write the data to delay_calibration.json
+    // std::ofstream outfile(homedir + "/.uhd/delay_calibration.json");
 
-    // std::vector<double> samp_rates = { 10e6, 20e6, 30e6, 40e6, 50e6 };
-    std::string args = "master_clock_rate=" + std::to_string(mcr);
-    double freq = 5e9;
     // Initialzie the USRP object
     uhd::usrp::multi_usrp::sptr usrp;
+    usrp = uhd::usrp::multi_usrp::make("");
+    // TODO: These should be program option parameters
+    std::vector<double> rates;
+    std::string args;
+    std::string filename;
+    double tx_gain, rx_gain;
+    double freq;
+    po::options_description desc("Allowed options");
+    // clang-format off
+    desc.add_options()("help", "help message")
+    ("rates", po::value<std::vector<double>>()->multitoken(), "List of samples rates")
+    ("args", po::value<std::string>(&args)->default_value(""), "single uhd device address args")
+    ("tx_gain", po::value<double>(&tx_gain)->default_value(usrp->get_tx_gain_range().stop() * 0.5), "Transmit gain")
+    ("rx_gain", po::value<double>(&rx_gain)->default_value(usrp->get_rx_gain_range().stop() * 0.5), "Receive gain")
+    ("freq", po::value<double>(&freq)->default_value(5e9), "Center Frequency")
+    ("filename", po::value<std::string>(&filename)->default_value(homedir + "/.uhd/delay_calibration.json"), "Output json file")
+    ;
+    // clang-format on
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    // print the help message
+    if (vm.count("help")) {
+        std::cout << boost::format("gr-plasma Calibrate USRP Delay %s") % desc
+                  << std::endl;
+        std::cout << "The DSP in USRP devices introduces a delay that is constant for a "
+                     "given sample rate and master clock rate. In radar processing, this "
+                     "delay shows up as a constant range offset and must be corrected to "
+                     "produce accurate range values. This script estimates the delay for "
+                     "each sample rate/master clock rate pair in the input arguments, "
+                     "and saves them to a json file for use in later processing."
+                  << std::endl;
+        return ~0;
+    }
+    if (not vm["rates"].empty()) {
+        rates = vm["rates"].as<std::vector<double>>();
+    } else {
+        UHD_LOG_ERROR("CALIBRATE_DELAY",
+                      "You must specify a list of sample rates to calibrate");
+        return EXIT_FAILURE;
+    }
+    // Get the directory of the output file
+    std::string directory;
+    const size_t last_slash_idx = filename.rfind('/');
+    if (std::string::npos != last_slash_idx) {
+        directory = filename.substr(0, last_slash_idx);
+    }
 
     double start_time = 0.2;
     boost::thread_group tx_thread;
-    std::vector<double> master_clock_rates(samp_rates.size());
-    std::vector<size_t> delays(samp_rates.size());
+    std::vector<double> master_clock_rates(rates.size());
+    std::vector<size_t> delays(rates.size());
     std::string radio_type;
-    for (size_t i = 0; i < samp_rates.size(); i++) {
+    for (size_t i = 0; i < rates.size(); i++) {
         // Set up the USRP device
         usrp = uhd::usrp::multi_usrp::make(args);
         usrp->set_tx_freq(freq);
         usrp->set_rx_freq(freq);
         // Set the gain to half of the max gain on Tx and Rx. This should be
         // plenty of gain to get a clean matched filter peak in loopback
-        double tx_gain = usrp->get_tx_gain_range().stop() * 0.5;
-        double rx_gain = usrp->get_tx_gain_range().stop() * 0.5;
         usrp->set_tx_gain(tx_gain);
         usrp->set_rx_gain(rx_gain);
-        usrp->set_tx_rate(samp_rates[i]);
-        usrp->set_rx_rate(samp_rates[i]);
+        usrp->set_tx_rate(rates[i]);
+        usrp->set_rx_rate(rates[i]);
 
         master_clock_rates[i] = usrp->get_master_clock_rate();
         if (i == 0) {
             radio_type = usrp->get_mboard_name();
         }
         // Initialize the waveform object
-        double bandwidth = samp_rates[i] / 2;
+        double bandwidth = rates[i] / 2;
         double pulse_width = 20e-6;
         double prf = 10e3;
-        plasma::LinearFMWaveform waveform(bandwidth, pulse_width, prf, samp_rates[i]);
+        plasma::LinearFMWaveform waveform(bandwidth, pulse_width, prf, rates[i]);
         Eigen::ArrayXcf waveform_data = waveform.step().cast<std::complex<float>>();
 
         // Set up Rx buffer
@@ -204,9 +251,9 @@ int main(int argc, char* argv[])
         }
         delays[i] = argmax - h.size();
         // Output the results for the current configuration
-        UHD_LOG_INFO("PLASMA",
+        UHD_LOG_INFO("CALIBRATE_DELAY",
                      "At MCR = " << master_clock_rates[i] / 1e6
-                                 << " MHz, sample rate = " << samp_rates[i] / 1e6
+                                 << " MHz, sample rate = " << rates[i] / 1e6
                                  << " MHz, delay is " << delays[i] << " samples");
 
 
@@ -214,24 +261,24 @@ int main(int argc, char* argv[])
         usrp.reset();
     }
     // Save the calibration results to a json file
-    const std::string homedir = getenv("HOME");
+    // const std::string homedir = getenv("HOME");
     // Create uhd hidden folder if it doesn't already exist
-    if (not std::filesystem::exists(homedir + "/.uhd")) {
-        std::filesystem::create_directory(homedir + "/.uhd");
+    if (not std::filesystem::exists(directory)) {
+        std::filesystem::create_directory(directory);
     }
     // If data already exists in the file, keep it
     nlohmann::json json;
-    std::ifstream prev_data(homedir + "/.uhd/delay_calibration.json");
+    std::ifstream prev_data(filename);
     if (prev_data)
         prev_data >> json;
     prev_data.close();
     // Write the data to delay_calibration.json
-    std::ofstream outfile(homedir + "/.uhd/delay_calibration.json");
-    for (size_t i = 0; i < samp_rates.size(); i++) {
+    std::ofstream outfile(filename);
+    for (size_t i = 0; i < rates.size(); i++) {
         // Check if radio/clock rate/sample rate triplet already exists
         bool exists = false;
         for (auto& config : json[radio_type]) {
-            if (config["samp_rate"] == samp_rates[i] and
+            if (config["samp_rate"] == rates[i] and
                 config["master_clock_rate"] == master_clock_rates[i]) {
                 config["delay"] = delays[i];
                 exists = true;
@@ -241,7 +288,7 @@ int main(int argc, char* argv[])
         // Calibration configuration not found, add it
         if (not exists)
             json[radio_type].push_back({ { "master_clock_rate", master_clock_rates[i] },
-                                         { "samp_rate", samp_rates[i] },
+                                         { "samp_rate", rates[i] },
                                          { "delay", delays[i] } });
     }
     outfile << json.dump(true);
