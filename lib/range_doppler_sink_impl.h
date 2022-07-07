@@ -46,9 +46,8 @@ private:
     gr::thread::thread d_processing_thread;
 
     size_t d_fftsize;
+    size_t d_msg_queue_depth;
     void fftresize(size_t size);
-    void process_data(const Eigen::ArrayXXcf);
-    volk::vector<gr_complex> conv(const gr_complex* x, size_t nx);
 
 public:
     range_doppler_sink_impl(double samp_rate,
@@ -72,7 +71,7 @@ public:
     void handle_rx_msg(pmt::pmt_t msg);
 
     void set_dynamic_range(const double) override;
-    void set_num_fft_thread(const int) override;
+    void set_msg_queue_depth(size_t) override;
 };
 
 } // namespace plasma

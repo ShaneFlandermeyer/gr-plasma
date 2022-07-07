@@ -54,7 +54,7 @@ public:
 #endif
 
     virtual void set_dynamic_range(const double) = 0;
-    virtual void set_num_fft_thread(const int) = 0;
+    virtual void set_msg_queue_depth(size_t depth) = 0;
 };
 
 } // namespace plasma

@@ -51,7 +51,6 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
     d_main_gui = new RangeDopplerWindow(parent);
 
     d_count = 0;
-    d_working = false;
 
     // Initialize message ports
     message_port_register_in(pmt::mp("tx"));
@@ -156,19 +155,18 @@ void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    // if (d_working or d_finished or d_matched_filter.size() == 0) {
-    //     return;
-    // }
+    if (d_finished or this->nmsgs(pmt::intern("rx")) > d_msg_queue_depth) {
+        return;
+    }
     // GR_LOG_DEBUG(d_logger, "Rx message received");
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
     }
     size_t n = pmt::length(samples);
-    Eigen::Map<Eigen::Array<gr_complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        in(pmt::c32vector_writable_elements(samples, n),
-           n / d_num_pulse_cpi,
-           d_num_pulse_cpi);
+    Eigen::Map<Eigen::ArrayXXcf> in(pmt::c32vector_writable_elements(samples, n),
+                                    n / d_num_pulse_cpi,
+                                    d_num_pulse_cpi);
 
     Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
         20 * log10(abs(in)).cast<double>();
@@ -183,112 +181,18 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
                           plot_data.data(), plot_data.rows(), plot_data.cols()));
     d_main_gui->xlim(0, in.cols());
     d_main_gui->ylim(0, in.rows());
-    // std::vector<gr_complex> in = pmt::c32vector_elements(samples);
-    // if (d_fast_time_slow_time.size() == 0) {
-    //     // Initialize the fast-time/slow-time data matrix if it hasn't
-    //     // already been done
-    //     // TODO: This currently assumes a uniform PRF
-    //     d_fast_time_slow_time = Eigen::ArrayXXcf(n, d_num_pulse_cpi);
-    // }
-    // d_fast_time_slow_time.col(d_count) = Eigen::Map<Eigen::ArrayXcf>(in.data(), n);
-
-    // if (d_count < d_num_pulse_cpi - 1) {
-    //     d_count++;
-    // } else {
-    //     // Once we've collected a full CPI, process it
-    //     d_processing_thread.join();
-    //     d_processing_thread =
-    //         gr::thread::thread([this] { process_data(d_fast_time_slow_time); });
-    //     d_count = 0;
-    // }
-    GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
 }
 
-void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time)
-{
-    d_working = true;
-    auto nfft = fast_slow_time.rows() + d_matched_filter.size() - 1;
-    Eigen::ArrayXXcf range_slow_time = Eigen::ArrayXXcf(nfft, fast_slow_time.cols());
-    for (int i = 0; i < range_slow_time.cols(); i++) {
-        volk::vector<gr_complex> mfresp =
-            conv(fast_slow_time.col(i).data(), fast_slow_time.rows());
-        range_slow_time.col(i) =
-            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(mfresp.data(), nfft);
-    }
-    // range_slow_time *= 1 / (float)nfft;
-
-    // Do doppler processing
-    Eigen::Array<gr_complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-        range_doppler(nfft, fast_slow_time.cols());
-    auto start = std::chrono::high_resolution_clock::now();
-    for (auto i = 0; i < range_slow_time.rows(); i++) {
-        Eigen::ArrayXcf tmp = range_slow_time.row(i);
-        memcpy(d_doppler_fft->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
-        d_doppler_fft->execute();
-        d_shift.shift(d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
-
-        // Copy the output into the range doppler map object
-        range_doppler.row(i) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
-            d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
-    }
-    auto stop = std::chrono::high_resolution_clock::now();
-    std::cout
-        << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count()
-        << std::endl;
-
-
-    // Convert the data to a form that can be plotted and send it to the GUI
-    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
-        20 * log10(abs(range_doppler)).cast<double>();
-    // Normalize the plot data and clip it to fit the dynamic range
-    plot_data = plot_data - plot_data.maxCoeff();
-    for (int i = 0; i < plot_data.size(); i++) {
-        if (plot_data.data()[i] < -d_dynamic_range_db)
-            plot_data.data()[i] = -d_dynamic_range_db;
-    }
-    // Update the axes
-    d_qapp->postEvent(d_main_gui,
-                      new RangeDopplerUpdateEvent(
-                          plot_data.data(), plot_data.rows(), plot_data.cols()));
-    d_working = false;
-}
-
-
-volk::vector<gr_complex> range_doppler_sink_impl::conv(const gr_complex* x, size_t nx)
-{
-    auto nfft = nx + d_matched_filter.size() - 1;
-    fftresize(nfft);
-    // Zero-pad the input and transform
-    memcpy(d_conv_fwd->get_inbuf(), x, nx * sizeof(gr_complex));
-    for (size_t i = nx; i < d_fftsize; i++)
-        d_conv_fwd->get_inbuf()[i] = 0;
-    d_conv_fwd->execute();
-    gr_complex* a = d_conv_fwd->get_outbuf();
-
-    // Get the matched filter (already transformed and zero-padded)
-    gr_complex* b = d_matched_filter_freq.data();
-
-    // Hadamard and IFFT
-    volk_32fc_x2_multiply_32fc_a(d_conv_inv->get_inbuf(), a, b, d_fftsize);
-    d_conv_inv->execute();
-    volk_32fc_s32fc_multiply_32fc_a(d_conv_inv->get_outbuf(),
-                                    d_conv_inv->get_outbuf(),
-                                    1 / (float)d_fftsize,
-                                    d_fftsize);
-
-    // Copy the result to
-    volk::vector<gr_complex> out(nfft);
-    memcpy(out.data(), d_conv_inv->get_outbuf(), out.size() * sizeof(gr_complex));
-
-    return out;
-}
 
 void range_doppler_sink_impl::set_dynamic_range(const double r)
 {
     d_dynamic_range_db = r;
 }
 
-void range_doppler_sink_impl::set_num_fft_thread(const int n) { d_num_fft_thread = n; }
+void range_doppler_sink_impl::set_msg_queue_depth(size_t depth)
+{
+    d_msg_queue_depth = depth;
+}
 
 } /* namespace plasma */
 } /* namespace gr */

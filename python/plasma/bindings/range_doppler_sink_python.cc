@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(1)                                                       */
 /* BINDTOOL_USE_PYGCCXML(1)                                                        */
 /* BINDTOOL_HEADER_FILE(range_doppler_sink.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(a3ed4d0d988070cd60829d3d94a2a6b2)                     */
+/* BINDTOOL_HEADER_FILE_HASH(6fbb7f4d3d5fcfbe2d66aa53b32f9063)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -72,10 +72,10 @@ void bind_range_doppler_sink(py::module& m)
              D(range_doppler_sink, set_dynamic_range))
 
 
-        .def("set_num_fft_thread",
-             &range_doppler_sink::set_num_fft_thread,
-             py::arg("arg0"),
-             D(range_doppler_sink, set_num_fft_thread))
+        .def("set_msg_queue_depth",
+             &range_doppler_sink::set_msg_queue_depth,
+             py::arg("depth"),
+             D(range_doppler_sink, set_msg_queue_depth))
 
         ;
 }

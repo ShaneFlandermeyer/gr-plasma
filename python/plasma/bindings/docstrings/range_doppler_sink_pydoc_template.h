@@ -39,4 +39,4 @@ static const char* __doc_gr_plasma_range_doppler_sink_pyqwidget = R"doc()doc";
 static const char* __doc_gr_plasma_range_doppler_sink_set_dynamic_range = R"doc()doc";
 
 
-static const char* __doc_gr_plasma_range_doppler_sink_set_num_fft_thread = R"doc()doc";
+static const char* __doc_gr_plasma_range_doppler_sink_set_msg_queue_depth = R"doc()doc";

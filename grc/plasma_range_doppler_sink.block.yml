@@ -21,10 +21,10 @@ parameters:
     dtype: float
     default: 60
     hide: part
-  - id: num_fft_thread
-    label: Num FFT threads
+  - id: depth
+    label: Message Queue Depth
     dtype: int
-    default: 1
+    default: 32
     hide: part
   - id: gui_hint
     label: GUI Hint
@@ -48,7 +48,7 @@ templates:
     %>\
     plasma.range_doppler_sink(${samp_rate}, ${num_pulse_cpi}, ${center_freq})
     self.${id}.set_dynamic_range(${dynamic_range})
-    self.${id}.set_num_fft_thread(${num_fft_thread})
+    self.${id}.set_msg_queue_depth(${depth})
     ${win} = sip.wrapinstance(self.${id}.pyqwidget(), Qt.QWidget)
     ${gui_hint() % win}
 

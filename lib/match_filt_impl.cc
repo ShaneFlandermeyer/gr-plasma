@@ -83,7 +83,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 
     pmt::pmt_t samples;
 
-    if (d_match_filt.size() == 0 or this->nmsgs(pmt::intern("rx")) >= d_msg_queue_depth) {
+    if (d_match_filt.size() == 0 or this->nmsgs(pmt::intern("rx")) > d_msg_queue_depth) {
         return;
     }
     // Get a copy of the input samples
