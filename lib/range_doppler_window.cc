@@ -117,6 +117,17 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         zInterval.maxValue());
 
         d_plot->replot();
+
+            // TODO: Update the range and doppler axe
+    //         double prf = d_samp_rate / (double)(size - d_matched_filter.size() + 1);
+    //         double c = ::plasma::physconst::c;
+    //         double lam = c / d_center_freq;
+    //         double vmax = (lam / 2) * (prf / 2);
+    //         double rmin = (c / 2) * -d_matched_filter.size() / d_samp_rate;
+    //         double rmax = (c / 2) * (size - d_matched_filter.size()) / d_samp_rate;
+
+        xlim(0, cols);
+        ylim(0, rows);
     }
 
 }

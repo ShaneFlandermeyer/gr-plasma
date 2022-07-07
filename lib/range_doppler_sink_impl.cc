@@ -60,9 +60,7 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
  */
 range_doppler_sink_impl::~range_doppler_sink_impl()
 {
-    // GR_LOG_DEBUG(d_logger, "Destroying")
-    // delete d_argv;
-    // delete d_main_gui;
+    delete d_argv;
 }
 
 bool range_doppler_sink_impl::start()
@@ -95,62 +93,9 @@ PyObject* range_doppler_sink_impl::pyqwidget()
 void* range_doppler_sink_impl::pyqwidget() { return nullptr; }
 #endif
 
-// void range_doppler_sink_impl::fftresize(size_t size)
-// {
-//     gr::thread::scoped_lock lock(d_setlock);
-//     // Make the fft a power of 2
-//     size_t newsize = pow(2, log(size) / log(2));
-
-//     if (newsize != d_fftsize) {
-//         d_fftsize = size;
-
-//         d_conv_fwd = std::make_unique<fft::fft_complex_fwd>(newsize);
-//         d_doppler_fft = std::make_unique<fft::fft_complex_fwd>(d_num_pulse_cpi);
-//         d_conv_inv = std::make_unique<fft::fft_complex_rev>(newsize);
-//         // Set the number of threads used for the FFT computations
-//         d_conv_fwd->set_nthreads(d_num_fft_thread);
-//         d_conv_inv->set_nthreads(d_num_fft_thread);
-//         d_doppler_fft->set_nthreads(d_num_fft_thread);
-
-
-//         d_shift.resize(d_num_pulse_cpi);
-
-//         // Pre-compute the frequency-domain matched filter
-//         memcpy(d_conv_fwd->get_inbuf(),
-//                d_matched_filter.data(),
-//                d_matched_filter.size() * sizeof(gr_complex));
-//         for (size_t i = d_matched_filter.size(); i < d_fftsize; i++)
-//             d_conv_fwd->get_inbuf()[i] = 0;
-//         d_conv_fwd->execute();
-//         d_matched_filter_freq = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
-//             d_conv_fwd->get_outbuf(), newsize);
-//         // Update the axes
-//         double prf = d_samp_rate / (double)(size - d_matched_filter.size() + 1);
-//         double c = ::plasma::physconst::c;
-//         double lam = c / d_center_freq;
-//         double vmax = (lam / 2) * (prf / 2);
-//         double rmin = (c / 2) * -d_matched_filter.size() / d_samp_rate;
-//         double rmax = (c / 2) * (size - d_matched_filter.size()) / d_samp_rate;
-//         d_main_gui->xlim(-vmax, vmax);
-//         d_main_gui->ylim(rmin, rmax);
-//     }
-// }
-
-// void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
-// {
-//     if (pmt::is_pdu(msg)) {
-//         // Get the transmit data
-//         pmt::pmt_t samples = pmt::cdr(msg);
-//         size_t n = pmt::length(samples);
-//         std::vector<gr_complex> data = pmt::c32vector_elements(samples);
-//         d_matched_filter = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(data.data(), n);
-//         d_matched_filter = d_matched_filter.conjugate().reverse();
-//     }
-// }
-
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    if (d_finished or this->nmsgs(d_in_port) > d_msg_queue_depth) {
+    if (d_finished) {
         return;
     }
     pmt::pmt_t samples;
@@ -159,31 +104,19 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     }
     size_t n = pmt::length(samples);
     Eigen::Map<Eigen::ArrayXXcf> in(pmt::c32vector_writable_elements(samples, n),
-                                    n / d_num_pulse_cpi,
-                                    d_num_pulse_cpi);
-
+                                     n / d_num_pulse_cpi,
+                                     d_num_pulse_cpi);
+    // Eigen::ArrayXXd newdata = Eigen::ArrayXXd::Ones(100,25);
     Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
         20 * log10(abs(in)).cast<double>();
     // Normalize the plot data and clip it to fit the dynamic range
     plot_data = plot_data - plot_data.maxCoeff();
-    for (int i = 0; i < plot_data.size(); i++) {
-        if (plot_data.data()[i] < -d_dynamic_range_db)
-            plot_data.data()[i] = -d_dynamic_range_db;
-    }
+    plot_data = plot_data.max(-d_dynamic_range_db);
+
+
     d_qapp->postEvent(d_main_gui,
                       new RangeDopplerUpdateEvent(
                           plot_data.data(), plot_data.rows(), plot_data.cols()));
-    // TODO: Update the range and doppler axes
-    d_main_gui->xlim(0, in.cols());
-    d_main_gui->ylim(0, in.rows());
-    //         double prf = d_samp_rate / (double)(size - d_matched_filter.size() + 1);
-    //         double c = ::plasma::physconst::c;
-    //         double lam = c / d_center_freq;
-    //         double vmax = (lam / 2) * (prf / 2);
-    //         double rmin = (c / 2) * -d_matched_filter.size() / d_samp_rate;
-    //         double rmax = (c / 2) * (size - d_matched_filter.size()) / d_samp_rate;
-    //         d_main_gui->xlim(-vmax, vmax);
-    //         d_main_gui->ylim(rmin, rmax);
 }
 
 
