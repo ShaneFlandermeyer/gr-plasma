@@ -54,8 +54,8 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
       d_meta_filename(meta_filename)
 {
     // TODO: Declare port names as const in a separate file
-    message_port_register_in(pmt::mp("in"));
-    set_msg_handler(pmt::mp("in"),
+    message_port_register_in(PMT_IN);
+    set_msg_handler(PMT_IN,
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
     if (not d_meta_filename.empty()) {
@@ -138,15 +138,15 @@ void pdu_file_sink_impl::run()
 void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
 {
     // Global object fields
-    pmt::pmt_t sample_rate = pmt::dict_ref(dict, SAMPLE_RATE_KEY, pmt::PMT_NIL);
+    pmt::pmt_t sample_rate = pmt::dict_ref(dict, PMT_SAMPLE_RATE, pmt::PMT_NIL);
     // Capture object fields
-    pmt::pmt_t frequency = pmt::dict_ref(dict, FREQUENCY_KEY, pmt::PMT_NIL);
+    pmt::pmt_t frequency = pmt::dict_ref(dict, PMT_FREQUENCY, pmt::PMT_NIL);
     // Annotation object fields
-    pmt::pmt_t sample_start = pmt::dict_ref(dict, SAMPLE_START_KEY, pmt::PMT_NIL);
+    pmt::pmt_t sample_start = pmt::dict_ref(dict, PMT_SAMPLE_START, pmt::PMT_NIL);
     pmt::pmt_t sample_count =
-        pmt::dict_ref(dict,SAMPLE_COUNT_KEY , pmt::PMT_NIL);
-    pmt::pmt_t bandwidth = pmt::dict_ref(dict, BANDWIDTH_KEY, pmt::PMT_NIL);
-    pmt::pmt_t label = pmt::dict_ref(dict, LABEL_KEY, pmt::PMT_NIL);
+        pmt::dict_ref(dict,PMT_SAMPLE_COUNT , pmt::PMT_NIL);
+    pmt::pmt_t bandwidth = pmt::dict_ref(dict, PMT_BANDWIDTH, pmt::PMT_NIL);
+    pmt::pmt_t label = pmt::dict_ref(dict, PMT_LABEL, pmt::PMT_NIL);
 
 
     // Update global object

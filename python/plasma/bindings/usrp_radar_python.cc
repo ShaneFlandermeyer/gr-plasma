@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(1)                                                       */
 /* BINDTOOL_USE_PYGCCXML(1)                                                        */
 /* BINDTOOL_HEADER_FILE(usrp_radar.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(65614bc695ecc58c090c911fce3bd125)                     */
+/* BINDTOOL_HEADER_FILE_HASH(e5bc425fe376e56f15007be3850df402)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -36,16 +36,43 @@ void bind_usrp_radar(py::module& m)
     py::class_<usrp_radar, gr::block, gr::basic_block, std::shared_ptr<usrp_radar>>(
         m, "usrp_radar", D(usrp_radar))
 
-        .def(py::init(&usrp_radar::make),
-             py::arg("samp_rate"),
-             py::arg("tx_gain"),
-             py::arg("rx_gain"),
-             py::arg("tx_freq"),
-             py::arg("rx_freq"),
-             py::arg("start_time"),
-             py::arg("tx_args"),
-             py::arg("rx_args"),
-             D(usrp_radar, make))
+        .def(py::init(&usrp_radar::make), py::arg("args"), D(usrp_radar, make))
+
+
+        .def("set_samp_rate",
+             &usrp_radar::set_samp_rate,
+             py::arg("arg0"),
+             D(usrp_radar, set_samp_rate))
+
+
+        .def("set_tx_gain",
+             &usrp_radar::set_tx_gain,
+             py::arg("arg0"),
+             D(usrp_radar, set_tx_gain))
+
+
+        .def("set_rx_gain",
+             &usrp_radar::set_rx_gain,
+             py::arg("arg0"),
+             D(usrp_radar, set_rx_gain))
+
+
+        .def("set_tx_freq",
+             &usrp_radar::set_tx_freq,
+             py::arg("arg0"),
+             D(usrp_radar, set_tx_freq))
+
+
+        .def("set_rx_freq",
+             &usrp_radar::set_rx_freq,
+             py::arg("arg0"),
+             D(usrp_radar, set_rx_freq))
+
+
+        .def("set_start_time",
+             &usrp_radar::set_start_time,
+             py::arg("arg0"),
+             D(usrp_radar, set_start_time))
 
 
         .def("set_tx_thread_priority",
@@ -58,6 +85,12 @@ void bind_usrp_radar(py::module& m)
              &usrp_radar::set_rx_thread_priority,
              py::arg("arg0"),
              D(usrp_radar, set_rx_thread_priority))
+
+
+        .def("read_calibration_file",
+             &usrp_radar::read_calibration_file,
+             py::arg("arg0"),
+             D(usrp_radar, read_calibration_file))
 
         ;
 }

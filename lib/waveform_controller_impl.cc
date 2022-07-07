@@ -27,9 +27,9 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0))
 {
-    message_port_register_in(pmt::mp("in"));
-    message_port_register_out(pmt::mp("out"));
-    set_msg_handler(pmt::mp("in"),
+    message_port_register_in(PMT_IN);
+    message_port_register_out(PMT_OUT);
+    set_msg_handler(PMT_IN,
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_updated = false;
     d_prf = prf;
@@ -66,9 +66,9 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
         // d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
         // Send the new waveform through the message port (with additional
         // metadata)
-        meta = pmt::dict_add(meta, PRF_KEY, pmt::from_double(d_prf));
+        meta = pmt::dict_add(meta, PMT_PRF, pmt::from_double(d_prf));
         message_port_pub(
-            pmt::mp("out"),
+            PMT_OUT,
             pmt::cons(meta, pmt::init_c32vector(n, pmt::c32vector_elements(data, n))));
 
 

@@ -32,17 +32,16 @@ public:
      * class. plasma::usrp_radar::make is the public interface for
      * creating new instances.
      */
-    static sptr make(double samp_rate,
-                     double tx_gain,
-                     double rx_gain,
-                     double tx_freq,
-                     double rx_freq,
-                     double start_time,
-                     const std::string& tx_args,
-                     const std::string& rx_args);
-
+    static sptr make(const std::string& args);
+    virtual void set_samp_rate(const double) = 0;
+    virtual void set_tx_gain(const double) = 0;
+    virtual void set_rx_gain(const double) = 0;
+    virtual void set_tx_freq(const double) = 0;
+    virtual void set_rx_freq(const double) = 0;
+    virtual void set_start_time(const double) = 0;
     virtual void set_tx_thread_priority(const double) = 0;
     virtual void set_rx_thread_priority(const double) = 0;
+    virtual void read_calibration_file(const std::string&) = 0;
 };
 
 } // namespace plasma

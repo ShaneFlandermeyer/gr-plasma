@@ -20,9 +20,10 @@ list(APPEND plasma_sources
     qt_update_events.cc
     range_doppler_sink_impl.cc
     range_doppler_window.cc
-    window.cc
     range_doppler_window.h
-    window.h
+    match_filt_impl.cc
+    doppler_processing_impl.cc
+    pulse_to_cpi_impl.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)

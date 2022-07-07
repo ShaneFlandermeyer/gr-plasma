@@ -15,10 +15,12 @@ install(FILES
     pcfm_source.h
     pdu_file_sink.h
     pdu_head.h
-    pmt_dict_keys.h
+    pmt_constants.h
     qt_update_events.h
     range_doppler_sink.h 
     usrp_radar.h
     waveform_controller.h
-    DESTINATION include/gnuradio/plasma
+    match_filt.h
+    doppler_processing.h
+    pulse_to_cpi.h DESTINATION include/gnuradio/plasma
 )

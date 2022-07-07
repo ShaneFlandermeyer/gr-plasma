@@ -39,7 +39,7 @@ pcfm_source_impl::pcfm_source_impl(std::vector<double>& code,
     d_waveform = ::plasma::PCFMWaveform(d_code, d_filter, d_samp_rate, 0);
     d_data = d_waveform.sample().cast<gr_complex>();
 
-    d_out_port = pmt::mp("out");
+    d_out_port = PMT_OUT;
     message_port_register_out(d_out_port);
 }
 
@@ -53,7 +53,7 @@ bool pcfm_source_impl::start()
     d_finished = false;
     d_meta = pmt::make_dict();
     d_meta = pmt::dict_add(
-        d_meta, SAMPLE_RATE_KEY, pmt::from_double(d_waveform.samp_rate()));
+        d_meta, PMT_SAMPLE_RATE, pmt::from_double(d_waveform.samp_rate()));
     pmt::pmt_t data = pmt::init_c32vector(d_data.size(), d_data.data());
     message_port_pub(d_out_port, pmt::cons(d_meta, data));
 

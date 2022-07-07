@@ -9,7 +9,7 @@
 #define INCLUDED_PLASMA_LFM_SOURCE_IMPL_H
 
 #include <gnuradio/plasma/lfm_source.h>
-#include <gnuradio/plasma/pmt_dict_keys.h>
+#include <gnuradio/plasma/pmt_constants.h>
 #include <plasma_dsp/linear_fm_waveform.h>
 
 namespace gr {

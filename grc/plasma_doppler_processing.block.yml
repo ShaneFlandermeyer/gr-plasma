@@ -1,0 +1,36 @@
+id: plasma_doppler_processing
+label: Doppler Processing
+category: '[plasma]'
+
+parameters:
+- id: num_pulse_cpi
+  label: Pulses per CPI
+  dtype: int
+  default: 128
+- id: nfft
+  label: FFT size
+  dtype: int
+  default: 128
+- id: depth
+  label: Message queue depth
+  dtype: int
+  default: 1
+  hide: part
+
+inputs:
+- id: in
+  domain: message
+
+outputs:
+- id: out
+  domain: message
+
+templates:
+  imports: from gnuradio import plasma
+  make: |-
+    plasma.doppler_processing(${num_pulse_cpi}, ${nfft})
+    self.${id}.set_msg_queue_depth(${depth})
+
+#  'file_format' specifies the version of the GRC yml format used in the file
+#  and should usually not be changed.
+file_format: 1

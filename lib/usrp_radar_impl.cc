@@ -10,64 +10,27 @@
 namespace gr {
 namespace plasma {
 
-usrp_radar::sptr usrp_radar::make(double samp_rate,
-                                  double tx_gain,
-                                  double rx_gain,
-                                  double tx_freq,
-                                  double rx_freq,
-                                  double start_time,
-                                  const std::string& tx_args,
-                                  const std::string& rx_args)
+usrp_radar::sptr usrp_radar::make(const std::string& args)
 {
-    return gnuradio::make_block_sptr<usrp_radar_impl>(
-        samp_rate, tx_gain, rx_gain, tx_freq, rx_freq, start_time, tx_args, rx_args);
+    return gnuradio::make_block_sptr<usrp_radar_impl>(args);
 }
 
 
 /*
  * The private constructor
  */
-usrp_radar_impl::usrp_radar_impl(double samp_rate,
-                                 double tx_gain,
-                                 double rx_gain,
-                                 double tx_freq,
-                                 double rx_freq,
-                                 double start_time,
-                                 const std::string& tx_args,
-                                 const std::string& rx_args)
+usrp_radar_impl::usrp_radar_impl(const std::string& args)
     : gr::block(
           "usrp_radar", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
-      d_samp_rate(samp_rate),
-      d_tx_gain(tx_gain),
-      d_rx_gain(rx_gain),
-      d_tx_freq(tx_freq),
-      d_rx_freq(rx_freq),
-      d_start_time(start_time),
-      d_tx_args(tx_args),
-      d_rx_args(rx_args)
+      d_args(args)
 {
-    message_port_register_in(pmt::mp("in"));
-    message_port_register_out(pmt::mp("out"));
-    set_msg_handler(pmt::mp("in"),
-                    [this](const pmt::pmt_t& msg) { handle_message(msg); });
-    // Initialize the USRP device
-    // d_usrp.reset();
-    d_usrp = uhd::usrp::multi_usrp::make(d_tx_args);
-    d_usrp->set_tx_freq(d_tx_freq);
-    d_usrp->set_rx_freq(d_rx_freq);
-    while (not d_usrp->get_rx_sensor("lo_locked").to_bool()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    d_usrp->set_tx_rate(d_samp_rate);
-    d_usrp->set_rx_rate(d_samp_rate);
-
-    d_usrp->set_tx_gain(d_tx_gain);
-    d_usrp->set_rx_gain(d_rx_gain);
-
+    d_usrp = uhd::usrp::multi_usrp::make(d_args);
     d_pulse_count = 0;
+    d_sample_count = 0;
     d_meta = pmt::make_dict();
-
-    read_calibration_json();
+    message_port_register_in(PMT_IN);
+    message_port_register_out(PMT_OUT);
+    set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
 }
 
 /*
@@ -81,14 +44,13 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         // Maintain any metadata that was produced by upstream blocks
         d_meta = pmt::car(msg);
         // Parse the metadata to update waveform parameters
-        pmt::pmt_t new_prf = pmt::dict_ref(d_meta, PRF_KEY, pmt::PMT_NIL);
+        pmt::pmt_t new_prf = pmt::dict_ref(d_meta, PMT_PRF, pmt::PMT_NIL);
         if (not pmt::is_null(new_prf)) {
             d_prf = pmt::to_double(new_prf);
         }
 
-
         // Append additional metadata to the pmt object
-        d_meta = pmt::dict_add(d_meta, FREQUENCY_KEY, pmt::from_double(d_tx_freq));
+        d_meta = pmt::dict_add(d_meta, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
         d_armed = true;
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -129,7 +91,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         if (d_armed) {
             d_armed = false;
             d_meta =
-                pmt::dict_add(d_meta, SAMPLE_START_KEY, pmt::from_uint64(d_sample_count));
+                pmt::dict_add(d_meta, PMT_SAMPLE_START, pmt::from_uint64(d_sample_count));
             gr::thread::scoped_lock lock(d_tx_buff_mutex);
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
@@ -137,10 +99,9 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
             num_samp_pulse = d_tx_buff.size();
         }
         boost::this_thread::disable_interruption disable_interrupt;
-        // tx_stream->send("", 0, tx_md, 0.1);
-        // tx_md.start_of_burst = false;
-        // tx_md.end_of_burst = true;
-        // tx_md.has_time_spec = false;
+        tx_md.start_of_burst = true;
+        tx_md.end_of_burst = false;
+        tx_md.has_time_spec = true;
         tx_stream->send(buff_ptrs, num_samp_pulse, tx_md, 0.1);
         // Send a mini EOB to tell the USRP that we're done
         tx_md.start_of_burst = false;
@@ -149,21 +110,11 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         tx_stream->send(zeros.data(), zeros.size(), tx_md);
         boost::this_thread::restore_interruption restore_interrupt(disable_interrupt);
 
-        tx_md.start_of_burst = true;
-        tx_md.end_of_burst = false;
-        tx_md.has_time_spec = true;
-        // TODO: Don't hard-code the prf
+
         tx_md.time_spec += 1 / d_prf;
-
-
         d_pulse_count++;
         d_sample_count += num_samp_pulse;
     }
-
-    // Send a mini EOB to tell the USRP that we're done
-    // tx_md.has_time_spec = false;
-    // tx_md.end_of_burst = true;
-    // tx_stream->send("", 0, tx_md);
 }
 
 void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
@@ -223,17 +174,12 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             d_delay_samps = 0;
         }
 
-        // TODO: Handle errors
-        // if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT)
-        //     break;
-        // if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE)
-        //     break;
         // Send the pdu for the PRI
         if (num_samps_total == num_samps_pri) {
             // Copy the received data into the message PDU and send it
             gr_complex* ptr = pmt::c32vector_writable_elements(d_rx_data, num_samps_pri);
             std::copy(buffs[0].begin(), buffs[0].end(), ptr);
-            message_port_pub(pmt::intern("out"), pmt::cons(d_meta, d_rx_data));
+            message_port_pub(PMT_OUT, pmt::cons(d_meta, d_rx_data));
             // Reset the metadata
             d_meta = pmt::make_dict();
             num_samps_total = 0;
@@ -297,7 +243,7 @@ void usrp_radar_impl::run()
     // Start the transmit and receive threads
     // If a time in the future is given
     uhd::time_spec_t time_now = uhd::time_spec_t(0.0);
-    const pmt::pmt_t outport = pmt::intern("out");
+    const pmt::pmt_t outport = PMT_OUT;
     if (d_start_time.get_real_secs() != 0) {
         time_now = d_usrp->get_time_now();
     }
@@ -310,11 +256,9 @@ void usrp_radar_impl::run()
     d_tx_thread.join();
 }
 
-void usrp_radar_impl::read_calibration_json()
+void usrp_radar_impl::read_calibration_file(const std::string& filename)
 {
-    // const std::string homedir = getenv("HOME");
-    const std::string homedir = "/home/shane";
-    std::ifstream file(homedir + "/.uhd/delay_calibration.json");
+    std::ifstream file(filename);
     nlohmann::json json;
     d_delay_samps = 0;
     if (file) {
@@ -338,6 +282,39 @@ void usrp_radar_impl::read_calibration_json()
     file.close();
 }
 
+void usrp_radar_impl::set_samp_rate(const double rate)
+{
+    d_samp_rate = rate;
+    d_usrp->set_tx_rate(d_samp_rate);
+    d_usrp->set_rx_rate(d_samp_rate);
+}
+
+void usrp_radar_impl::set_tx_gain(const double gain)
+{
+    d_tx_gain = gain;
+    d_usrp->set_tx_gain(d_tx_gain);
+}
+void usrp_radar_impl::set_rx_gain(const double gain)
+{
+    d_rx_gain = gain;
+    d_usrp->set_rx_gain(d_rx_gain);
+}
+void usrp_radar_impl::set_tx_freq(const double freq)
+{
+    d_tx_freq = freq;
+    d_usrp->set_tx_freq(d_tx_freq);
+}
+void usrp_radar_impl::set_rx_freq(const double freq)
+{
+    d_rx_freq = freq;
+    d_usrp->set_rx_freq(d_rx_freq);
+    while (not d_usrp->get_rx_sensor("lo_locked").to_bool()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+void usrp_radar_impl::set_start_time(const double t) { d_start_time = t; }
+
+
 void usrp_radar_impl::set_tx_thread_priority(const double priority)
 {
     d_tx_thread_priority = priority;
@@ -347,6 +324,7 @@ void usrp_radar_impl::set_rx_thread_priority(const double priority)
 {
     d_rx_thread_priority = priority;
 }
+
 
 } /* namespace plasma */
 } /* namespace gr */
