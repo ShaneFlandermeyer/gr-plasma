@@ -8,6 +8,8 @@
 #include <plasma_dsp/file.h>
 #include <plasma_dsp/filter.h>
 #include <plasma_dsp/linear_fm_waveform.h>
+#include <gnuradio/plasma/pmt_dict_keys.h>
+#include <pmt/pmt.h>
 #include <qwt/qwt_plot.h>
 #include <qwt/qwt_thermo.h>
 #include <qwt_color_map.h>
@@ -56,8 +58,10 @@ private:
     QVBoxLayout* vLayout;
     QHBoxLayout* hLayout;
 
-    double xData[100];
-    double yData[100];
+    double d_prf;
+    double d_samp_rate;
+    double d_pulsewidth;
+    double d_center_freq;
 };
 
 #endif /* C63B8235_0BB0_46FF_A644_A4CCB87E809D */

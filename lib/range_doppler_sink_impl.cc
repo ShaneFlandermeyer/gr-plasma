@@ -101,6 +101,7 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
+        d_meta = pmt::car(msg);
     }
     size_t n = pmt::length(samples);
     Eigen::Map<Eigen::ArrayXXcf> in(pmt::c32vector_writable_elements(samples, n),
@@ -116,7 +117,7 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 
     d_qapp->postEvent(d_main_gui,
                       new RangeDopplerUpdateEvent(
-                          plot_data.data(), plot_data.rows(), plot_data.cols()));
+                          plot_data.data(), plot_data.rows(), plot_data.cols(), d_meta));
 }
 
 

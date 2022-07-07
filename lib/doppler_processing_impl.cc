@@ -66,6 +66,9 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
+        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
+        d_meta = pmt::dict_add(
+            d_meta, pmt::intern("doppler_fft_size"), pmt::from_long(d_fftsize));
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
@@ -97,6 +100,7 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     }
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
+    d_meta = pmt::make_dict();
 }
 
 void doppler_processing_impl::fftresize(size_t size)

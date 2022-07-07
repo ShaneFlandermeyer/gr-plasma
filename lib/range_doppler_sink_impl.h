@@ -39,6 +39,8 @@ private:
     pmt::pmt_t d_in_port;
     size_t d_msg_queue_depth;
 
+    pmt::pmt_t d_meta;
+
 public:
     range_doppler_sink_impl(double samp_rate,
                             size_t num_pulse_cpi,

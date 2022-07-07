@@ -48,6 +48,8 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
 {
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
+        d_meta = pmt::dict_add(d_meta, pmt::intern("num_pulse_cpi"), pmt::from_long(d_num_pulse_cpi));
+        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
         samples = pmt::cdr(msg);
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
@@ -61,6 +63,7 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
         message_port_pub(d_out_port,
                          pmt::cons(d_meta, pmt::init_c32vector(d_data.size(), d_data)));
         d_data.clear();
+        d_meta = pmt::make_dict();
         d_pulse_count = 0;
     }
 }

@@ -67,6 +67,7 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
     if (pmt::is_pdu(msg)) {
         // Get the transmit data
         samples = pmt::cdr(msg);
+        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
@@ -89,6 +90,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     // Get a copy of the input samples
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
+        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
@@ -133,7 +135,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     }
 
     message_port_pub(pmt::intern("out"), pmt::cons(d_meta, d_data));
-
+    d_meta = pmt::make_dict();
     // GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
 }
 

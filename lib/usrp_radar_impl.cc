@@ -65,6 +65,7 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
     d_usrp->set_rx_gain(d_rx_gain);
 
     d_pulse_count = 0;
+    d_sample_count = 0;
     d_meta = pmt::make_dict();
 
     read_calibration_json();

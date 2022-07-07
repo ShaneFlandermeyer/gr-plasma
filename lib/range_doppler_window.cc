@@ -31,11 +31,6 @@ public:
 
 RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 {
-    // Debug Plot
-    // d_debug_curve = new QwtPlotCurve();
-    // d_debug_plot = new QwtPlot();
-    // d_debug_curve->setSamples(xData, yData, 100);
-    // d_debug_curve->attach(d_debug_plot);
 
     // Spectrogram
     d_plot = new QwtPlot();
@@ -75,6 +70,10 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
     setLayout(vLayout);
 
     d_closed = false;
+    d_prf = 0;
+    d_pulsewidth = 0;
+    d_samp_rate = 0;
+    d_center_freq = 0;
 }
 
 RangeDopplerWindow::~RangeDopplerWindow() { d_closed = true; }
@@ -98,6 +97,7 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         double* data = event->data();
         auto rows = event->rows();
         auto cols = event->cols();
+        pmt::pmt_t meta = event->meta();
 
         // Create a new vector
         QVector<double> vec(rows * cols);
@@ -113,21 +113,41 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         const QwtInterval zInterval = d_spectro->data()->interval(Qt::ZAxis);
         QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
         rightAxis->setColorMap(zInterval, new ColorMap());
-        d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(),
-        zInterval.maxValue());
+        d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
 
         d_plot->replot();
 
-            // TODO: Update the range and doppler axe
-    //         double prf = d_samp_rate / (double)(size - d_matched_filter.size() + 1);
-    //         double c = ::plasma::physconst::c;
-    //         double lam = c / d_center_freq;
-    //         double vmax = (lam / 2) * (prf / 2);
-    //         double rmin = (c / 2) * -d_matched_filter.size() / d_samp_rate;
-    //         double rmax = (c / 2) * (size - d_matched_filter.size()) / d_samp_rate;
+        // TODO: Update the range and doppler axes
+        pmt::pmt_t prf = pmt::dict_ref(meta, PRF_KEY, pmt::PMT_NIL);
+        pmt::pmt_t pulse_width = pmt::dict_ref(meta, PULSEWIDTH_KEY, pmt::PMT_NIL);
+        pmt::pmt_t samp_rate = pmt::dict_ref(meta, SAMPLE_RATE_KEY, pmt::PMT_NIL);
+        pmt::pmt_t center_freq = pmt::dict_ref(meta, FREQUENCY_KEY, pmt::PMT_NIL);
+        if (not pmt::is_null(prf))
+            d_prf = pmt::to_double(prf);
+        if (not pmt::is_null(pulse_width))
+            d_pulsewidth = pmt::to_double(pulse_width);
+        if (not pmt::is_null(samp_rate))
+            d_samp_rate = pmt::to_double(samp_rate);
+        if (not pmt::is_null(center_freq))
+            d_center_freq = pmt::to_double(center_freq);
 
-        xlim(0, cols);
-        ylim(0, rows);
+        if (d_prf == 0 or d_pulsewidth == 0 or d_samp_rate == 0) {
+            ylim(0, rows);
+        } else {
+            const double c = ::plasma::physconst::c;
+            double rmin = -(c / 2) * d_pulsewidth;
+            double rmax = (c / 2) * (1 / d_prf);
+            ylim(rmin, rmax);
+        }
+
+        if (d_center_freq == 0 or d_prf == 0) {
+            xlim(0, cols);
+        } else {
+            const double c = ::plasma::physconst::c;
+            double lam = c / d_center_freq;
+            double vmax = (lam / 2) * (d_prf / 2);
+            double vmin = -vmax;
+            xlim(vmin, vmax);
+        }
     }
-
 }
