@@ -7,6 +7,7 @@
 
 #include "range_doppler_sink_impl.h"
 #include <gnuradio/io_signature.h>
+#include <chrono>
 #include <thread>
 
 namespace gr {
@@ -127,8 +128,8 @@ void range_doppler_sink_impl::fftresize(size_t size)
         for (size_t i = d_matched_filter.size(); i < d_fftsize; i++)
             d_conv_fwd->get_inbuf()[i] = 0;
         d_conv_fwd->execute();
-        d_matched_filter_freq =
-            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(d_conv_fwd->get_outbuf(), newsize);
+        d_matched_filter_freq = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
+            d_conv_fwd->get_outbuf(), newsize);
         // Update the axes
         double prf = d_samp_rate / (double)(size - d_matched_filter.size() + 1);
         double c = ::plasma::physconst::c;
@@ -155,33 +156,52 @@ void range_doppler_sink_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    if (d_working or d_finished or d_matched_filter.size() == 0) {
-        return;
-    }
+    // if (d_working or d_finished or d_matched_filter.size() == 0) {
+    //     return;
+    // }
     // GR_LOG_DEBUG(d_logger, "Rx message received");
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
     }
     size_t n = pmt::length(samples);
-    std::vector<gr_complex> in = pmt::c32vector_elements(samples);
-    if (d_fast_time_slow_time.size() == 0) {
-        // Initialize the fast-time/slow-time data matrix if it hasn't
-        // already been done
-        // TODO: This currently assumes a uniform PRF
-        d_fast_time_slow_time = Eigen::ArrayXXcf(n, d_num_pulse_cpi);
-    }
-    d_fast_time_slow_time.col(d_count) = Eigen::Map<Eigen::ArrayXcf>(in.data(), n);
+    Eigen::Map<Eigen::Array<gr_complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        in(pmt::c32vector_writable_elements(samples, n),
+           n / d_num_pulse_cpi,
+           d_num_pulse_cpi);
 
-    if (d_count < d_num_pulse_cpi - 1) {
-        d_count++;
-    } else {
-        // Once we've collected a full CPI, process it
-        d_processing_thread.join();
-        d_processing_thread =
-            gr::thread::thread([this] { process_data(d_fast_time_slow_time); });
-        d_count = 0;
+    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
+        20 * log10(abs(in)).cast<double>();
+    // Normalize the plot data and clip it to fit the dynamic range
+    plot_data = plot_data - plot_data.maxCoeff();
+    for (int i = 0; i < plot_data.size(); i++) {
+        if (plot_data.data()[i] < -d_dynamic_range_db)
+            plot_data.data()[i] = -d_dynamic_range_db;
     }
+    d_qapp->postEvent(d_main_gui,
+                      new RangeDopplerUpdateEvent(
+                          plot_data.data(), plot_data.rows(), plot_data.cols()));
+    d_main_gui->xlim(0, in.cols());
+    d_main_gui->ylim(0, in.rows());
+    // std::vector<gr_complex> in = pmt::c32vector_elements(samples);
+    // if (d_fast_time_slow_time.size() == 0) {
+    //     // Initialize the fast-time/slow-time data matrix if it hasn't
+    //     // already been done
+    //     // TODO: This currently assumes a uniform PRF
+    //     d_fast_time_slow_time = Eigen::ArrayXXcf(n, d_num_pulse_cpi);
+    // }
+    // d_fast_time_slow_time.col(d_count) = Eigen::Map<Eigen::ArrayXcf>(in.data(), n);
+
+    // if (d_count < d_num_pulse_cpi - 1) {
+    //     d_count++;
+    // } else {
+    //     // Once we've collected a full CPI, process it
+    //     d_processing_thread.join();
+    //     d_processing_thread =
+    //         gr::thread::thread([this] { process_data(d_fast_time_slow_time); });
+    //     d_count = 0;
+    // }
+    GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
 }
 
 void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time)
@@ -200,6 +220,7 @@ void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time
     // Do doppler processing
     Eigen::Array<gr_complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         range_doppler(nfft, fast_slow_time.cols());
+    auto start = std::chrono::high_resolution_clock::now();
     for (auto i = 0; i < range_slow_time.rows(); i++) {
         Eigen::ArrayXcf tmp = range_slow_time.row(i);
         memcpy(d_doppler_fft->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
@@ -210,6 +231,10 @@ void range_doppler_sink_impl::process_data(const Eigen::ArrayXXcf fast_slow_time
         range_doppler.row(i) = Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(
             d_doppler_fft->get_outbuf(), d_doppler_fft->outbuf_length());
     }
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::cout
+        << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count()
+        << std::endl;
 
 
     // Convert the data to a form that can be plotted and send it to the GUI

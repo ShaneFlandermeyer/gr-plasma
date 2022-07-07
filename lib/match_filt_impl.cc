@@ -134,7 +134,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 
     message_port_pub(pmt::intern("out"), pmt::cons(d_meta, d_data));
 
-    GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
+    // GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
 }
 
 void match_filt_impl::fftresize(size_t size)

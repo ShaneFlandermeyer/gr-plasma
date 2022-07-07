@@ -33,6 +33,7 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
     d_in_port = pmt::intern("in");
     d_out_port = pmt::intern("out");
     d_meta = pmt::make_dict();
+    d_data = pmt::make_c32vector(0, 0);
     message_port_register_in(d_in_port);
     message_port_register_out(d_out_port);
     set_msg_handler(d_in_port, [this](pmt::pmt_t msg) { handle_msg(msg); });
@@ -52,72 +53,51 @@ bool doppler_processing_impl::start()
 bool doppler_processing_impl::stop()
 {
     d_finished = true;
-    d_processing_thread.interrupt();
     return block::stop();
 }
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
-    auto start = std::chrono::high_resolution_clock::now();
     if (this->nmsgs(pmt::intern("in")) >= d_queue_depth) {
         return;
     }
-    
+
     // Read the input PDU and map it to an eigen array
+    pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
-        d_data = pmt::cdr(msg);
+        samples = pmt::cdr(msg);
     } else if (pmt::is_uniform_vector(msg)) {
-        d_data = msg;
+        samples = msg;
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
         return;
     }
-    size_t n = pmt::length(d_data);
-    gr_complex* inptr = pmt::c32vector_writable_elements(d_data, n);
-    Eigen::Map<Eigen::Array<gr_complex, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        data(inptr, n / d_num_pulse_cpi, d_num_pulse_cpi);
-    
+    // Resize the output data vector if necessary
+    size_t n = pmt::length(samples);
+    if (pmt::length(d_data) != n)
+        d_data = pmt::make_c32vector(n, 0);
+    Eigen::Map<Eigen::ArrayXXcf> data(pmt::c32vector_writable_elements(samples, n),
+                                      n / d_num_pulse_cpi,
+                                      d_num_pulse_cpi);
+    Eigen::Map<Eigen::ArrayXXcf> out(pmt::c32vector_writable_elements(d_data, n),
+                                     n / d_num_pulse_cpi,
+                                     d_num_pulse_cpi);
+
     // Do an fft and fftshift
+    Eigen::ArrayXcf tmp;
     for (auto irow = 0; irow < data.rows(); irow++) {
-        Eigen::ArrayXcf tmp = data.row(irow);
-        memcpy(d_fwd->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
-        for (size_t i = tmp.size(); i < d_fftsize; i++)
+        tmp = data.row(irow);
+        memcpy(
+            d_fwd->get_inbuf(), tmp.data(), data.cols() * sizeof(gr_complex));
+        for (size_t i = data.cols(); i < d_fftsize; i++)
             d_fwd->get_inbuf()[i] = 0;
         d_fwd->execute();
-        d_shift.shift(d_fwd->get_outbuf(), d_fwd->outbuf_length());
+        d_shift.shift(d_fwd->get_outbuf(), d_fftsize);
 
-        memcpy(data.row(irow).data(),
-               d_fwd->get_outbuf(),
-               d_fwd->outbuf_length() * sizeof(gr_complex));
+        out.row(irow) = Eigen::Map<Eigen::ArrayXcf>(d_fwd->get_outbuf(), out.cols());
     }
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
-
-    auto stop = std::chrono::high_resolution_clock::now();
-    GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
-    GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("in")))
-}
-
-void doppler_processing_impl::process_data(const Eigen::ArrayXXcf& data)
-{
-    Eigen::ArrayXXcf range_dopp = Eigen::ArrayXXcf(data.rows(), d_fftsize);
-    for (auto i = 0; i < data.rows(); i++) {
-        Eigen::ArrayXcf tmp = data.row(i);
-        memcpy(d_fwd->get_inbuf(), tmp.data(), tmp.size() * sizeof(gr_complex));
-        for (size_t i = tmp.size(); i < d_fftsize; i++)
-            d_fwd->get_inbuf()[i] = 0;
-        d_fwd->execute();
-        d_shift.shift(d_fwd->get_outbuf(), d_fwd->outbuf_length());
-
-        // Copy the output into the range doppler map object
-        std::vector<gr_complex> vec(d_fwd->get_outbuf(),
-                                    d_fwd->get_outbuf() + d_fwd->outbuf_length());
-        range_dopp.row(i) =
-            Eigen::Map<Eigen::ArrayXcf, Eigen::Aligned>(vec.data(), vec.size());
-    }
-    // Send the data as a message
-    pmt::pmt_t out = pmt::init_c32vector(range_dopp.size(), range_dopp.data());
-    message_port_pub(pmt::mp("out"), pmt::cons(pmt::make_dict(), out));
 }
 
 void doppler_processing_impl::fftresize(size_t size)
@@ -132,8 +112,6 @@ void doppler_processing_impl::fftresize(size_t size)
     }
 }
 
-void doppler_processing_impl::set_msg_queue_depth(size_t depth) {
-    d_queue_depth = depth;
-}
+void doppler_processing_impl::set_msg_queue_depth(size_t depth) { d_queue_depth = depth; }
 } /* namespace plasma */
 } /* namespace gr */
