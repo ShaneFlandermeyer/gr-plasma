@@ -27,7 +27,28 @@ static const char* __doc_gr_plasma_usrp_radar_usrp_radar_1 = R"doc()doc";
 static const char* __doc_gr_plasma_usrp_radar_make = R"doc()doc";
 
 
+static const char* __doc_gr_plasma_usrp_radar_set_samp_rate = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_usrp_radar_set_tx_gain = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_usrp_radar_set_rx_gain = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_usrp_radar_set_tx_freq = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_usrp_radar_set_rx_freq = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_usrp_radar_set_start_time = R"doc()doc";
+
+
 static const char* __doc_gr_plasma_usrp_radar_set_tx_thread_priority = R"doc()doc";
 
 
 static const char* __doc_gr_plasma_usrp_radar_set_rx_thread_priority = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_usrp_radar_read_calibration_file = R"doc()doc";

@@ -24,17 +24,19 @@ class usrp_radar_impl : public usrp_radar
 {
 private:
     uhd::usrp::multi_usrp::sptr d_usrp;
+    std::string d_args;
     double d_samp_rate;
     double d_tx_gain;
     double d_rx_gain;
     double d_tx_freq;
     double d_rx_freq;
     double d_prf;
+    double d_tx_thread_priority;
+    double d_rx_thread_priority;
     size_t d_delay_samps;
     size_t d_pulse_count;
     size_t d_sample_count;
     uhd::time_spec_t d_start_time;
-    std::string d_tx_args, d_rx_args;
     std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
     pmt::pmt_t d_meta;
@@ -44,8 +46,7 @@ private:
     gr::thread::mutex d_tx_buff_mutex;
     std::atomic<bool> d_finished;
     std::atomic<bool> d_armed;
-    double d_tx_thread_priority;
-    double d_rx_thread_priority;
+    
 
 
     /**
@@ -85,14 +86,7 @@ private:
                  uhd::time_spec_t start_time);
 
 public:
-    usrp_radar_impl(double samp_rate,
-                    double tx_gain,
-                    double rx_gain,
-                    double tx_freq,
-                    double rx_freq,
-                    double start_time,
-                    const std::string& tx_args,
-                    const std::string& rx_args);
+    usrp_radar_impl(const std::string& args);
     ~usrp_radar_impl();
 
     /**
@@ -117,15 +111,22 @@ public:
     bool stop() override;
 
     /**
-     * @brief Use ~/.uhd/delay_calibration.json to determine the number of
+     * @brief Use the calibration file to determine the number of
      * samples to remove from the beginning of transmission
      *
      */
-    void read_calibration_json();
+    void read_calibration_file(const std::string&) override;
 
     void set_tx_thread_priority(const double) override;
 
     void set_rx_thread_priority(const double) override;
+
+    void set_samp_rate(const double) override;
+    void set_tx_gain(const double) override;
+    void set_rx_gain(const double) override;
+    void set_tx_freq(const double) override;
+    void set_rx_freq(const double) override;
+    void set_start_time(const double) override;
 };
 
 } // namespace plasma
