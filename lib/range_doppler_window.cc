@@ -118,10 +118,10 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         d_plot->replot();
 
         // TODO: Update the range and doppler axes
-        pmt::pmt_t prf = pmt::dict_ref(meta, PRF_KEY, pmt::PMT_NIL);
-        pmt::pmt_t pulse_width = pmt::dict_ref(meta, PULSEWIDTH_KEY, pmt::PMT_NIL);
-        pmt::pmt_t samp_rate = pmt::dict_ref(meta, SAMPLE_RATE_KEY, pmt::PMT_NIL);
-        pmt::pmt_t center_freq = pmt::dict_ref(meta, FREQUENCY_KEY, pmt::PMT_NIL);
+        pmt::pmt_t prf = pmt::dict_ref(meta, PMT_PRF, pmt::PMT_NIL);
+        pmt::pmt_t pulse_width = pmt::dict_ref(meta, PMT_PULSEWIDTH, pmt::PMT_NIL);
+        pmt::pmt_t samp_rate = pmt::dict_ref(meta, PMT_SAMPLE_RATE, pmt::PMT_NIL);
+        pmt::pmt_t center_freq = pmt::dict_ref(meta, PMT_FREQUENCY, pmt::PMT_NIL);
         if (not pmt::is_null(prf))
             d_prf = pmt::to_double(prf);
         if (not pmt::is_null(pulse_width))

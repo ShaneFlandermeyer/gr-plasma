@@ -50,7 +50,7 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
     d_main_gui = new RangeDopplerWindow(parent);
 
     // Initialize message ports
-    d_in_port = pmt::intern("in");
+    d_in_port = PMT_IN;
     message_port_register_in(d_in_port);
     set_msg_handler(d_in_port, [this](pmt::pmt_t msg) { handle_rx_msg(msg); });
 }

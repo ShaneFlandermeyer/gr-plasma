@@ -10,6 +10,7 @@
 
 #include <gnuradio/fft/fft.h>
 #include <gnuradio/plasma/match_filt.h>
+#include <gnuradio/plasma/pmt_constants.h>
 #include <Eigen/Dense>
 
 namespace gr {
@@ -47,14 +48,6 @@ public:
     bool start() override;
     bool stop() override;
 
-
-    // Where all the action really happens
-    // void forecast(int noutput_items, gr_vector_int& ninput_items_required);
-
-    // int general_work(int noutput_items,
-    //                  gr_vector_int& ninput_items,
-    //                  gr_vector_const_void_star& input_items,
-    //                  gr_vector_void_star& output_items);
     void set_msg_queue_depth(size_t) override;
 };
 

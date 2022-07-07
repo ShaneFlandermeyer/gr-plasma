@@ -9,7 +9,7 @@
 #define INCLUDED_PLASMA_PCFM_SOURCE_IMPL_H
 
 #include <gnuradio/plasma/pcfm_source.h>
-#include <gnuradio/plasma/pmt_dict_keys.h>
+#include <gnuradio/plasma/pmt_constants.h>
 #include <plasma_dsp/pcfm.h>
 #include <plasma_dsp/phase_code.h>
 

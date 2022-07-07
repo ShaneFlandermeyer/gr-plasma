@@ -13,6 +13,7 @@
 #include <gnuradio/fft/fft.h>
 #include <gnuradio/fft/fft_shift.h>
 #include <plasma_dsp/fftshift.h>
+#include <gnuradio/plasma/pmt_constants.h>
 
 namespace gr {
 namespace plasma {

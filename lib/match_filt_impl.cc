@@ -34,11 +34,11 @@ match_filt_impl::match_filt_impl(size_t num_pulse_cpi)
     d_fftsize = 0;
     d_data = pmt::make_c32vector(1, 0);
     d_meta = pmt::make_dict();
-    message_port_register_in(pmt::mp("tx"));
-    message_port_register_in(pmt::mp("rx"));
-    message_port_register_out(pmt::mp("out"));
-    set_msg_handler(pmt::mp("tx"), [this](pmt::pmt_t msg) { handle_tx_msg(msg); });
-    set_msg_handler(pmt::mp("rx"), [this](pmt::pmt_t msg) { handle_rx_msg(msg); });
+    message_port_register_in(PMT_TX);
+    message_port_register_in(PMT_RX);
+    message_port_register_out(PMT_OUT);
+    set_msg_handler(PMT_TX, [this](pmt::pmt_t msg) { handle_tx_msg(msg); });
+    set_msg_handler(PMT_RX, [this](pmt::pmt_t msg) { handle_rx_msg(msg); });
 }
 
 /*
@@ -84,7 +84,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 
     pmt::pmt_t samples;
 
-    if (d_match_filt.size() == 0 or this->nmsgs(pmt::intern("rx")) > d_msg_queue_depth) {
+    if (d_match_filt.size() == 0 or this->nmsgs(PMT_RX) > d_msg_queue_depth) {
         return;
     }
     // Get a copy of the input samples
@@ -134,9 +134,9 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
                nfft * sizeof(gr_complex));
     }
 
-    message_port_pub(pmt::intern("out"), pmt::cons(d_meta, d_data));
+    message_port_pub(PMT_OUT, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
-    // GR_LOG_DEBUG(d_logger, this->nmsgs(pmt::intern("rx")))
+    // GR_LOG_DEBUG(d_logger, this->nmsgs(PMT_RX))
 }
 
 void match_filt_impl::fftresize(size_t size)

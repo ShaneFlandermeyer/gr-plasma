@@ -30,9 +30,9 @@ pdu_head_impl::pdu_head_impl(size_t nitems)
           d_nitems(nitems)
 {
     // TODO: Declare port names as const in a separate file
-    message_port_register_in(pmt::mp("in"));
-    message_port_register_out(pmt::mp("out"));
-    set_msg_handler(pmt::mp("in"),
+    message_port_register_in(PMT_IN);
+    message_port_register_out(PMT_OUT);
+    set_msg_handler(PMT_IN,
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_nitems_sent = 0;
 }
@@ -40,7 +40,7 @@ pdu_head_impl::pdu_head_impl(size_t nitems)
 void pdu_head_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg) and d_nitems_sent < d_nitems) {
-        message_port_pub(pmt::mp("out"), msg);
+        message_port_pub(PMT_OUT, msg);
         d_nitems_sent++;
     }
     // TODO: Handle messages that are not PDUs

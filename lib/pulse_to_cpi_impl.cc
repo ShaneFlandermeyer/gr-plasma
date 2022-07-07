@@ -28,8 +28,8 @@ pulse_to_cpi_impl::pulse_to_cpi_impl(size_t num_pulse_cpi)
       d_num_pulse_cpi(num_pulse_cpi)
 {
     d_pulse_count = 0;
-    d_in_port = pmt::intern("in");
-    d_out_port = pmt::intern("out");
+    d_in_port = PMT_IN;
+    d_out_port = PMT_OUT;
     d_meta = pmt::make_dict();
     // d_data = pmt::make_c32vector(0, 0);
 
@@ -48,7 +48,7 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
 {
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
-        d_meta = pmt::dict_add(d_meta, pmt::intern("num_pulse_cpi"), pmt::from_long(d_num_pulse_cpi));
+        d_meta = pmt::dict_add(d_meta, PMT_NUM_PULSE_CPI, pmt::from_long(d_num_pulse_cpi));
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
         samples = pmt::cdr(msg);
     } else {

@@ -8,7 +8,7 @@
 #include <plasma_dsp/file.h>
 #include <plasma_dsp/filter.h>
 #include <plasma_dsp/linear_fm_waveform.h>
-#include <gnuradio/plasma/pmt_dict_keys.h>
+#include <gnuradio/plasma/pmt_constants.h>
 #include <pmt/pmt.h>
 #include <qwt/qwt_plot.h>
 #include <qwt/qwt_thermo.h>

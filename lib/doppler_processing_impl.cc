@@ -30,8 +30,8 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
 {
     fftresize(nfft);
 
-    d_in_port = pmt::intern("in");
-    d_out_port = pmt::intern("out");
+    d_in_port = PMT_IN;
+    d_out_port = PMT_OUT;
     d_meta = pmt::make_dict();
     d_data = pmt::make_c32vector(0, 0);
     message_port_register_in(d_in_port);
@@ -58,7 +58,7 @@ bool doppler_processing_impl::stop()
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
-    if (this->nmsgs(pmt::intern("in")) > d_queue_depth) {
+    if (this->nmsgs(PMT_IN) > d_queue_depth) {
         return;
     }
 
@@ -68,7 +68,7 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
         samples = pmt::cdr(msg);
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
         d_meta = pmt::dict_add(
-            d_meta, pmt::intern("doppler_fft_size"), pmt::from_long(d_fftsize));
+            d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {

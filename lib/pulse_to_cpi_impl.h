@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_PULSE_TO_CPI_IMPL_H
 
 #include <gnuradio/plasma/pulse_to_cpi.h>
+#include <gnuradio/plasma/pmt_constants.h>
 
 namespace gr {
 namespace plasma {

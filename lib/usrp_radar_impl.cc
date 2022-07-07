@@ -46,9 +46,9 @@ usrp_radar_impl::usrp_radar_impl(double samp_rate,
       d_tx_args(tx_args),
       d_rx_args(rx_args)
 {
-    message_port_register_in(pmt::mp("in"));
-    message_port_register_out(pmt::mp("out"));
-    set_msg_handler(pmt::mp("in"),
+    message_port_register_in(PMT_IN);
+    message_port_register_out(PMT_OUT);
+    set_msg_handler(PMT_IN,
                     [this](const pmt::pmt_t& msg) { handle_message(msg); });
     // Initialize the USRP device
     // d_usrp.reset();
@@ -82,14 +82,14 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         // Maintain any metadata that was produced by upstream blocks
         d_meta = pmt::car(msg);
         // Parse the metadata to update waveform parameters
-        pmt::pmt_t new_prf = pmt::dict_ref(d_meta, PRF_KEY, pmt::PMT_NIL);
+        pmt::pmt_t new_prf = pmt::dict_ref(d_meta, PMT_PRF, pmt::PMT_NIL);
         if (not pmt::is_null(new_prf)) {
             d_prf = pmt::to_double(new_prf);
         }
 
 
         // Append additional metadata to the pmt object
-        d_meta = pmt::dict_add(d_meta, FREQUENCY_KEY, pmt::from_double(d_tx_freq));
+        d_meta = pmt::dict_add(d_meta, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
         d_armed = true;
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -130,7 +130,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         if (d_armed) {
             d_armed = false;
             d_meta =
-                pmt::dict_add(d_meta, SAMPLE_START_KEY, pmt::from_uint64(d_sample_count));
+                pmt::dict_add(d_meta, PMT_SAMPLE_START, pmt::from_uint64(d_sample_count));
             gr::thread::scoped_lock lock(d_tx_buff_mutex);
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
@@ -223,7 +223,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             // Copy the received data into the message PDU and send it
             gr_complex* ptr = pmt::c32vector_writable_elements(d_rx_data, num_samps_pri);
             std::copy(buffs[0].begin(), buffs[0].end(), ptr);
-            message_port_pub(pmt::intern("out"), pmt::cons(d_meta, d_rx_data));
+            message_port_pub(PMT_OUT, pmt::cons(d_meta, d_rx_data));
             // Reset the metadata
             d_meta = pmt::make_dict();
             num_samps_total = 0;
@@ -287,7 +287,7 @@ void usrp_radar_impl::run()
     // Start the transmit and receive threads
     // If a time in the future is given
     uhd::time_spec_t time_now = uhd::time_spec_t(0.0);
-    const pmt::pmt_t outport = pmt::intern("out");
+    const pmt::pmt_t outport = PMT_OUT;
     if (d_start_time.get_real_secs() != 0) {
         time_now = d_usrp->get_time_now();
     }

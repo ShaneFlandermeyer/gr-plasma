@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_PDU_HEAD_IMPL_H
 
 #include <gnuradio/plasma/pdu_head.h>
+#include <gnuradio/plasma/pmt_constants.h>
 
 namespace gr {
 namespace plasma {

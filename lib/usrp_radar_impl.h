@@ -8,7 +8,7 @@
 #ifndef INCLUDED_PLASMA_USRP_RADAR_IMPL_H
 #define INCLUDED_PLASMA_USRP_RADAR_IMPL_H
 
-#include <gnuradio/plasma/pmt_dict_keys.h>
+#include <gnuradio/plasma/pmt_constants.h>
 #include <gnuradio/plasma/usrp_radar.h>
 #include <nlohmann/json.hpp>
 #include <uhd/types/time_spec.hpp>
