@@ -58,7 +58,7 @@ bool doppler_processing_impl::stop()
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
-    if (this->nmsgs(pmt::intern("in")) >= d_queue_depth) {
+    if (this->nmsgs(pmt::intern("in")) > d_queue_depth) {
         return;
     }
 
@@ -74,27 +74,26 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     }
     // Resize the output data vector if necessary
     size_t n = pmt::length(samples);
-    if (pmt::length(d_data) != n)
-        d_data = pmt::make_c32vector(n, 0);
+    size_t nout = n * (d_fftsize / d_num_pulse_cpi);
+    if (pmt::length(d_data) != nout)
+        d_data = pmt::make_c32vector(nout, 0);
     Eigen::Map<Eigen::ArrayXXcf> data(pmt::c32vector_writable_elements(samples, n),
                                       n / d_num_pulse_cpi,
                                       d_num_pulse_cpi);
-    Eigen::Map<Eigen::ArrayXXcf> out(pmt::c32vector_writable_elements(d_data, n),
-                                     n / d_num_pulse_cpi,
-                                     d_num_pulse_cpi);
+    Eigen::Map<Eigen::ArrayXXcf> out(
+        pmt::c32vector_writable_elements(d_data, nout), nout / d_fftsize, d_fftsize);
 
     // Do an fft and fftshift
     Eigen::ArrayXcf tmp;
     for (auto irow = 0; irow < data.rows(); irow++) {
         tmp = data.row(irow);
-        memcpy(
-            d_fwd->get_inbuf(), tmp.data(), data.cols() * sizeof(gr_complex));
+        memcpy(d_fwd->get_inbuf(), tmp.data(), data.cols() * sizeof(gr_complex));
         for (size_t i = data.cols(); i < d_fftsize; i++)
             d_fwd->get_inbuf()[i] = 0;
         d_fwd->execute();
         d_shift.shift(d_fwd->get_outbuf(), d_fftsize);
 
-        out.row(irow) = Eigen::Map<Eigen::ArrayXcf>(d_fwd->get_outbuf(), out.cols());
+        out.row(irow) = Eigen::Map<Eigen::ArrayXcf>(d_fwd->get_outbuf(), d_fftsize);
     }
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));

@@ -14,7 +14,7 @@ parameters:
 - id: depth
   label: Message queue depth
   dtype: int
-  default: 128
+  default: 1
   hide: part
 
 inputs:

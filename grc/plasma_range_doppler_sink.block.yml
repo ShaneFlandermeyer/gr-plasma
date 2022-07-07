@@ -24,7 +24,7 @@ parameters:
   - id: depth
     label: Message Queue Depth
     dtype: int
-    default: 32
+    default: 1
     hide: part
   - id: gui_hint
     label: GUI Hint
@@ -33,9 +33,7 @@ parameters:
   
 inputs:
   - domain: message
-    id: tx
-  - domain: message
-    id: rx
+    id: in
 
 templates:
   imports: |-

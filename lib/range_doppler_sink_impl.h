@@ -25,29 +25,19 @@ namespace plasma {
 class range_doppler_sink_impl : public range_doppler_sink
 {
 private:
+    // Block parameters
     double d_samp_rate;
     size_t d_num_pulse_cpi;
     double d_center_freq;
-    size_t d_num_fft_thread;
     double d_dynamic_range_db;
-    fft::fft_shift<gr_complex> d_shift;
+    // GUI parameters
     int d_argc;
     char* d_argv;
     RangeDopplerWindow* d_main_gui;
-    std::unique_ptr<fft::fft_complex_fwd> d_conv_fwd;
-    std::unique_ptr<fft::fft_complex_fwd> d_doppler_fft;
-    std::unique_ptr<fft::fft_complex_rev> d_conv_inv;
-    Eigen::ArrayXcf d_matched_filter;
-    Eigen::ArrayXcf d_matched_filter_freq;
-    Eigen::ArrayXXcf d_fast_time_slow_time;
-    std::atomic<size_t> d_count;
-    std::atomic<bool> d_finished;
-    std::atomic<bool> d_working;
-    gr::thread::thread d_processing_thread;
 
-    size_t d_fftsize;
+    std::atomic<bool> d_finished;
+    pmt::pmt_t d_in_port;
     size_t d_msg_queue_depth;
-    void fftresize(size_t size);
 
 public:
     range_doppler_sink_impl(double samp_rate,
@@ -67,7 +57,6 @@ public:
 #else
     void* pyqwidget();
 #endif
-    void handle_tx_msg(pmt::pmt_t msg);
     void handle_rx_msg(pmt::pmt_t msg);
 
     void set_dynamic_range(const double) override;
