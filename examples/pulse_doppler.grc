@@ -162,7 +162,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    args: addr=1
+    args: num_send_frames=512,num_recv_frames=512
     cal_file: '"/home/shane/.uhd/delay_calibration.json"'
     comment: ''
     maxoutbuf: '0'

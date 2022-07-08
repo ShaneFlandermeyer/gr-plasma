@@ -82,7 +82,7 @@ class pulse_doppler(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
         self.plasma_waveform_controller_0 = plasma.waveform_controller(10000, samp_rate)
-        self.plasma_usrp_radar_0 = plasma.usrp_radar('addr=1')
+        self.plasma_usrp_radar_0 = plasma.usrp_radar('num_send_frames=512,num_recv_frames=512')
         self.plasma_usrp_radar_0.set_samp_rate(samp_rate)
         self.plasma_usrp_radar_0.set_tx_gain(50)
         self.plasma_usrp_radar_0.set_rx_gain(50)
