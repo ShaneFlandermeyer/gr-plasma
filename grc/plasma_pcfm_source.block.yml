@@ -2,59 +2,30 @@ id: plasma_pcfm_source
 label: PCFM Source
 category: '[plasma]'
 
-templates:
-  imports: from gnuradio import plasma
-  make: plasma.pcfm_source(${code}, ${filter}, ${samp_rate})
-
-#  Make one 'parameters' list entry for every parameter you want settable from the GUI.
-#     Keys include:
-#     * id (makes the value accessible as keyname, e.g. in the make entry)
-#     * label (label shown in the GUI)
-#     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
-#     * default
 parameters:
 - id: code
   label: Code vector
-  dtype: float_vector
-  default: ()
-  hide: ${ 'none' if code else 'part' }
-- id: filter
-  label: Shaping Filter
-  dtype: float_vector
-  default: ()
-  hide: ${ 'none' if filter else 'part' }
+  dtype: enum
+  options: [plasma.PhaseCode.BARKER, plasma.PhaseCode.FRANK, plasma.PhaseCode.P4]
+  option_labels: [Barker, Frank, P4]
+- id: n
+  label: Code length
+  dtype: int
+- id: over
+  label: Oversampling factor
+  dtype: int
 - id: samp_rate
   label: Sample Rate
   dtype: float
   default: 'samp_rate'
 
-#- id: ...
-#  label: ...
-#  dtype: ...
-
-#  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
-#  Keys include:
-#      * label (an identifier for the GUI)
-#      * domain (optional - stream or message. Default is stream)
-#      * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
-#      * vlen (optional - data stream vector length. Default is 1)
-#      * optional (optional - set to 1 for optional inputs. Default is 0)
-# inputs:
-#- label: ...
-#  domain: ...
-#  dtype: ...
-#  vlen: ...
-#  optional: ...
-
 outputs:
   - id: out
     domain: message
-#- label: ...
-#  domain: ...
-#  dtype: ...
-#  vlen: ...
-#  optional: ...
 
-#  'file_format' specifies the version of the GRC yml format used in the file
-#  and should usually not be changed.
+
+templates:
+  imports: from gnuradio import plasma
+  make: plasma.pcfm_source(${code}, ${n}, ${over}, ${samp_rate})
+
 file_format: 1

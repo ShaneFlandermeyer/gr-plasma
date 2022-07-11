@@ -22,5 +22,6 @@ install(FILES
     waveform_controller.h
     match_filt.h
     doppler_processing.h
-    pulse_to_cpi.h DESTINATION include/gnuradio/plasma
+    pulse_to_cpi.h
+    phase_code.h DESTINATION include/gnuradio/plasma
 )
