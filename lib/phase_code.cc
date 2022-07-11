@@ -74,8 +74,8 @@ std::vector<double> frank(int M) {
 
 std::vector<double> p4(int M) {
   std::vector<double> phi(M);
-  for (int m = 0; m < M; m++) {
-    phi[m] = 2 * M_PI / M * (m - 1) * (m - 1 - M) / 2;
+  for (int m = 1; m <= M; m++) {
+    phi[m-1] = 2 * M_PI / M * (m - 1) * (m - 1 - M) / 2;
   }
   return phi;
 }
