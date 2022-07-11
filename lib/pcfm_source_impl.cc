@@ -11,10 +11,6 @@
 namespace gr {
 namespace plasma {
 
-// #pragma message("set the following appropriately and remove this warning")
-// using input_type = float;
-// #pragma message("set the following appropriately and remove this warning")
-// using output_type = float;
 pcfm_source::sptr
 pcfm_source::make(PhaseCode::Code code, int n, int over, double samp_rate)
 {
@@ -39,7 +35,6 @@ pcfm_source_impl::pcfm_source_impl(PhaseCode::Code code,
     d_filter = Eigen::ArrayXd::Ones(over);
     d_waveform = ::plasma::PCFMWaveform(d_code, d_filter, d_samp_rate, 0);
     d_data = d_waveform.sample().cast<gr_complex>();
-
     d_out_port = PMT_OUT;
     message_port_register_out(d_out_port);
 }

@@ -145,8 +145,6 @@ add_custom_target(uninstall
 # Add subdirectories
 ########################################################################
 set(CMAKE_AUTOMOC ON)
-# set(CMAKE_AUTORCC ON)
-# set(CMAKE_AUTOUIC ON)
 
 add_subdirectory(include/gnuradio/plasma)
 add_subdirectory(lib)
