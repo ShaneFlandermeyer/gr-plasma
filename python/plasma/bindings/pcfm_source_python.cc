@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(pcfm_source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(512f0a496cafed0ee2c52018f2b46517)                     */
+/* BINDTOOL_HEADER_FILE_HASH(c669e2bd38ec3b4200841c31b303bd23)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -30,33 +30,19 @@ namespace py = pybind11;
 void bind_pcfm_source(py::module& m)
 {
 
-    using pcfm_source    = ::gr::plasma::pcfm_source;
+    using pcfm_source = ::gr::plasma::pcfm_source;
 
 
-    py::class_<pcfm_source, gr::block, gr::basic_block,
-        std::shared_ptr<pcfm_source>>(m, "pcfm_source", D(pcfm_source))
+    py::class_<pcfm_source, gr::block, gr::basic_block, std::shared_ptr<pcfm_source>>(
+        m, "pcfm_source", D(pcfm_source))
 
         .def(py::init(&pcfm_source::make),
-           py::arg("code"),
-           py::arg("filter"),
-           py::arg("samp_rate"),
-           D(pcfm_source,make)
-        )
-        
-
+             py::arg("code"),
+             py::arg("n"),
+             py::arg("over"),
+             py::arg("samp_rate"),
+             D(pcfm_source, make))
 
 
         ;
-
-
-
-
 }
-
-
-
-
-
-
-
-

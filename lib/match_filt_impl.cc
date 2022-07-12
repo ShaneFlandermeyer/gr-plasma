@@ -13,10 +13,6 @@
 namespace gr {
 namespace plasma {
 
-// #pragma message("set the following appropriately and remove this warning")
-// using input_type = float;
-// #pragma message("set the following appropriately and remove this warning")
-// using output_type = float;
 match_filt::sptr match_filt::make(size_t num_pulse_cpi)
 {
     return gnuradio::make_block_sptr<match_filt_impl>(num_pulse_cpi);

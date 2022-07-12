@@ -24,6 +24,7 @@ list(APPEND plasma_sources
     match_filt_impl.cc
     doppler_processing_impl.cc
     pulse_to_cpi_impl.cc
+    phase_code.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
@@ -78,6 +79,7 @@ include(GrTest)
 #include_directories()
 # List all files that contain Boost.UTF unit tests here
 list(APPEND test_plasma_sources
+qa_phase_code.cc
 )
 # Anything we need to link to for the unit tests go here
 list(APPEND GR_TEST_TARGET_DEPS gnuradio-plasma)

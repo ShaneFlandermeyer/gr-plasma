@@ -29,8 +29,9 @@ private:
     std::atomic<bool> d_finished;
 
 public:
-    pcfm_source_impl(std::vector<double>& code,
-                     std::vector<double>& filter,
+    pcfm_source_impl(PhaseCode::Code code,
+                     int n,
+                     int over,
                      double samp_rate);
     ~pcfm_source_impl();
 

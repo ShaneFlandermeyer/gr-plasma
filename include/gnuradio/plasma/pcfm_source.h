@@ -10,6 +10,7 @@
 
 #include <gnuradio/block.h>
 #include <gnuradio/plasma/api.h>
+#include <gnuradio/plasma/phase_code.h>
 
 namespace gr {
 namespace plasma {
@@ -32,7 +33,7 @@ public:
      * class. plasma::pcfm_source::make is the public interface for
      * creating new instances.
      */
-    static sptr make(std::vector<double>& code, std::vector<double>& filter, double samp_rate);
+    static sptr make(PhaseCode::Code code, int n, int over, double samp_rate);
 };
 
 } // namespace plasma
