@@ -25,3 +25,6 @@ static const char* __doc_gr_plasma_PhaseCode_PhaseCode_1 = R"doc()doc";
 
 
 static const char* __doc_gr_plasma_PhaseCode_generate_code = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_PhaseCode_wrapToPi = R"doc()doc";

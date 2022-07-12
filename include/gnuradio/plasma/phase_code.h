@@ -60,6 +60,8 @@ public:
    * @return std::vector<double> Phase code vector
    */
   static std::vector<double> generate_code(Code type, int n);
+
+  static void wrapToPi(std::vector<double>&);
 };
 
 } // namespace plasma
