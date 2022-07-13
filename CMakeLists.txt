@@ -9,8 +9,8 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 3.8)
-project(gr-plasma CXX C)
+cmake_minimum_required(VERSION 3.17)
+project(gr-plasma CXX C CUDA)
 enable_testing()
 
 # Install to PyBOMBS target prefix if defined
@@ -103,6 +103,7 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qwt REQUIRED)
+find_package(CUDAToolkit)
 ########################################################################
 # PyBind11 Related
 ########################################################################

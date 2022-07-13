@@ -17,11 +17,13 @@ install(FILES
     pdu_head.h
     pmt_constants.h
     qt_update_events.h
+    range_doppler.h
     range_doppler_sink.h 
     usrp_radar.h
     waveform_controller.h
     match_filt.h
     doppler_processing.h
     pulse_to_cpi.h
-    phase_code.h DESTINATION include/gnuradio/plasma
+    phase_code.h 
+    DESTINATION include/gnuradio/plasma
 )

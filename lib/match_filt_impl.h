@@ -22,7 +22,7 @@ private:
     // Nothing to declare in this block.
     Eigen::ArrayXcf d_match_filt;
     Eigen::ArrayXcf d_match_filt_freq;
-    // Eigen::ArrayXXcf d_fast_slow_time;
+    Eigen::ArrayXXcf d_fast_slow_time;
     // Eigen::Map<Eigen::ArrayXcf> d_fast_slow_time;
     size_t d_num_pulse_cpi;
     size_t d_fftsize;

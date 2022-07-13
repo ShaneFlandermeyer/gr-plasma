@@ -25,6 +25,7 @@ list(APPEND plasma_sources
     doppler_processing_impl.cc
     pulse_to_cpi_impl.cc
     phase_code.cc
+    range_doppler.cu
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
@@ -39,6 +40,10 @@ target_link_libraries(gnuradio-plasma
     gnuradio::gnuradio-runtime
     gnuradio::gnuradio-fft
     gnuradio::gnuradio-filter
+    ${CUDA_cufft_LIBRARY}
+    ${CUDA_cufftw_LIBRARY}
+    ${CUDA_cudart_LIBRARY}
+    ${CUDA_cuda_driver_LIBRARY}
     Qt5::Widgets
     qwt::qwt
     Python::Python
