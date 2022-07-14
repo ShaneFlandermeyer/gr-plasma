@@ -14,4 +14,9 @@ void cudaMatchedFilter(std::complex<float>* H,
                        long int num_pulse,
                        long int nfft);
 
+void cudaDopplerProcessing(std::complex<float>* out,
+                           std::complex<float>* x,
+                           long int nrow,
+                           long int ncol);
+
 #endif /* A12C37D2_39C4_4E19_8B04_F963CB4B7A0D */

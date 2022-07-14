@@ -11,9 +11,6 @@
 #include <chrono>
 #include <future>
 
-#define NX 256
-#define BATCH 10
-
 namespace gr {
 namespace plasma {
 
@@ -42,7 +39,6 @@ match_filt_impl::match_filt_impl(size_t num_pulse_cpi, Device device)
     message_port_register_out(PMT_OUT);
     set_msg_handler(PMT_TX, [this](pmt::pmt_t msg) { handle_tx_msg(msg); });
     set_msg_handler(PMT_RX, [this](pmt::pmt_t msg) { handle_rx_msg(msg); });
-    std::cout << d_device << std::endl;
 }
 
 /*
@@ -84,7 +80,6 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    auto start = std::chrono::high_resolution_clock::now();
     pmt::pmt_t samples;
     if (d_match_filt.size() == 0 or this->nmsgs(PMT_RX) > d_msg_queue_depth) {
         return;
@@ -130,53 +125,8 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
         gr_complex* in = pmt::c32vector_writable_elements(samples, io);
         cpuMatchedFilter(in, num_samp_pri, nfft);
     }
-
-
-    // memcpy(out, d_fast_slow_time.block(0, 0, nconv, d_num_pulse_cpi).data(),
-    // nconv*d_num_pulse_cpi*sizeof(gr_complex)); d_data =
-    // pmt::init_c32vector(d_fast_slow_time.size(), d_fast_slow_time.data()); gr_complex*
-    // out = pmt::c32vector_writable_elements(d_data, io); memcpy(out,
-    //        d_fast_slow_time.block(0, 0, nconv, d_fast_slow_time.cols()).data(),
-    //        pmt::length(d_data) * sizeof(gr_complex));
-
-
-    // for (int icol = 0; icol < fast_slow_time.cols(); icol++) {
-    //     // Zero-pad the input and transform
-    //     memcpy(d_fwd->get_inbuf(),
-    //            fast_slow_time.col(icol).data(),
-    //            num_samp_pri * sizeof(gr_complex));
-    //     for (size_t i = num_samp_pri; i < d_fftsize; i++)
-    //         d_fwd->get_inbuf()[i] = 0;
-    //     d_fwd->execute();
-    //     gr_complex* a = d_fwd->get_outbuf();
-
-    //     // Get the matched filter (already transformed and zero-padded)
-    //     gr_complex* b = d_match_filt_freq.data();
-
-    //     // Hadamard and IFFT
-    //     volk_32fc_x2_multiply_32fc_a(d_inv->get_inbuf(), a, b, d_fftsize);
-    //     d_inv->execute();
-
-    //     volk_32fc_s32fc_multiply_32fc_a(
-    //         d_inv->get_outbuf(), d_inv->get_outbuf(), 1 / (float)d_fftsize,
-    //         d_fftsize);
-
-    //     // Copy the result to the output buffer
-    //     if (pmt::length(d_data) != nfft * d_num_pulse_cpi) {
-    //         d_data = pmt::make_c32vector(nfft * d_num_pulse_cpi, 0);
-    //     }
-    //     size_t io(0);
-    //     memcpy(pmt::c32vector_writable_elements(d_data, io) + nfft * icol,
-    //            d_inv->get_outbuf(),
-    //            nfft * sizeof(gr_complex));
-    // }
-    // d_data = pmt::init_c32vector(fast_slow_time.size(),
-    // fast_slow_time.data());
     message_port_pub(PMT_OUT, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
-    GR_LOG_DEBUG(d_logger, this->nmsgs(PMT_RX))
-    auto stop = std::chrono::high_resolution_clock::now();
-    GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
 }
 
 void match_filt_impl::cpuMatchedFilter(gr_complex* in, size_t num_samp_pri, size_t nfft)

@@ -7,6 +7,7 @@
 
 #include "doppler_processing_impl.h"
 #include <gnuradio/io_signature.h>
+#include <gnuradio/plasma/range_doppler.h>
 #include <chrono>
 
 namespace gr {
@@ -58,6 +59,7 @@ bool doppler_processing_impl::stop()
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
+    auto start = std::chrono::high_resolution_clock::now();
     if (this->nmsgs(PMT_IN) > d_queue_depth) {
         return;
     }
@@ -67,8 +69,7 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
-        d_meta = pmt::dict_add(
-            d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
+        d_meta = pmt::dict_add(d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
@@ -85,22 +86,26 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
                                       d_num_pulse_cpi);
     Eigen::Map<Eigen::ArrayXXcf> out(
         pmt::c32vector_writable_elements(d_data, nout), nout / d_fftsize, d_fftsize);
-
     // Do an fft and fftshift
-    Eigen::ArrayXcf tmp;
-    for (auto irow = 0; irow < data.rows(); irow++) {
-        tmp = data.row(irow);
-        memcpy(d_fwd->get_inbuf(), tmp.data(), data.cols() * sizeof(gr_complex));
-        for (size_t i = data.cols(); i < d_fftsize; i++)
-            d_fwd->get_inbuf()[i] = 0;
-        d_fwd->execute();
-        d_shift.shift(d_fwd->get_outbuf(), d_fftsize);
+    cudaDopplerProcessing(out.data(), data.data(), data.rows(), data.cols());
 
-        out.row(irow) = Eigen::Map<Eigen::ArrayXcf>(d_fwd->get_outbuf(), d_fftsize);
-    }
+    // Eigen::ArrayXcf tmp;
+    // for (auto irow = 0; irow < data.rows(); irow++) {
+    //     tmp = data.row(irow);
+    //     memcpy(d_fwd->get_inbuf(), tmp.data(), data.cols() * sizeof(gr_complex));
+    //     for (size_t i = data.cols(); i < d_fftsize; i++)
+    //         d_fwd->get_inbuf()[i] = 0;
+    //     d_fwd->execute();
+    //     d_shift.shift(d_fwd->get_outbuf(), d_fftsize);
+
+    //     out.row(irow) = Eigen::Map<Eigen::ArrayXcf>(d_fwd->get_outbuf(), d_fftsize);
+    // }
+
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
+    auto stop = std::chrono::high_resolution_clock::now();
+    GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
 }
 
 void doppler_processing_impl::fftresize(size_t size)
