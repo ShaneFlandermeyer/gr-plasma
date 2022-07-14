@@ -1,32 +1,40 @@
-// #include <gnuradio/plasma/ra
-// #include <gnuradio/plasma/range_doppler.h>
+#include <gnuradio/plasma/range_doppler.h>
 #include <complex>
 #include <iostream>
 
-#include <cufft.h>
-
-
+/**
+ * @brief Multiply each column of matrix x1 (stored as a contiguous data vector)
+   by x2
+ *
+ * @param x1 Input matrix data
+ * @param x2 Input coefficient data
+ * @param ncol Number of columns in x1
+ * @param nrow Number of rows in x1
+ */
 __global__ void
-rdComplexMultiply(cuFloatComplex* s, cuFloatComplex* w, long int M, long int N)
+complexMultiply(cuFloatComplex* x1, cuFloatComplex* x2, long int ncol, long int nrow)
 {
     long int i = threadIdx.x + blockDim.x * blockIdx.x;
+    if (i < nrow * ncol) {
+        long int n = i % nrow;
 
-    if (i < N * M) {
-        long int n = i % N;
-
-        s[i] = cuCmulf(s[i], w[n]);
-        // s[i] = make_cuFloatComplex(10.0f,0.0f);
+        x1[i] = cuCmulf(x1[i], x2[n]);
     }
 }
 
-__global__ void
-rdComplexDivide(cuFloatComplex* s, long int M, long int N)
+/**
+ * @brief Divide each element of input array x by a constant c
+ *
+ * @param x1 Array of complex floats
+ * @param N Input size
+ * @param c Division constant
+ * @return __global__
+ */
+__global__ void complexDivideConstant(cuFloatComplex* x1, long int N, cuFloatComplex c)
 {
     long int i = threadIdx.x + blockDim.x * blockIdx.x;
-
-    if (i < N * M) {
-        long int n = i % N;
-        s[i] = cuCdivf(s[i],make_cuFloatComplex((float)N,0.0f);
+    if (i < N) {
+        x1[i] = cuCdivf(x1[i], c);
     }
 }
 
@@ -34,74 +42,37 @@ rdComplexDivide(cuFloatComplex* s, long int M, long int N)
 void cudaMatchedFilter(std::complex<float>* H,
                        std::complex<float>* x,
                        std::complex<float>* out,
-                       long int M,
-                       long int N)
+                       long int num_pulse,
+                       long int nfft)
 {
     long int num_thread_block = 256;
     long int num_block_grid;
 
-    cuFloatComplex *d_rx, *d_mf_freq;
-    cudaMalloc((void**)&d_rx, sizeof(cuFloatComplex) * M * N);
-    cudaMalloc((void**)&d_mf_freq, sizeof(cuFloatComplex) * N);
-    cudaMemcpy(d_rx, x, sizeof(cuFloatComplex) * M * N, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_mf_freq, H, sizeof(cuFloatComplex) * N, cudaMemcpyHostToDevice);
+    // Copy input arrays to the device
+    cuFloatComplex *d_x, *d_H;
+    cudaMalloc((void**)&d_x, sizeof(cuFloatComplex) * num_pulse * nfft);
+    cudaMalloc((void**)&d_H, sizeof(cuFloatComplex) * nfft);
+    cudaMemcpy(d_x, x, sizeof(cuFloatComplex) * num_pulse * nfft, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_H, H, sizeof(cuFloatComplex) * nfft, cudaMemcpyHostToDevice);
 
+    // FFT input array
     cufftHandle plan;
-    cufftPlan1d(&plan, N, CUFFT_C2C, M);
-
-    cufftExecC2C(plan, (cufftComplex*)d_rx, (cufftComplex*)d_rx, CUFFT_FORWARD);
+    cufftPlan1d(&plan, nfft, CUFFT_C2C, num_pulse);
+    cufftExecC2C(plan, (cufftComplex*)d_x, (cufftComplex*)d_x, CUFFT_FORWARD);
 
     // Multiplying signal with waveform in fourier domain
-    num_block_grid = (N * M + num_thread_block - 1) / num_thread_block;
-    rdComplexMultiply<<<num_block_grid, num_thread_block>>>(d_rx, d_mf_freq, M, N);
-    cudaDeviceSynchronize();
-    cufftExecC2C(plan, (cufftComplex*)d_rx, (cufftComplex*)d_rx, CUFFT_INVERSE);
-    rdComplexDivide<<<num_block_grid, num_thread_block>>>(d_rx, M, N);
-    cudaMemcpy(out, d_rx, sizeof(cuFloatComplex) * M * N, cudaMemcpyDeviceToHost);
+    num_block_grid = (nfft * num_pulse + num_thread_block - 1) / num_thread_block;
+    complexMultiply<<<num_block_grid, num_thread_block>>>(d_x, d_H, num_pulse, nfft);
 
+    // IFFT input array
+    cufftExecC2C(plan, (cufftComplex*)d_x, (cufftComplex*)d_x, CUFFT_INVERSE);
+    complexDivideConstant<<<num_block_grid, num_thread_block>>>(
+        d_x, num_pulse, make_cuFloatComplex((float)nfft, 0.0f));
+
+    // Copy data back from the device and clean up
+    cudaMemcpy(
+        out, d_x, sizeof(cuFloatComplex) * num_pulse * nfft, cudaMemcpyDeviceToHost);
     cufftDestroy(plan);
-    cudaFree(d_rx);
-    cudaFree(d_mf_freq);
+    cudaFree(d_x);
+    cudaFree(d_H);
 }
-
-// void matchedFilterProcessingCUDA_gpu(std::complex<float>* signal,
-//                                      std::complex<float>* waveform,
-//                                      long int M,
-//                                      long int N)
-// {
-// size_t mem_size = sizeof(cuFloatComplex) * M * N;
-// long int threadsPerBlock = 256;
-// long int blocksPerGrid;
-
-// cuFloatComplex *d_signal, *d_waveform;
-// cudaMalloc((void**)&d_signal, mem_size);
-// cudaMalloc((void**)&d_waveform, (mem_size / M));
-// cudaMemcpy(d_signal, signal, mem_size, cudaMemcpyHostToDevice);
-// cudaMemcpy(d_waveform, waveform, (mem_size / M), cudaMemcpyHostToDevice);
-
-// cufftHandle plan;
-// int nCol[1] = { N };
-// if (cufftPlan1d(&plan, N, CUFFT_C2C, M) !=
-//     CUFFT_SUCCESS) {
-//     std::cout << "Problem creating plan" << std::endl;
-// }
-// // if (cufftPlan1d(&plan, N, CUFFT_C2C, M) != CUFFT_SUCCESS) {
-// //     std::cout << "Problem creating plan" << std::endl;
-// // }
-
-// cufftExecC2C(plan, (cufftComplex*)d_signal, (cufftComplex*)d_signal,
-// CUFFT_FORWARD);
-
-// // Multiplying signal with waveform in fourier domain
-// blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
-// rdComplexMultiply<<<blocksPerGrid, threadsPerBlock>>>(d_signal, d_waveform, M, N);
-
-// cufftExecC2C(plan, (cufftComplex*)d_signal, (cufftComplex*)d_signal,
-// CUFFT_INVERSE);
-
-// cudaMemcpy(signal, d_signal, mem_size, cudaMemcpyDeviceToHost);
-
-// cufftDestroy(plan);
-// cudaFree(d_signal);
-// cudaFree(d_waveform);
-// }

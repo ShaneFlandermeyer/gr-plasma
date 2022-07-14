@@ -168,7 +168,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     // fast_slow_time.data());
     message_port_pub(PMT_OUT, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
-    // GR_LOG_DEBUG(d_logger, this->nmsgs(PMT_RX))
+    GR_LOG_DEBUG(d_logger, this->nmsgs(PMT_RX))
     auto stop = std::chrono::high_resolution_clock::now();
     GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
 }

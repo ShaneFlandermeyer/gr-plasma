@@ -7,6 +7,7 @@
 #include <cufftXt.h>
 #include <device_launch_parameters.h>
 #include <complex>
+
 void cudaMatchedFilter(std::complex<float>* mf_freq,
                        std::complex<float>* rx,
                        std::complex<float>* out,
