@@ -22,6 +22,7 @@ namespace plasma {
 class PLASMA_API match_filt : virtual public gr::block
 {
 public:
+    enum Device { CPU, GPU };
     typedef std::shared_ptr<match_filt> sptr;
 
     /*!
@@ -32,7 +33,7 @@ public:
      * class. plasma::match_filt::make is the public interface for
      * creating new instances.
      */
-    static sptr make(size_t num_pulse_cpi);
+    static sptr make(size_t num_pulse_cpi, Device device = CPU);
 
     virtual void set_msg_queue_depth(size_t depth) = 0;
 };

@@ -19,19 +19,20 @@ namespace plasma {
 
 int nextpow2(int x) { return pow(2, ceil(log(x) / log(2))); }
 
-match_filt::sptr match_filt::make(size_t num_pulse_cpi)
+match_filt::sptr match_filt::make(size_t num_pulse_cpi, Device device)
 {
-    return gnuradio::make_block_sptr<match_filt_impl>(num_pulse_cpi);
+    return gnuradio::make_block_sptr<match_filt_impl>(num_pulse_cpi, device);
 }
 
 
 /*
  * The private constructor
  */
-match_filt_impl::match_filt_impl(size_t num_pulse_cpi)
+match_filt_impl::match_filt_impl(size_t num_pulse_cpi, Device device)
     : gr::block(
           "match_filt", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
-      d_num_pulse_cpi(num_pulse_cpi)
+      d_num_pulse_cpi(num_pulse_cpi),
+      d_device(device)
 {
     d_fftsize = 0;
     d_data = pmt::make_c32vector(1, 0);
@@ -41,6 +42,7 @@ match_filt_impl::match_filt_impl(size_t num_pulse_cpi)
     message_port_register_out(PMT_OUT);
     set_msg_handler(PMT_TX, [this](pmt::pmt_t msg) { handle_tx_msg(msg); });
     set_msg_handler(PMT_RX, [this](pmt::pmt_t msg) { handle_rx_msg(msg); });
+    std::cout << d_device << std::endl;
 }
 
 /*
@@ -82,7 +84,6 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-
     auto start = std::chrono::high_resolution_clock::now();
     pmt::pmt_t samples;
     if (d_match_filt.size() == 0 or this->nmsgs(PMT_RX) > d_msg_queue_depth) {
@@ -100,32 +101,37 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     }
     // Convolve each column of the input data with the matched filter
     int num_samp_pri = pmt::length(samples) / d_num_pulse_cpi;
-    size_t num_samp_cpi = num_samp_pri * d_num_pulse_cpi;
     auto nconv = num_samp_pri + d_match_filt.size() - 1;
-    // TODO: This is only faster on the CPU
-    // auto nfft = nextpow2(nconv);
-    auto nfft = nconv;
-    gr_complex* in = pmt::c32vector_writable_elements(samples, num_samp_cpi);
+
     size_t io(0);
-    // Zero pad each column of the fast-time array - hopefully very quickly
-    // TODO: This logic might break if num_samp_pri changes
-    if (d_fast_slow_time.rows() != nfft and
-        d_fast_slow_time.cols() != (int)d_num_pulse_cpi) {
-        d_fast_slow_time = Eigen::ArrayXXcf::Zero(nfft, d_num_pulse_cpi);
-        d_data = pmt::make_c32vector(nfft * d_num_pulse_cpi, 0);
-        fftresize(nfft);
+    gr_complex* in = pmt::c32vector_writable_elements(samples, io);
+    
+    if (d_device == GPU) { // GPU Processing
+        // Zero pad each column of the fast-time array - hopefully very quickly
+        auto nfft = nconv;
+        // TODO: This logic might break if num_samp_pri changes
+        gr_complex* out;
+        if (d_fast_slow_time.rows() != nfft and
+            d_fast_slow_time.cols() != (int)d_num_pulse_cpi) {
+            d_fast_slow_time = Eigen::ArrayXXcf::Zero(nfft, d_num_pulse_cpi);
+            d_data = pmt::make_c32vector(nfft * d_num_pulse_cpi, 0);
+            fftresize(nfft);
+            out = pmt::c32vector_writable_elements(d_data, io);
+        }
+        d_fast_slow_time.block(0, 0, num_samp_pri, d_num_pulse_cpi) =
+            Eigen::Map<Eigen::ArrayXXcf>(in, num_samp_pri, d_num_pulse_cpi);
+        cudaMatchedFilter(d_match_filt_freq.data(),
+                          d_fast_slow_time.data(),
+                          out,
+                          d_fast_slow_time.cols(),
+                          d_fast_slow_time.rows());
+    } else if (d_device == CPU) {
+        auto nfft = nextpow2(nconv);
+        gr_complex* in = pmt::c32vector_writable_elements(samples, io);
+        cpuMatchedFilter(in, num_samp_pri, nfft);
     }
 
-    d_fast_slow_time.block(0, 0, num_samp_pri, d_num_pulse_cpi) =
-        Eigen::Map<Eigen::ArrayXXcf>(in, num_samp_pri, d_num_pulse_cpi);
-    gr_complex* out = pmt::c32vector_writable_elements(d_data, io);
-    
-    cudaMatchedFilter(d_match_filt_freq.data(),
-                      d_fast_slow_time.data(),
-                      out,
-                      d_fast_slow_time.cols(),
-                      d_fast_slow_time.rows());
-    
+
     // memcpy(out, d_fast_slow_time.block(0, 0, nconv, d_num_pulse_cpi).data(),
     // nconv*d_num_pulse_cpi*sizeof(gr_complex)); d_data =
     // pmt::init_c32vector(d_fast_slow_time.size(), d_fast_slow_time.data()); gr_complex*
@@ -171,6 +177,41 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     GR_LOG_DEBUG(d_logger, this->nmsgs(PMT_RX))
     auto stop = std::chrono::high_resolution_clock::now();
     GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
+}
+
+void match_filt_impl::cpuMatchedFilter(gr_complex* in, size_t num_samp_pri, size_t nfft)
+{
+    Eigen::Map<Eigen::ArrayXXcf> fast_slow_time(in, num_samp_pri, d_num_pulse_cpi);
+    fftresize(nfft);
+    for (int icol = 0; icol < fast_slow_time.cols(); icol++) {
+        // Zero-pad the input and transform
+        memcpy(d_fwd->get_inbuf(),
+               fast_slow_time.col(icol).data(),
+               num_samp_pri * sizeof(gr_complex));
+        for (size_t i = num_samp_pri; i < d_fftsize; i++)
+            d_fwd->get_inbuf()[i] = 0;
+        d_fwd->execute();
+        gr_complex* a = d_fwd->get_outbuf();
+
+        // Get the matched filter (already transformed and zero-padded)
+        gr_complex* b = d_match_filt_freq.data();
+
+        // Hadamard and IFFT
+        volk_32fc_x2_multiply_32fc_a(d_inv->get_inbuf(), a, b, d_fftsize);
+        d_inv->execute();
+
+        volk_32fc_s32fc_multiply_32fc_a(
+            d_inv->get_outbuf(), d_inv->get_outbuf(), 1 / (float)d_fftsize, d_fftsize);
+
+        // Copy the result to the output buffer
+        if (pmt::length(d_data) != nfft * d_num_pulse_cpi) {
+            d_data = pmt::make_c32vector(nfft * d_num_pulse_cpi, 0);
+        }
+        size_t io(0);
+        memcpy(pmt::c32vector_writable_elements(d_data, io) + nfft * icol,
+               d_inv->get_outbuf(),
+               nfft * sizeof(gr_complex));
+    }
 }
 
 void match_filt_impl::fftresize(size_t size)

@@ -7,6 +7,11 @@ parameters:
   label: Pulses per CPI
   dtype: int
   default: 128
+- id: device
+  label: Device
+  dtype: enum
+  options: [plasma.match_filt.CPU, plasma.match_filt.GPU]
+  option_labels: [CPU, GPU]
 - id: depth
   label: Message Queue Depth
   dtype: int
@@ -26,7 +31,7 @@ outputs:
 templates:
   imports: from gnuradio import plasma
   make: |-
-    plasma.match_filt(${num_pulse_cpi})
+    plasma.match_filt(${num_pulse_cpi}, ${device})
     self.${id}.set_msg_queue_depth(${depth})
 
 file_format: 1
