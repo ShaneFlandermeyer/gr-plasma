@@ -10,6 +10,5 @@
 
 namespace gr {
 namespace plasma {
-
 } /* namespace plasma */
 } /* namespace gr */

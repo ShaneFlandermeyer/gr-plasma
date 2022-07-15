@@ -8,12 +8,8 @@
 #ifndef INCLUDED_PLASMA_DOPPLER_PROCESSING_IMPL_H
 #define INCLUDED_PLASMA_DOPPLER_PROCESSING_IMPL_H
 
-// #include <gnuradio/fft/fft.h>
-// #include <gnuradio/fft/fft_shift.h>
 #include <gnuradio/plasma/doppler_processing.h>
 #include <gnuradio/plasma/pmt_constants.h>
-// #include <Eigen/Dense>
-// #include <plasma_dsp/fftshift.h>
 #include <gnuradio/plasma/device.h>
 
 namespace gr {
@@ -32,6 +28,7 @@ private:
     pmt::pmt_t d_in_port;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_data;
+    af::Backend d_backend;
 
 public:
     doppler_processing_impl(size_t num_pulse_cpi, size_t nfft);

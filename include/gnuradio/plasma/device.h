@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_DEVICE_H
 
 #include <gnuradio/plasma/api.h>
+#include <arrayfire.h>
 
 namespace gr {
 namespace plasma {

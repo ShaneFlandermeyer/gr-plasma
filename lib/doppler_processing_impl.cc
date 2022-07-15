@@ -51,21 +51,21 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     if (this->nmsgs(PMT_IN) > d_queue_depth) {
         return;
     }
+    af::setBackend(d_backend);
 
     // Read the input PDU
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
-        d_meta = pmt::dict_add(
-            d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
+        d_meta = pmt::dict_add(d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
         return;
     }
-    
+
     // Get pointers to the input and output arrays
     size_t n = pmt::length(samples);
     size_t io(0);
@@ -94,22 +94,22 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 
 void doppler_processing_impl::set_msg_queue_depth(size_t depth) { d_queue_depth = depth; }
 
-void doppler_processing_impl::set_backend(Device::Backend backend) {
+void doppler_processing_impl::set_backend(Device::Backend backend)
+{
     switch (backend) {
-        case Device::CPU:
-            af::setBackend(AF_BACKEND_CPU);
-            break;
-        case Device::CUDA:
-            af::setBackend(AF_BACKEND_CUDA);
-            break;
-        case Device::OPENCL:
-            af::setBackend(AF_BACKEND_OPENCL);
-            break;
-        default:
-            af::setBackend(AF_BACKEND_DEFAULT);
-            break;
+    case Device::CPU:
+        d_backend = AF_BACKEND_CPU;
+        break;
+    case Device::CUDA:
+        d_backend = AF_BACKEND_CUDA;
+        break;
+    case Device::OPENCL:
+        d_backend = AF_BACKEND_OPENCL;
+        break;
+    default:
+        d_backend = AF_BACKEND_DEFAULT;
+        break;
     }
-
 }
 } /* namespace plasma */
 } /* namespace gr */
