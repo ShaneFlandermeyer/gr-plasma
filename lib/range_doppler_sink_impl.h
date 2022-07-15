@@ -17,6 +17,7 @@
 #include <gnuradio/thread/thread.h>
 #include <plasma_dsp/constants.h>
 #include <volk/volk_alloc.hh>
+#include <arrayfire.h>
 
 
 namespace gr {

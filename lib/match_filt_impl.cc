@@ -8,8 +8,6 @@
 #include "match_filt_impl.h"
 #include <gnuradio/io_signature.h>
 #include <arrayfire.h>
-#include <chrono>
-#include <future>
 
 namespace gr {
 namespace plasma {

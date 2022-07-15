@@ -58,10 +58,7 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
 /*
  * Our virtual destructor.
  */
-range_doppler_sink_impl::~range_doppler_sink_impl()
-{
-    delete d_argv;
-}
+range_doppler_sink_impl::~range_doppler_sink_impl() { delete d_argv; }
 
 bool range_doppler_sink_impl::start()
 {
@@ -104,20 +101,19 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
         d_meta = pmt::car(msg);
     }
     size_t n = pmt::length(samples);
-    Eigen::Map<Eigen::ArrayXXcf> in(pmt::c32vector_writable_elements(samples, n),
-                                     n / d_num_pulse_cpi,
-                                     d_num_pulse_cpi);
-    // Eigen::ArrayXXd newdata = Eigen::ArrayXXd::Ones(100,25);
-    Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> plot_data =
-        20 * log10(abs(in)).cast<double>();
-    // Normalize the plot data and clip it to fit the dynamic range
-    plot_data = plot_data - plot_data.maxCoeff();
-    plot_data = plot_data.max(-d_dynamic_range_db);
-
-
+    size_t ncol = d_num_pulse_cpi;
+    size_t nrow = n / ncol;
+    const gr_complex* in = pmt::c32vector_elements(samples, n);
+    af::array plot_data = af::constant(0, nrow, ncol, c32);
+    plot_data.write(reinterpret_cast<const af::cfloat*>(in), n * sizeof(gr_complex));
+    plot_data = 20 * af::log10(af::abs(plot_data));
+    plot_data -= af::max(af::flat(plot_data)).scalar<float>();
+    plot_data = af::clamp(plot_data, -d_dynamic_range_db, 0);
+    plot_data = plot_data.T();
+    std::unique_ptr<float> tmp(plot_data.host<float>());
+    std::vector<double> plot_data(tmp.get(), tmp.get() + n);
     d_qapp->postEvent(d_main_gui,
-                      new RangeDopplerUpdateEvent(
-                          plot_data.data(), plot_data.rows(), plot_data.cols(), d_meta));
+                      new RangeDopplerUpdateEvent(plot_data.data(), nrow, ncol, d_meta));
 }
 
 
