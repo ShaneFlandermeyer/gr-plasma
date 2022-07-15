@@ -25,6 +25,7 @@ list(APPEND plasma_sources
     doppler_processing_impl.cc
     pulse_to_cpi_impl.cc
     phase_code.cc
+    device.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
@@ -44,7 +45,8 @@ target_link_libraries(gnuradio-plasma
     Python::Python
     Volk::volk
     ${UHD_LIBRARIES}
-    ${CONAN_LIBS})
+    ${CONAN_LIBS}
+    ArrayFire::af)
 
 target_include_directories(gnuradio-plasma
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>

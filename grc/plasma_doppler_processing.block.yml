@@ -16,6 +16,11 @@ parameters:
   dtype: int
   default: 1
   hide: part
+- id: backend
+  label: Backend
+  dtype: enum
+  options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
+  option_labels: [Default, CPU, Cuda, OpenCL]
 
 inputs:
 - id: in
@@ -30,6 +35,7 @@ templates:
   make: |-
     plasma.doppler_processing(${num_pulse_cpi}, ${nfft})
     self.${id}.set_msg_queue_depth(${depth})
+    self.${id}.set_backend(${backend})
 
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.

@@ -103,6 +103,8 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qwt REQUIRED)
+find_package(CUDAToolkit)
+find_package(ArrayFire)
 ########################################################################
 # PyBind11 Related
 ########################################################################

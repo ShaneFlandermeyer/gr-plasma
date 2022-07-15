@@ -10,6 +10,8 @@
 
 #include <gnuradio/block.h>
 #include <gnuradio/plasma/api.h>
+#include <gnuradio/plasma/device.h>
+// #include "device.h"
 
 namespace gr {
 namespace plasma {
@@ -35,6 +37,8 @@ public:
     static sptr make(size_t num_pulse_cpi, size_t nfft);
 
     virtual void set_msg_queue_depth(size_t) = 0;
+
+    virtual void set_backend(Device::Backend) = 0;
 };
 
 } // namespace plasma

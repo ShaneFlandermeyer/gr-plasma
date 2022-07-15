@@ -23,5 +23,6 @@ install(FILES
     match_filt.h
     doppler_processing.h
     pulse_to_cpi.h
-    phase_code.h DESTINATION include/gnuradio/plasma
+    phase_code.h
+    device.h DESTINATION include/gnuradio/plasma
 )
