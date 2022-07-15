@@ -47,7 +47,6 @@ doppler_processing_impl::~doppler_processing_impl() {}
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
-    auto start = std::chrono::high_resolution_clock::now();
     if (this->nmsgs(PMT_IN) > d_queue_depth) {
         return;
     }
@@ -88,8 +87,6 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
-    auto stop = std::chrono::high_resolution_clock::now();
-    GR_LOG_DEBUG(d_logger, std::chrono::duration<double>(stop - start).count())
 }
 
 void doppler_processing_impl::set_msg_queue_depth(size_t depth) { d_queue_depth = depth; }
