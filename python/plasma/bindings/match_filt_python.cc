@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(match_filt.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(28a7e4c17e35be2c3e0d9a8ff8d16297)                     */
+/* BINDTOOL_HEADER_FILE_HASH(2c990ed3abd1367112e4844238f039ae)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -43,6 +43,12 @@ void bind_match_filt(py::module& m)
              &match_filt::set_msg_queue_depth,
              py::arg("depth"),
              D(match_filt, set_msg_queue_depth))
+
+
+        .def("set_backend",
+             &match_filt::set_backend,
+             py::arg("arg0"),
+             D(match_filt, set_backend))
 
         ;
 }

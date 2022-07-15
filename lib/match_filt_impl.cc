@@ -78,6 +78,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     if (d_match_filt.elements() == 0 or this->nmsgs(PMT_RX) > d_msg_queue_depth) {
         return;
     }
+    af::setBackend(d_backend);
     // Get a copy of the input samples
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
@@ -94,8 +95,8 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     size_t nrow = n / ncol;
     size_t nconv = nrow + d_match_filt.elements() - 1;
     if (pmt::length(d_data) != n)
-        d_data = pmt::make_c32vector(nconv*ncol, 0);
-    
+        d_data = pmt::make_c32vector(nconv * ncol, 0);
+
     // Get input and output data
     size_t io(0);
     const gr_complex* in = pmt::c32vector_elements(samples, io);
@@ -112,5 +113,23 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 }
 
 void match_filt_impl::set_msg_queue_depth(size_t depth) { d_msg_queue_depth = depth; }
+
+void match_filt_impl::set_backend(Device::Backend backend)
+{
+    switch (backend) {
+    case Device::CPU:
+        d_backend = AF_BACKEND_CPU;
+        break;
+    case Device::CUDA:
+        d_backend = AF_BACKEND_CUDA;
+        break;
+    case Device::OPENCL:
+        d_backend = AF_BACKEND_OPENCL;
+        break;
+    default:
+        d_backend = AF_BACKEND_DEFAULT;
+        break;
+    }
+}
 } /* namespace plasma */
 } /* namespace gr */

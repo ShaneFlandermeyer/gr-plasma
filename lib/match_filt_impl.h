@@ -14,6 +14,7 @@
 #include <Eigen/Dense>
 #include <arrayfire.h>
 
+
 namespace gr {
 namespace plasma {
 
@@ -21,6 +22,7 @@ class match_filt_impl : public match_filt
 {
 private:
     af::array d_match_filt;
+    af::Backend d_backend;
     size_t d_num_pulse_cpi;
     size_t d_fftsize;
     size_t d_msg_queue_depth;
@@ -37,8 +39,9 @@ private:
 public:
     match_filt_impl(size_t num_pulse_cpi);
     ~match_filt_impl();
-    
+
     void set_msg_queue_depth(size_t) override;
+    void set_backend(Device::Backend) override;
 };
 
 } // namespace plasma
