@@ -74,7 +74,7 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    af::timer start = af::timer::start();
+    
     pmt::pmt_t samples;
 
     if (d_match_filt.elements() == 0 or this->nmsgs(PMT_RX) > d_msg_queue_depth) {
@@ -113,7 +113,7 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 
     message_port_pub(PMT_OUT, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
-    GR_LOG_DEBUG(d_logger, af::timer::stop(start))
+    
 }
 
 void match_filt_impl::set_msg_queue_depth(size_t depth) { d_msg_queue_depth = depth; }
