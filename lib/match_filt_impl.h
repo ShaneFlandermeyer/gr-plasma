@@ -8,10 +8,8 @@
 #ifndef INCLUDED_PLASMA_MATCH_FILT_IMPL_H
 #define INCLUDED_PLASMA_MATCH_FILT_IMPL_H
 
-// #include <gnuradio/fft/fft.h>
 #include <gnuradio/plasma/match_filt.h>
 #include <gnuradio/plasma/pmt_constants.h>
-// #include <Eigen/Dense>
 #include <arrayfire.h>
 
 

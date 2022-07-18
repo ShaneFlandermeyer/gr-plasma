@@ -9,14 +9,7 @@
 #define INCLUDED_PLASMA_RANGE_DOPPLER_SINK_IMPL_H
 
 #include "range_doppler_window.h"
-#include <gnuradio/fft/fft.h>
-#include <gnuradio/fft/fft_shift.h>
-#include <gnuradio/filter/fft_filter.h>
-#include <gnuradio/filter/fft_filter_ccc.h>
 #include <gnuradio/plasma/range_doppler_sink.h>
-#include <gnuradio/thread/thread.h>
-#include <plasma_dsp/constants.h>
-#include <volk/volk_alloc.hh>
 #include <arrayfire.h>
 
 

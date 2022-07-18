@@ -104,16 +104,16 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     size_t ncol = d_num_pulse_cpi;
     size_t nrow = n / ncol;
     const gr_complex* in = pmt::c32vector_elements(samples, n);
-    af::array plot_data = af::constant(0, nrow, ncol, c32);
+    // convert the input data to dB, normalize, and set the dynamic range
+    af::array plot_data(af::dim4(nrow, ncol), c32);
     plot_data.write(reinterpret_cast<const af::cfloat*>(in), n * sizeof(gr_complex));
     plot_data = 20 * af::log10(af::abs(plot_data));
     plot_data -= af::max(af::flat(plot_data)).scalar<float>();
     plot_data = af::clamp(plot_data, -d_dynamic_range_db, 0);
     plot_data = plot_data.T();
-    std::unique_ptr<float> tmp(plot_data.host<float>());
-    std::vector<double> plot_data(tmp.get(), tmp.get() + n);
     d_qapp->postEvent(d_main_gui,
-                      new RangeDopplerUpdateEvent(plot_data.data(), nrow, ncol, d_meta));
+                      new RangeDopplerUpdateEvent(
+                          plot_data.as(f64).host<double>(), nrow, ncol, d_meta));
 }
 
 

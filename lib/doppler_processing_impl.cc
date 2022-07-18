@@ -75,14 +75,16 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     int nrow = n / d_num_pulse_cpi;
     int ncol = d_num_pulse_cpi;
 
-    // Take an FFT across each row of the matrix
-    af::array a = af::constant(0, nrow, ncol, c32);
-    a.write(reinterpret_cast<af::cfloat*>(in), n * sizeof(gr_complex));
-    a = a.T();
-    af::fftInPlace(a);
-    a = fftshift(a);
-    a = a.T();
-    a.host(out);
+    // Take an FFT across each row of the matrix to form a range-doppler map
+    af::array rdm(af::dim4(nrow,ncol),c32);
+    rdm.write(reinterpret_cast<af::cfloat*>(in), n * sizeof(gr_complex));
+    // The FFT function transforms each column of the input matrix by default,
+    // so we need to transpose it to do the FFT across rows.
+    rdm = rdm.T();
+    af::fftInPlace(rdm);
+    rdm = fftshift(rdm);
+    rdm = rdm.T();
+    rdm.host(out);
 
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));

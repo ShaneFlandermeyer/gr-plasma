@@ -101,10 +101,10 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     gr_complex* out = pmt::c32vector_writable_elements(d_data, io);
 
     // Apply the matched filter to each column
-    af::array a = af::constant(0, nrow, ncol, c32);
-    a.write(reinterpret_cast<const af::cfloat*>(in), n * sizeof(gr_complex));
-    a = af::convolve1(a, d_match_filt, AF_CONV_EXPAND, AF_CONV_AUTO);
-    a.host(out);
+    af::array mf_resp(af::dim4(nrow,ncol), c32);
+    mf_resp.write(reinterpret_cast<const af::cfloat*>(in), n * sizeof(gr_complex));
+    mf_resp = af::convolve1(mf_resp, d_match_filt, AF_CONV_EXPAND, AF_CONV_AUTO);
+    mf_resp.host(out);
 
     message_port_pub(PMT_OUT, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
