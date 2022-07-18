@@ -46,6 +46,7 @@ target_link_libraries(gnuradio-plasma
     Volk::volk
     ${UHD_LIBRARIES}
     ${CONAN_LIBS}
+    plasma_dsp
     ArrayFire::af)
 
 target_include_directories(gnuradio-plasma

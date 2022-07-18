@@ -102,10 +102,11 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         // Create a new vector
         QVector<double> vec(rows * cols);
         std::copy(data, data + vec.size(), vec.data());
-        // Also map the vector to an Eigen array to easily compute the minimum
+        // Also map the vector to an array to easily compute the minimum
         // and maximum values
-        Eigen::ArrayXd tmp = Eigen::Map<Eigen::ArrayXd>(vec.data(), vec.size());
-        d_data->setInterval(Qt::ZAxis, QwtInterval(tmp.minCoeff(), tmp.maxCoeff()));
+        af::array tmp(vec.size(),f64);
+        tmp.write(vec.data(), sizeof(double)*vec.size());
+        d_data->setInterval(Qt::ZAxis, QwtInterval(af::min<double>(tmp), af::max<double>(tmp)));
         d_data->setValueMatrix(vec, cols);
         d_spectro->setData(d_data);
         d_zoomer->setZoomBase(d_spectro->boundingRect());

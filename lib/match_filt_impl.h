@@ -22,12 +22,10 @@ private:
     af::array d_match_filt;
     af::Backend d_backend;
     size_t d_num_pulse_cpi;
-    size_t d_fftsize;
     size_t d_msg_queue_depth;
     
     pmt::pmt_t d_meta;
     pmt::pmt_t d_data;
-
     void handle_tx_msg(pmt::pmt_t);
     void handle_rx_msg(pmt::pmt_t);
 

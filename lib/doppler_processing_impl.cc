@@ -47,10 +47,10 @@ doppler_processing_impl::~doppler_processing_impl() {}
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
+    
     if (this->nmsgs(PMT_IN) > d_queue_depth) {
         return;
     }
-    af::setBackend(d_backend);
 
     // Read the input PDU
     pmt::pmt_t samples;
@@ -76,6 +76,7 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     int ncol = d_num_pulse_cpi;
 
     // Take an FFT across each row of the matrix to form a range-doppler map
+    af::sync();
     af::array rdm(af::dim4(nrow,ncol),c32);
     rdm.write(reinterpret_cast<af::cfloat*>(in), n * sizeof(gr_complex));
     // The FFT function transforms each column of the input matrix by default,
@@ -109,6 +110,8 @@ void doppler_processing_impl::set_backend(Device::Backend backend)
         d_backend = AF_BACKEND_DEFAULT;
         break;
     }
+    af::setBackend(d_backend);
+    
 }
 } /* namespace plasma */
 } /* namespace gr */

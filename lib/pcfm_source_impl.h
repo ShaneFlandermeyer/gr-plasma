@@ -22,9 +22,10 @@ private:
     pmt::pmt_t d_out_port;
     pmt::pmt_t d_meta;
     ::plasma::PCFMWaveform d_waveform;
-    Eigen::ArrayXcf d_data;
-    Eigen::ArrayXd d_code;
-    Eigen::ArrayXd d_filter;
+    std::unique_ptr<gr_complex> d_data;
+    size_t num_samp;
+    af::array d_code;
+    af::array d_filter;
     double d_samp_rate;
     std::atomic<bool> d_finished;
 

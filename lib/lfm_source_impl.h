@@ -11,6 +11,7 @@
 #include <gnuradio/plasma/lfm_source.h>
 #include <gnuradio/plasma/pmt_constants.h>
 #include <plasma_dsp/linear_fm_waveform.h>
+#include <arrayfire.h>
 
 namespace gr {
 namespace plasma {
@@ -22,13 +23,11 @@ private:
     const pmt::pmt_t d_port;
     pmt::pmt_t d_msg;
     ::plasma::LinearFMWaveform d_waveform;
-    Eigen::ArrayXcf d_data;
-
+    std::unique_ptr<std::complex<float>> d_data;
+    size_t num_samp;
     uint64_t d_start_time;
     uint64_t d_send_time;
-
     std::atomic<bool> d_finished;
-    // std::atomic<bool> d_armed;
 
 
 public:

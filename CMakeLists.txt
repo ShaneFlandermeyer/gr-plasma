@@ -101,9 +101,10 @@ endif(APPLE)
 ########################################################################
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
+find_package(plasma_dsp REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qwt REQUIRED)
-find_package(ArrayFire)
+find_package(ArrayFire REQUIRED)
 ########################################################################
 # PyBind11 Related
 ########################################################################
