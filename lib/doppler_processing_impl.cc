@@ -7,7 +7,6 @@
 
 #include "doppler_processing_impl.h"
 #include <gnuradio/io_signature.h>
-#include <gnuradio/plasma/range_doppler.h>
 #include <arrayfire.h>
 #include <chrono>
 
