@@ -21,7 +21,7 @@ class range_doppler_sink_impl : public range_doppler_sink
 private:
     // Block parameters
     double d_samp_rate;
-    size_t d_num_pulse_cpi;
+    size_t d_ncol;
     double d_center_freq;
     double d_dynamic_range_db;
     // GUI parameters
@@ -37,7 +37,7 @@ private:
 
 public:
     range_doppler_sink_impl(double samp_rate,
-                            size_t num_pulse_cpi,
+                            size_t ncol,
                             double center_freq,
                             QWidget* parent);
     ~range_doppler_sink_impl();

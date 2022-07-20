@@ -15,12 +15,12 @@ namespace plasma {
 
 
 range_doppler_sink::sptr range_doppler_sink::make(double samp_rate,
-                                                  size_t num_pulse_cpi,
+                                                  size_t ncol,
                                                   double center_freq,
                                                   QWidget* parent)
 {
     return gnuradio::make_block_sptr<range_doppler_sink_impl>(
-        samp_rate, num_pulse_cpi, center_freq, parent);
+        samp_rate, ncol, center_freq, parent);
 }
 
 
@@ -28,14 +28,14 @@ range_doppler_sink::sptr range_doppler_sink::make(double samp_rate,
  * The private constructor
  */
 range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
-                                                 size_t num_pulse_cpi,
+                                                 size_t ncol,
                                                  double center_freq,
                                                  QWidget* parent)
     : gr::block("range_doppler_sink",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
       d_samp_rate(samp_rate),
-      d_num_pulse_cpi(num_pulse_cpi),
+      d_ncol(ncol),
       d_center_freq(center_freq)
 
 {
@@ -96,26 +96,26 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     if (this->nmsgs(d_in_port) > d_msg_queue_depth) {
         return;
     }
-    af::timer start = af::timer::start();
+    // af::timer start = af::timer::start();
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         d_meta = pmt::car(msg);
     }
     size_t n = pmt::length(samples);
-    size_t ncol = d_num_pulse_cpi;
-    size_t nrow = n / ncol;
+    // size_t ncol = d_num_pulse_cpi;
+    size_t nrow = n / d_ncol;
     const gr_complex* in = pmt::c32vector_elements(samples, n);
     // convert the input data to dB, normalize, and set the dynamic range
-    af::array plot_data(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat*>(in));
+    af::array plot_data(af::dim4(nrow, d_ncol), reinterpret_cast<const af::cfloat*>(in));
     plot_data = 20 * log10(abs(plot_data));
-    plot_data -= af::tile(af::max(af::flat(plot_data)), nrow, ncol);
+    plot_data -= af::tile(af::max(af::flat(plot_data)), nrow, d_ncol);
     plot_data = af::clamp(plot_data, -d_dynamic_range_db, 0);
     plot_data = plot_data.T();
     d_qapp->postEvent(d_main_gui,
                       new RangeDopplerUpdateEvent(
-                          plot_data.as(f64).host<double>(), nrow, ncol, d_meta));
-    GR_LOG_DEBUG(d_logger, af::timer::stop(start))
+                          plot_data.as(f64).host<double>(), nrow, d_ncol, d_meta));
+    // GR_LOG_DEBUG(d_logger, af::timer::stop(start))
 }
 
 

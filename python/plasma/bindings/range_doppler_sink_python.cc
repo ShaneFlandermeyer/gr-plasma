@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(1)                                                       */
 /* BINDTOOL_USE_PYGCCXML(1)                                                        */
 /* BINDTOOL_HEADER_FILE(range_doppler_sink.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(6fbb7f4d3d5fcfbe2d66aa53b32f9063)                     */
+/* BINDTOOL_HEADER_FILE_HASH(7b7111c73b7e246283edbf286fddfc31)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -41,7 +41,7 @@ void bind_range_doppler_sink(py::module& m)
 
         .def(py::init(&range_doppler_sink::make),
              py::arg("samp_rate"),
-             py::arg("num_pulse_cpi"),
+             py::arg("ncol"),
              py::arg("center_freq"),
              py::arg("parent") = nullptr,
              D(range_doppler_sink, make))
