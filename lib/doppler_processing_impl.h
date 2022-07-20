@@ -21,6 +21,7 @@ private:
     size_t d_num_pulse_cpi;
     size_t d_fftsize;
     size_t d_queue_depth;
+    size_t d_nfft;
 
     void handle_msg(pmt::pmt_t msg);
 

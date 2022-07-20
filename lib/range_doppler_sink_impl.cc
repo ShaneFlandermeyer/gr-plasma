@@ -92,9 +92,11 @@ void* range_doppler_sink_impl::pyqwidget() { return nullptr; }
 
 void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    if (d_finished) {
+
+    if (this->nmsgs(d_in_port) > d_msg_queue_depth) {
         return;
     }
+    af::timer start = af::timer::start();
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
@@ -105,15 +107,15 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     size_t nrow = n / ncol;
     const gr_complex* in = pmt::c32vector_elements(samples, n);
     // convert the input data to dB, normalize, and set the dynamic range
-    af::array plot_data(af::dim4(nrow, ncol), c32);
-    plot_data.write(reinterpret_cast<const af::cfloat*>(in), n * sizeof(gr_complex));
-    plot_data = 20 * af::log10(af::abs(plot_data));
-    plot_data -= af::max(af::flat(plot_data)).scalar<float>();
+    af::array plot_data(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat*>(in));
+    plot_data = 20 * log10(abs(plot_data));
+    plot_data -= af::tile(af::max(af::flat(plot_data)), nrow, ncol);
     plot_data = af::clamp(plot_data, -d_dynamic_range_db, 0);
     plot_data = plot_data.T();
     d_qapp->postEvent(d_main_gui,
                       new RangeDopplerUpdateEvent(
                           plot_data.as(f64).host<double>(), nrow, ncol, d_meta));
+    GR_LOG_DEBUG(d_logger, af::timer::stop(start))
 }
 
 

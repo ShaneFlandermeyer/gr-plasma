@@ -26,7 +26,7 @@ match_filt_impl::match_filt_impl(size_t num_pulse_cpi)
           "match_filt", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
       d_num_pulse_cpi(num_pulse_cpi)
 {
-   
+
     d_data = pmt::make_c32vector(1, 0);
     d_meta = pmt::make_dict();
     message_port_register_in(PMT_TX);
@@ -59,28 +59,26 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
     }
     size_t n = pmt::length(samples);
     size_t io(0);
-    gr_complex* tx_data = pmt::c32vector_writable_elements(samples, io);
+    const gr_complex* tx_data = pmt::c32vector_elements(samples, io);
     // Resize the matched filter array if necessary
-    
+
     if (d_match_filt.elements() != (int)n) {
         d_match_filt = af::constant(0, n, c32);
     }
     // Create the matched filter
-    af::sync();
-    d_match_filt.write(reinterpret_cast<af::cfloat*>(tx_data), n * sizeof(gr_complex));
+    d_match_filt = af::array(af::dim4(n),reinterpret_cast<const af::cfloat*>(tx_data));
     d_match_filt = af::conjg(d_match_filt);
     d_match_filt = af::flip(d_match_filt, 0);
 }
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    
-    pmt::pmt_t samples;
+    // af::timer start = af::timer::start();
 
-    if (d_match_filt.elements() == 0 or this->nmsgs(PMT_RX) > d_msg_queue_depth) {
+    pmt::pmt_t samples;
+    if (this->nmsgs(PMT_RX) > d_msg_queue_depth or d_match_filt.elements() == 0) {
         return;
     }
-    
     // Get a copy of the input samples
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
@@ -105,15 +103,14 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     gr_complex* out = pmt::c32vector_writable_elements(d_data, io);
 
     // Apply the matched filter to each column
-    af::sync();
-    af::array mf_resp(af::dim4(nrow,ncol), c32);
-    mf_resp.write(reinterpret_cast<const af::cfloat*>(in), n * sizeof(gr_complex));
+
+    af::array mf_resp(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat*>(in));
     mf_resp = af::convolve1(mf_resp, d_match_filt, AF_CONV_EXPAND, AF_CONV_AUTO);
     mf_resp.host(out);
 
     message_port_pub(PMT_OUT, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
-    
+    // GR_LOG_DEBUG(d_logger, af::timer::stop(start))
 }
 
 void match_filt_impl::set_msg_queue_depth(size_t depth) { d_msg_queue_depth = depth; }

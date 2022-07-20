@@ -28,7 +28,8 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
     : gr::block("doppler_processing",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
-      d_num_pulse_cpi(num_pulse_cpi)
+      d_num_pulse_cpi(num_pulse_cpi),
+      d_nfft(nfft)
 {
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
@@ -46,7 +47,8 @@ doppler_processing_impl::~doppler_processing_impl() {}
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
-    
+    // af::timer start = af::timer::start();
+
     if (this->nmsgs(PMT_IN) > d_queue_depth) {
         return;
     }
@@ -67,28 +69,27 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     // Get pointers to the input and output arrays
     size_t n = pmt::length(samples);
     size_t io(0);
-    if (pmt::length(d_data) != n)
-        d_data = pmt::make_c32vector(n, 0);
-    gr_complex* in = pmt::c32vector_writable_elements(samples, io);
+    if (pmt::length(d_data) != n * d_nfft / d_num_pulse_cpi)
+        d_data = pmt::make_c32vector(n * d_nfft / d_num_pulse_cpi, 0);
+    const gr_complex* in = pmt::c32vector_elements(samples, io);
     gr_complex* out = pmt::c32vector_writable_elements(d_data, io);
     int nrow = n / d_num_pulse_cpi;
     int ncol = d_num_pulse_cpi;
 
     // Take an FFT across each row of the matrix to form a range-doppler map
-    af::sync();
-    af::array rdm(af::dim4(nrow,ncol),c32);
-    rdm.write(reinterpret_cast<af::cfloat*>(in), n * sizeof(gr_complex));
+
+    af::array rdm(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat*>(in));
     // The FFT function transforms each column of the input matrix by default,
     // so we need to transpose it to do the FFT across rows.
     rdm = rdm.T();
-    af::fftInPlace(rdm);
+    rdm = af::fftNorm(rdm, 1.0, d_nfft);
     rdm = fftshift(rdm);
     rdm = rdm.T();
     rdm.host(out);
-
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
+    // GR_LOG_DEBUG(d_logger, af::timer::stop(start))
 }
 
 void doppler_processing_impl::set_msg_queue_depth(size_t depth) { d_queue_depth = depth; }
@@ -110,7 +111,6 @@ void doppler_processing_impl::set_backend(Device::Backend backend)
         break;
     }
     af::setBackend(d_backend);
-    
 }
 } /* namespace plasma */
 } /* namespace gr */
