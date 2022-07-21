@@ -176,7 +176,3 @@ configure_package_config_file(
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/Modules/${target}Config.cmake
     INSTALL_DESTINATION ${GR_CMAKE_DIR}
 )
-
-# Install shared dependency libraries
-install(DIRECTORY ${CONAN_LIB_DIRS}/
-  DESTINATION ${CMAKE_INSTALL_PREFIX})
