@@ -2,11 +2,7 @@
 #define C63B8235_0BB0_46FF_A644_A4CCB87E809D
 
 #include <gnuradio/plasma/qt_update_events.h>
-#include <Eigen/Dense>
-#include <plasma_dsp/fft.h>
-#include <plasma_dsp/fftshift.h>
 #include <plasma_dsp/file.h>
-#include <plasma_dsp/filter.h>
 #include <plasma_dsp/linear_fm_waveform.h>
 #include <gnuradio/plasma/pmt_constants.h>
 #include <pmt/pmt.h>

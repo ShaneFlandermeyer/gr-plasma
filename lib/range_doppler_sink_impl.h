@@ -9,14 +9,8 @@
 #define INCLUDED_PLASMA_RANGE_DOPPLER_SINK_IMPL_H
 
 #include "range_doppler_window.h"
-#include <gnuradio/fft/fft.h>
-#include <gnuradio/fft/fft_shift.h>
-#include <gnuradio/filter/fft_filter.h>
-#include <gnuradio/filter/fft_filter_ccc.h>
 #include <gnuradio/plasma/range_doppler_sink.h>
-#include <gnuradio/thread/thread.h>
-#include <plasma_dsp/constants.h>
-#include <volk/volk_alloc.hh>
+#include <arrayfire.h>
 
 
 namespace gr {
@@ -27,7 +21,7 @@ class range_doppler_sink_impl : public range_doppler_sink
 private:
     // Block parameters
     double d_samp_rate;
-    size_t d_num_pulse_cpi;
+    size_t d_ncol;
     double d_center_freq;
     double d_dynamic_range_db;
     // GUI parameters
@@ -43,7 +37,7 @@ private:
 
 public:
     range_doppler_sink_impl(double samp_rate,
-                            size_t num_pulse_cpi,
+                            size_t ncol,
                             double center_freq,
                             QWidget* parent);
     ~range_doppler_sink_impl();

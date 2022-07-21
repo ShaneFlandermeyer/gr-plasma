@@ -8,8 +8,8 @@ parameters:
     label: Sample Rate
     dtype: float
     default: "samp_rate"
-  - id: num_pulse_cpi
-    label: Pulses per CPI
+  - id: nrow
+    label: Num. matrix cols
     dtype: int
     default: 128
   - id: center_freq
@@ -44,7 +44,7 @@ templates:
     <%
       win = 'self._%s_win'%id
     %>\
-    plasma.range_doppler_sink(${samp_rate}, ${num_pulse_cpi}, ${center_freq})
+    plasma.range_doppler_sink(${samp_rate}, ${nrow}, ${center_freq})
     self.${id}.set_dynamic_range(${dynamic_range})
     self.${id}.set_msg_queue_depth(${depth})
     ${win} = sip.wrapinstance(self.${id}.pyqwidget(), Qt.QWidget)

@@ -98,7 +98,8 @@ class pulse_doppler(gr.top_block, Qt.QWidget):
         self._plasma_range_doppler_sink_0_win = sip.wrapinstance(self.plasma_range_doppler_sink_0.pyqwidget(), Qt.QWidget)
         self.top_layout.addWidget(self._plasma_range_doppler_sink_0_win)
         self.plasma_pulse_to_cpi_0 = plasma.pulse_to_cpi(num_pulse_cpi)
-        self.plasma_match_filt_0 = plasma.match_filt(num_pulse_cpi)
+        self.plasma_pdu_file_sink_0 = plasma.pdu_file_sink(gr.sizeof_gr_complex,'/home/shane/gpu.dat', '')
+        self.plasma_match_filt_0 = plasma.match_filt(num_pulse_cpi, plasma.match_filt.CPU)
         self.plasma_match_filt_0.set_msg_queue_depth(1)
         self.plasma_lfm_source_0 = plasma.lfm_source(0.8*samp_rate, 20e-6, samp_rate)
         self.plasma_doppler_processing_0 = plasma.doppler_processing(num_pulse_cpi, num_pulse_cpi)
@@ -108,6 +109,7 @@ class pulse_doppler(gr.top_block, Qt.QWidget):
         ##################################################
         # Connections
         ##################################################
+        self.msg_connect((self.plasma_doppler_processing_0, 'out'), (self.plasma_pdu_file_sink_0, 'in'))
         self.msg_connect((self.plasma_doppler_processing_0, 'out'), (self.plasma_range_doppler_sink_0, 'in'))
         self.msg_connect((self.plasma_lfm_source_0, 'pdu'), (self.plasma_match_filt_0, 'tx'))
         self.msg_connect((self.plasma_lfm_source_0, 'pdu'), (self.plasma_waveform_controller_0, 'in'))

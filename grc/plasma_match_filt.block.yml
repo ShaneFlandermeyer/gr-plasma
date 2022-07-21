@@ -12,6 +12,11 @@ parameters:
   dtype: int
   default: 1
   hide: part
+- id: backend
+  label: Backend
+  dtype: enum
+  options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
+  option_labels: [Default, CPU, Cuda, OpenCL]
 
 inputs:
 - id: tx
@@ -28,5 +33,6 @@ templates:
   make: |-
     plasma.match_filt(${num_pulse_cpi})
     self.${id}.set_msg_queue_depth(${depth})
+    self.${id}.set_backend(${backend})
 
 file_format: 1

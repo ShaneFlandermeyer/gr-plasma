@@ -1,5 +1,4 @@
 #include <nlohmann/json.hpp>
-#include <plasma_dsp/filter.h>
 #include <plasma_dsp/linear_fm_waveform.h>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/utils/safe_main.hpp>
@@ -8,6 +7,7 @@
 #include <boost/thread.hpp>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 
 namespace po = boost::program_options;
 
@@ -213,19 +213,20 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         double pulse_width = 20e-6;
         double prf = 10e3;
         plasma::LinearFMWaveform waveform(bandwidth, pulse_width, prf, rates[i]);
-        Eigen::ArrayXcf waveform_data = waveform.step().cast<std::complex<float>>();
+        af::array waveform_array = waveform.step().as(c32);
+        std::unique_ptr<std::complex<float>> waveform_data(
+            reinterpret_cast<std::complex<float>*>(
+                waveform_array.host<af::cfloat>()));
 
         // Set up Rx buffer
-        size_t num_samp_rx = waveform_data.size();
+        size_t num_samp_rx = waveform_array.elements();
         std::vector<std::complex<float>*> rx_buff_ptrs;
         std::vector<std::complex<float>> rx_buff(num_samp_rx, 0);
         rx_buff_ptrs.push_back(&rx_buff.front());
 
         // Set up Tx buffer
-        std::vector<std::complex<float>>* tx_buff = new std::vector<std::complex<float>>(
-            waveform_data.data(), waveform_data.data() + waveform_data.size());
         std::vector<std::complex<float>*> tx_buff_ptrs;
-        tx_buff_ptrs.push_back(&tx_buff->front());
+        tx_buff_ptrs.push_back(waveform_data.get());
 
         // Send the  data to be used for calibration
         uhd::time_spec_t time_now = usrp->get_time_now();
@@ -233,23 +234,21 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
                                             usrp,
                                             tx_buff_ptrs,
                                             1,
-                                            waveform_data.size(),
+                                            waveform_array.elements(),
                                             time_now + start_time));
         receive(usrp, rx_buff_ptrs, num_samp_rx, time_now + start_time);
         tx_thread.join_all();
 
         // Create the matched filter
-        Eigen::ArrayXXcf x(rx_buff.size(), 1);
-        x.col(0) = Eigen::Map<Eigen::ArrayXcf>(rx_buff.data(), rx_buff.size());
-        Eigen::ArrayXcf h = waveform.MatchedFilter().cast<std::complex<float>>();
-
-        // Do convolution and compute the delay of the matched filter peak
-        Eigen::ArrayXXcf y = plasma::conv(x, h);
-        size_t argmax = 0;
-        for (int i = 0; i < y.size(); i++) {
-            argmax = (abs(y(i, 0)) > abs(y(argmax, 0))) ? i : argmax;
-        }
-        delays[i] = argmax - h.size();
+        af::array x(rx_buff.size(), c32);
+        x.write(reinterpret_cast<af::cfloat*>(rx_buff.data()),
+                rx_buff.size() * sizeof(af::cfloat));
+        af::array h = waveform.MatchedFilter();
+        af::array y = af::convolve1(x, h, AF_CONV_EXPAND, AF_CONV_AUTO);
+        double max;
+        unsigned int argmax;
+        af::max<double>(&max, &argmax, y);
+        delays[i] = argmax - h.elements();
         // Output the results for the current configuration
         UHD_LOG_INFO("CALIBRATE_DELAY",
                      "At MCR = " << master_clock_rates[i] / 1e6

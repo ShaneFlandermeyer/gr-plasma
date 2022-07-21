@@ -13,8 +13,8 @@
 /* If manual edits are made, the following tags should be modified accordingly.    */
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
-/* BINDTOOL_HEADER_FILE(match_filt.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(2c990ed3abd1367112e4844238f039ae)                     */
+/* BINDTOOL_HEADER_FILE(device.h)                                        */
+/* BINDTOOL_HEADER_FILE_HASH(9ee386279f14c5616fe6087bfbe1b8ca)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -23,32 +23,26 @@
 
 namespace py = pybind11;
 
-#include <gnuradio/plasma/match_filt.h>
+#include <gnuradio/plasma/device.h>
 // pydoc.h is automatically generated in the build directory
-#include <match_filt_pydoc.h>
+#include <device_pydoc.h>
 
-void bind_match_filt(py::module& m)
+void bind_device(py::module& m)
 {
 
-    using match_filt = ::gr::plasma::match_filt;
+    using Device = ::gr::plasma::Device;
 
 
-    py::class_<match_filt, gr::block, gr::basic_block, std::shared_ptr<match_filt>>(
-        m, "match_filt", D(match_filt))
+    py::class_<Device, std::shared_ptr<Device>> device_class(m, "Device", D(Device));
 
-        .def(py::init(&match_filt::make), py::arg("num_pulse_cpi"), D(match_filt, make))
+    device_class.def(py::init<>(), D(Device, Device, 0));
+    device_class.def(py::init<gr::plasma::Device const&>(), py::arg("arg0"), D(Device, Device, 1));
 
-
-        .def("set_msg_queue_depth",
-             &match_filt::set_msg_queue_depth,
-             py::arg("depth"),
-             D(match_filt, set_msg_queue_depth))
-
-
-        .def("set_backend",
-             &match_filt::set_backend,
-             py::arg("arg0"),
-             D(match_filt, set_backend))
-
-        ;
+    py::enum_<gr::plasma::Device::Backend>(device_class, "Backend")
+        .value("DEFAULT", gr::plasma::Device::DEFAULT)
+        .value("CPU", gr::plasma::Device::CPU)
+        .value("CUDA", gr::plasma::Device::CUDA)
+        .value("OPENCL", gr::plasma::Device::OPENCL) // 999
+        .export_values();
+    py::implicitly_convertible<int, gr::plasma::Device::Backend>();
 }

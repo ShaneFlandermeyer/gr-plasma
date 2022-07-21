@@ -7,8 +7,11 @@
 
 #include "doppler_processing_impl.h"
 #include <gnuradio/io_signature.h>
+#include <arrayfire.h>
 #include <chrono>
 
+#define fftshift(in) shift(in, in.dims(0) / 2, 0)
+#define ifftshift(in) shift(in, (in.dims(0) + 1) / 2, (in.dims(1) + 1) / 2)
 namespace gr {
 namespace plasma {
 
@@ -26,10 +29,8 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
       d_num_pulse_cpi(num_pulse_cpi),
-      d_shift(nfft)
+      d_nfft(nfft)
 {
-    fftresize(nfft);
-
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
     d_meta = pmt::make_dict();
@@ -44,77 +45,72 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
  */
 doppler_processing_impl::~doppler_processing_impl() {}
 
-bool doppler_processing_impl::start()
-{
-    d_finished = false;
-    return block::start();
-}
-
-bool doppler_processing_impl::stop()
-{
-    d_finished = true;
-    return block::stop();
-}
-
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
+    // af::timer start = af::timer::start();
+
     if (this->nmsgs(PMT_IN) > d_queue_depth) {
         return;
     }
 
-    // Read the input PDU and map it to an eigen array
+    // Read the input PDU
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
-        d_meta = pmt::dict_add(
-            d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
+        d_meta = pmt::dict_add(d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
         return;
     }
-    // Resize the output data vector if necessary
+
+    // Get pointers to the input and output arrays
     size_t n = pmt::length(samples);
-    size_t nout = n * (d_fftsize / d_num_pulse_cpi);
-    if (pmt::length(d_data) != nout)
-        d_data = pmt::make_c32vector(nout, 0);
-    Eigen::Map<Eigen::ArrayXXcf> data(pmt::c32vector_writable_elements(samples, n),
-                                      n / d_num_pulse_cpi,
-                                      d_num_pulse_cpi);
-    Eigen::Map<Eigen::ArrayXXcf> out(
-        pmt::c32vector_writable_elements(d_data, nout), nout / d_fftsize, d_fftsize);
+    size_t io(0);
+    if (pmt::length(d_data) != n * d_nfft / d_num_pulse_cpi)
+        d_data = pmt::make_c32vector(n * d_nfft / d_num_pulse_cpi, 0);
+    const gr_complex* in = pmt::c32vector_elements(samples, io);
+    gr_complex* out = pmt::c32vector_writable_elements(d_data, io);
+    int nrow = n / d_num_pulse_cpi;
+    int ncol = d_num_pulse_cpi;
 
-    // Do an fft and fftshift
-    Eigen::ArrayXcf tmp;
-    for (auto irow = 0; irow < data.rows(); irow++) {
-        tmp = data.row(irow);
-        memcpy(d_fwd->get_inbuf(), tmp.data(), data.cols() * sizeof(gr_complex));
-        for (size_t i = data.cols(); i < d_fftsize; i++)
-            d_fwd->get_inbuf()[i] = 0;
-        d_fwd->execute();
-        d_shift.shift(d_fwd->get_outbuf(), d_fftsize);
+    // Take an FFT across each row of the matrix to form a range-doppler map
 
-        out.row(irow) = Eigen::Map<Eigen::ArrayXcf>(d_fwd->get_outbuf(), d_fftsize);
-    }
+    af::array rdm(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat*>(in));
+    // The FFT function transforms each column of the input matrix by default,
+    // so we need to transpose it to do the FFT across rows.
+    rdm = rdm.T();
+    rdm = af::fftNorm(rdm, 1.0, d_nfft);
+    rdm = fftshift(rdm);
+    rdm = rdm.T();
+    rdm.host(out);
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
     d_meta = pmt::make_dict();
-}
-
-void doppler_processing_impl::fftresize(size_t size)
-{
-    gr::thread::scoped_lock lock(d_setlock);
-
-    if (size != d_fftsize) {
-        // Re-initialize the plans
-        d_fftsize = size;
-        d_fwd = std::make_unique<fft::fft_complex_fwd>(size);
-        d_shift.resize(size);
-    }
+    // GR_LOG_DEBUG(d_logger, af::timer::stop(start))
 }
 
 void doppler_processing_impl::set_msg_queue_depth(size_t depth) { d_queue_depth = depth; }
+
+void doppler_processing_impl::set_backend(Device::Backend backend)
+{
+    switch (backend) {
+    case Device::CPU:
+        d_backend = AF_BACKEND_CPU;
+        break;
+    case Device::CUDA:
+        d_backend = AF_BACKEND_CUDA;
+        break;
+    case Device::OPENCL:
+        d_backend = AF_BACKEND_OPENCL;
+        break;
+    default:
+        d_backend = AF_BACKEND_DEFAULT;
+        break;
+    }
+    af::setBackend(d_backend);
+}
 } /* namespace plasma */
 } /* namespace gr */

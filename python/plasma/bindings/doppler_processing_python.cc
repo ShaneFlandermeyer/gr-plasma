@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(doppler_processing.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(b2c9b73ff88854048b3d06bbde3d110a)                     */
+/* BINDTOOL_HEADER_FILE_HASH(351b84d208f6c75be2fbd9fd2c2e3295)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -49,6 +49,12 @@ void bind_doppler_processing(py::module& m)
              &doppler_processing::set_msg_queue_depth,
              py::arg("arg0"),
              D(doppler_processing, set_msg_queue_depth))
+
+
+        .def("set_backend",
+             &doppler_processing::set_backend,
+             py::arg("arg0"),
+             D(doppler_processing, set_backend))
 
         ;
 }

@@ -29,7 +29,7 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 # Make sure our local CMake Modules path comes first
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/Modules)
 # Find gnuradio to get access to the cmake modules
-find_package(Gnuradio "3.10" REQUIRED COMPONENTS uhd fft filter blocks)
+find_package(Gnuradio "3.10" REQUIRED COMPONENTS blocks)
 
 # Set the version information here
 set(VERSION_MAJOR 1)
@@ -41,6 +41,7 @@ cmake_policy(SET CMP0011 NEW)
 
 # Enable generation of compile_commands.json for code completion engines
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 ########################################################################
 # Minimum Version Requirements
 ########################################################################
@@ -99,15 +100,18 @@ endif(APPLE)
 ########################################################################
 # Find gnuradio build dependencies
 ########################################################################
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+find_package(ArrayFire REQUIRED)
+find_package(doxygen)
+find_package(nlohmann_json REQUIRED)
+find_package(plasma_dsp REQUIRED)
+find_package(PythonLibs 3)
+find_package(pybind11 REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qwt REQUIRED)
+find_package(UHD REQUIRED)
 ########################################################################
 # PyBind11 Related
 ########################################################################
-find_package(PythonLibs 3)
-find_package(pybind11 REQUIRED)
 include(GrPython)
 GR_PYTHON_CHECK_MODULE("PyQt5" PyQt5 True PYQT5_FOUND)
 
@@ -172,7 +176,3 @@ configure_package_config_file(
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/Modules/${target}Config.cmake
     INSTALL_DESTINATION ${GR_CMAKE_DIR}
 )
-
-# Install shared dependency libraries
-install(DIRECTORY ${CONAN_LIB_DIRS}/
-  DESTINATION ${CMAKE_INSTALL_PREFIX})

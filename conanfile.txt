@@ -1,8 +1,8 @@
 [requires]
-plasma_dsp/0.1
+# plasma_dsp/0.1
 nlohmann_json/3.10.5
 doxygen/1.9.4
 
 [generators]
-cmake
+cmake_find_package
 

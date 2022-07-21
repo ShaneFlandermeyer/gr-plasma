@@ -51,6 +51,7 @@ list(APPEND plasma_python_files
     range_doppler_sink_python.cc
     usrp_radar_python.cc
     waveform_controller_python.cc
+    device_python.cc
 )
 
 GR_PYBIND_MAKE_OOT(plasma

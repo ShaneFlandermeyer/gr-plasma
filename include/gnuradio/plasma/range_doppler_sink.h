@@ -42,7 +42,7 @@ public:
      * creating new instances.
      */
     static sptr make(double samp_rate,
-                     size_t num_pulse_cpi,
+                     size_t ncol,
                      double center_freq,
                      QWidget* parent = nullptr);
     virtual void exec_() = 0;
