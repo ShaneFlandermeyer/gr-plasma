@@ -41,6 +41,7 @@ cmake_policy(SET CMP0011 NEW)
 
 # Enable generation of compile_commands.json for code completion engines
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 ########################################################################
 # Minimum Version Requirements
 ########################################################################
@@ -99,17 +100,18 @@ endif(APPLE)
 ########################################################################
 # Find gnuradio build dependencies
 ########################################################################
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+find_package(ArrayFire REQUIRED)
+find_package(doxygen)
+find_package(nlohmann_json REQUIRED)
 find_package(plasma_dsp REQUIRED)
+find_package(PythonLibs 3)
+find_package(pybind11 REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qwt REQUIRED)
-find_package(ArrayFire REQUIRED)
+find_package(UHD REQUIRED)
 ########################################################################
 # PyBind11 Related
 ########################################################################
-find_package(PythonLibs 3)
-find_package(pybind11 REQUIRED)
 include(GrPython)
 GR_PYTHON_CHECK_MODULE("PyQt5" PyQt5 True PYQT5_FOUND)
 

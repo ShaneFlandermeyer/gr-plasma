@@ -42,7 +42,7 @@ target_link_libraries(gnuradio-plasma
     qwt::qwt
     Python::Python
     ${UHD_LIBRARIES}
-    ${CONAN_LIBS}
+    nlohmann_json::nlohmann_json
     plasma_dsp
     ArrayFire::af)
 
