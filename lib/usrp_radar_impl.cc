@@ -28,6 +28,13 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
     d_pulse_count = 0;
     d_sample_count = 0;
     d_meta = pmt::make_dict();
+
+    // Add metadata for the current capture
+    pmt::pmt_t capture = pmt::make_dict();
+    capture = pmt::dict_add(capture, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
+    capture = pmt::dict_add(capture, PMT_SAMPLE_START, pmt::from_uint64(0));
+    d_meta = pmt::dict_add(d_meta, PMT_CAPTURES, capture);
+
     message_port_register_in(PMT_IN);
     message_port_register_out(PMT_OUT);
     set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
@@ -42,15 +49,13 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
         // Maintain any metadata that was produced by upstream blocks
-        d_meta = pmt::car(msg);
+        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
         // Parse the metadata to update waveform parameters
         pmt::pmt_t new_prf = pmt::dict_ref(d_meta, PMT_PRF, pmt::PMT_NIL);
         if (not pmt::is_null(new_prf)) {
             d_prf = pmt::to_double(new_prf);
         }
 
-        // Append additional metadata to the pmt object
-        d_meta = pmt::dict_add(d_meta, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
         d_armed = true;
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -90,8 +95,8 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         // Update the waveform data if it has changed
         if (d_armed) {
             d_armed = false;
-            d_meta =
-                pmt::dict_add(d_meta, PMT_SAMPLE_START, pmt::from_uint64(d_sample_count));
+
+
             gr::thread::scoped_lock lock(d_tx_buff_mutex);
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
@@ -303,6 +308,14 @@ void usrp_radar_impl::set_tx_freq(const double freq)
 {
     d_tx_freq = freq;
     d_usrp->set_tx_freq(d_tx_freq);
+
+    // Append additional metadata to the pmt object
+    // TODO: Figure out adding to annotations from multiple places
+    pmt::pmt_t annotation = pmt::make_dict();
+    annotation = pmt::dict_add(annotation, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
+    annotation =
+        pmt::dict_add(annotation, PMT_SAMPLE_START, pmt::from_uint64(d_sample_count));
+    d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, annotation);
 }
 void usrp_radar_impl::set_rx_freq(const double freq)
 {

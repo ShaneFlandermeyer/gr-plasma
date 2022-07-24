@@ -61,11 +61,14 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
         d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
         d_meta_dict = pmt::make_dict();
         // Initialize the global metadata fields
-        pmt::pmt_t global = pmt::make_dict();
-        global = pmt::dict_add(
-            global, pmt::intern("core:datatype"), pmt::intern(get_datatype_string()));
-        global = pmt::dict_add(global, pmt::intern("core:version"), pmt::intern("1.0.0"));
-        d_meta_dict = pmt::dict_add(d_meta_dict, pmt::intern("global"), global);
+        // pmt::pmt_t global = pmt::make_dict();
+        // global = pmt::dict_add(global, PMT_DATATYPE,
+        // pmt::intern(get_datatype_string())); global = pmt::dict_add(global,
+        // PMT_VERSION, pmt::intern("1.0.0")); d_meta_dict = pmt::dict_add(d_meta_dict,
+        // PMT_GLOBAL, global);
+
+        // d_meta["global"]["core:datatype"] = get_datatype_string();
+        // d_meta["global"]["core:version"] = "1.0.0";
     }
 }
 
@@ -109,7 +112,7 @@ bool pdu_file_sink_impl::stop()
 
 void pdu_file_sink_impl::run()
 {
-
+    static bool first = true;
     while (true) {
         {
             gr::thread::scoped_lock lock(d_mutex);
@@ -117,7 +120,21 @@ void pdu_file_sink_impl::run()
             if (d_finished)
                 return;
             d_data = d_data_queue.front();
-            d_meta_dict = pmt::dict_update(d_meta_dict,d_meta_queue.front());
+            d_meta_dict = pmt::dict_update(d_meta_dict, d_meta_queue.front());
+            if (first) {
+                // Add global metadata fields for the first output dictionary
+                first = false;
+                pmt::pmt_t input_global_dict =
+                    pmt::dict_ref(d_meta_dict, PMT_GLOBAL, pmt::PMT_NIL);
+                pmt::pmt_t global = pmt::make_dict();
+                global = pmt::dict_add(
+                    global, PMT_DATATYPE, pmt::intern(get_datatype_string()));
+                global = pmt::dict_add(global, PMT_VERSION, pmt::intern("1.0.0"));
+                if (not pmt::is_null(input_global_dict))
+                    global = pmt::dict_update(global, input_global_dict);
+                // d_meta[pmt::symbol_to_string(PMT_GLOBAL)] = 
+                d_meta_dict = pmt::dict_add(d_meta_dict, PMT_GLOBAL, global);
+            }
             d_data_queue.pop();
             d_meta_queue.pop();
         }
@@ -126,7 +143,7 @@ void pdu_file_sink_impl::run()
         // If the user wants metadata and we have some, save it
         if (d_meta_file.is_open() and pmt::length(pmt::dict_keys(d_meta_dict)) > 0) {
             parse_meta(d_meta_dict, d_meta);
-            // GR_LOG_DEBUG(d_logger, d_meta.dump(4));
+            GR_LOG_DEBUG(d_logger, d_meta.dump(4));
             d_meta_dict = pmt::make_dict();
         }
     }
@@ -152,7 +169,7 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict, nlohmann::json& json
             // Recursively add the dictionary to the json file
             nlohmann::json dict;
             parse_meta(value, dict);
-            json[key] = dict;
+            json[key].emplace_back(dict);
         } else {
             json[key] = pmt::write_string(value);
         }
