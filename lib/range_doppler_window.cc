@@ -104,9 +104,10 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         std::copy(data, data + vec.size(), vec.data());
         // Also map the vector to an array to easily compute the minimum
         // and maximum values
-        af::array tmp(vec.size(),f64);
-        tmp.write(vec.data(), sizeof(double)*vec.size());
-        d_data->setInterval(Qt::ZAxis, QwtInterval(af::min<double>(tmp), af::max<double>(tmp)));
+        af::array tmp(vec.size(), f64);
+        tmp.write(vec.data(), sizeof(double) * vec.size());
+        d_data->setInterval(Qt::ZAxis,
+                            QwtInterval(af::min<double>(tmp), af::max<double>(tmp)));
         d_data->setValueMatrix(vec, cols);
         d_spectro->setData(d_data);
         d_zoomer->setZoomBase(d_spectro->boundingRect());
@@ -122,18 +123,15 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         pmt::pmt_t annotation = pmt::dict_ref(meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
         pmt::pmt_t capture = pmt::dict_ref(meta, PMT_CAPTURES, pmt::PMT_NIL);
 
-        pmt::pmt_t prf = pmt::dict_ref(annotation, PMT_PRF, pmt::PMT_NIL);
-        pmt::pmt_t duration = pmt::dict_ref(annotation, PMT_DURATION, pmt::PMT_NIL);
-        pmt::pmt_t samp_rate = pmt::dict_ref(global, PMT_SAMPLE_RATE, pmt::PMT_NIL);
-        pmt::pmt_t center_freq = pmt::dict_ref(capture, PMT_FREQUENCY, pmt::PMT_NIL);
-        if (not pmt::is_null(prf)) 
-            d_prf = pmt::to_double(prf);
-        if (not pmt::is_null(duration))
-            d_pulsewidth = pmt::to_double(duration);
-        if (not pmt::is_null(samp_rate))
-            d_samp_rate = pmt::to_double(samp_rate);
-        if (not pmt::is_null(center_freq))
-            d_center_freq = pmt::to_double(center_freq);
+        d_prf =
+            pmt::to_double(pmt::dict_ref(annotation, PMT_PRF, pmt::from_double(d_prf)));
+        d_pulsewidth = pmt::to_double(
+            pmt::dict_ref(annotation, PMT_DURATION, pmt::from_double(d_pulsewidth)));
+        d_samp_rate = pmt::to_double(
+            pmt::dict_ref(global, PMT_SAMPLE_RATE, pmt::from_double(d_samp_rate)));
+        d_center_freq = pmt::to_double(
+            pmt::dict_ref(capture, PMT_FREQUENCY, pmt::from_double(d_center_freq)));
+
         if (d_prf == 0 or d_pulsewidth == 0 or d_samp_rate == 0) {
             ylim(0, rows);
         } else {
