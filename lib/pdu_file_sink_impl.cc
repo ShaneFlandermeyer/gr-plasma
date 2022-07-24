@@ -53,7 +53,7 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
       d_data_filename(data_filename),
       d_meta_filename(meta_filename)
 {
-    // TODO: Declare port names as const in a separate file
+
     message_port_register_in(PMT_IN);
     set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
@@ -171,16 +171,7 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict, nlohmann::json& json
             // Recursively add the dictionary to the json file
             nlohmann::json dict;
             parse_meta(value, dict);
-            // if (pmt::intern(key) == PMT_GLOBAL) {
-            //     // Unlike the other metadata fields in SigMF, the global object
-            //     // should just be a JSON object and not an array. Therefore,
-            //     // copy values over directly rather than pushing them back here
-            //     for (auto& x : dict.items()) {
-            //         json[key][x.key()] = x.value();
-            //     }
-            // } else {
             json[key].emplace_back(dict);
-            // }
         } else {
             json[key] = pmt::write_string(value);
         }

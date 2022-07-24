@@ -34,7 +34,8 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
     d_meta = pmt::make_dict();
-    d_meta = pmt::dict_add(d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
+    d_annotations = pmt::make_dict();
+    d_annotations = pmt::dict_add(d_annotations, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
     d_data = pmt::make_c32vector(0, 0);
     message_port_register_in(d_in_port);
     message_port_register_out(d_out_port);
@@ -59,6 +60,12 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
+        // Update the radar annotations in the metadata
+        if (pmt::dict_has_key(d_meta, PMT_ANNOTATIONS)) {
+            pmt::pmt_t annotations = pmt::dict_ref(d_meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
+            annotations = pmt::dict_update(annotations, d_annotations);
+            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, annotations);
+        }
         
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;

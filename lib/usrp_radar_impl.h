@@ -42,6 +42,7 @@ private:
     pmt::pmt_t d_meta;
     pmt::pmt_t d_rx_data;
     pmt::pmt_t d_capture;
+    pmt::pmt_t d_annotation;
     gr::thread::thread d_main_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::mutex d_tx_buff_mutex;

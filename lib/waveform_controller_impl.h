@@ -26,6 +26,7 @@ private:
     std::vector<gr_complex> d_data;
     std::atomic<bool> d_updated;
     std::atomic<bool> d_finished;
+    pmt::pmt_t d_annotations;
 
     /**
      * @brief Message handler function
@@ -44,8 +45,8 @@ public:
     waveform_controller_impl(double prf, double samp_rate);
     ~waveform_controller_impl();
 
-    bool start() override;
-    bool stop() override;
+    // bool start() override;
+    // bool stop() override;
 };
 
 } // namespace plasma

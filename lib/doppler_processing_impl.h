@@ -28,6 +28,7 @@ private:
     pmt::pmt_t d_in_port;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_data;
+    pmt::pmt_t d_annotations;
     af::Backend d_backend;
 
 public:

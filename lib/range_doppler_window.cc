@@ -120,7 +120,7 @@ void RangeDopplerWindow::customEvent(QEvent* e)
 
         // TODO: Update the range and doppler axes
         pmt::pmt_t prf = pmt::dict_ref(meta, PMT_PRF, pmt::PMT_NIL);
-        pmt::pmt_t pulse_width = pmt::dict_ref(meta, PMT_PULSEWIDTH, pmt::PMT_NIL);
+        pmt::pmt_t pulse_width = pmt::dict_ref(meta, PMT_DURATION, pmt::PMT_NIL);
         pmt::pmt_t samp_rate = pmt::dict_ref(meta, PMT_SAMPLE_RATE, pmt::PMT_NIL);
         pmt::pmt_t center_freq = pmt::dict_ref(meta, PMT_FREQUENCY, pmt::PMT_NIL);
         if (not pmt::is_null(prf))

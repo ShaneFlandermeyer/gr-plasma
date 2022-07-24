@@ -29,11 +29,29 @@ lfm_source_impl::lfm_source_impl(double bandwidth, double pulse_width, double sa
 {
     d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, 0, samp_rate);
     // Generate the waveform data
-    af::sync();
+    // af::sync();
     af::array waveform_array = d_waveform.sample().as(c32);
-    num_samp = waveform_array.elements();
+    d_num_samp = waveform_array.elements();
     d_data.reset(reinterpret_cast<gr_complex*>(waveform_array.host<af::cfloat>()));
 
+    // Set up metadata
+    d_meta = pmt::make_dict();
+    // Global object
+    d_global = pmt::make_dict();
+    d_global = pmt::dict_add(
+        d_global, PMT_SAMPLE_RATE, pmt::from_double(d_waveform.samp_rate()));
+
+    // Annotations array
+    d_annotations = pmt::make_dict();
+    d_annotations = pmt::dict_add(d_annotations, PMT_LABEL, pmt::intern("lfm"));
+    d_annotations = pmt::dict_add(
+        d_annotations, PMT_BANDWIDTH, pmt::from_double(d_waveform.bandwidth()));
+    d_annotations = pmt::dict_add(
+        d_annotations, PMT_DURATION, pmt::from_double(d_waveform.pulse_width()));
+
+    // Add the global and annotations field to the array
+    d_meta = pmt::dict_add(d_meta, PMT_GLOBAL, d_global);
+    d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotations);
 
     message_port_register_out(d_port);
 }
@@ -51,23 +69,9 @@ lfm_source_impl::~lfm_source_impl() {}
  */
 bool lfm_source_impl::start()
 {
-    d_finished = false;
     // Send a PDU containing the waveform and its metadata
-    pmt::pmt_t meta = pmt::make_dict();
-    // Add global metadata parameters
-    pmt::pmt_t global = pmt::make_dict();
-    pmt::pmt_t annotation = pmt::make_dict();
-    global =
-        pmt::dict_add(global, PMT_SAMPLE_RATE, pmt::from_double(d_waveform.samp_rate()));
-    annotation = pmt::dict_add(annotation, PMT_LABEL, pmt::intern("lfm"));
-    meta = pmt::dict_add(meta, PMT_GLOBAL, global);
-    meta = pmt::dict_add(meta, PMT_ANNOTATIONS, annotation);
-    meta = pmt::dict_add(meta, PMT_BANDWIDTH, pmt::from_double(d_waveform.bandwidth()));
-    meta =
-        pmt::dict_add(meta, PMT_PULSEWIDTH, pmt::from_double(d_waveform.pulse_width()));
-    pmt::pmt_t data = pmt::init_c32vector(num_samp, d_data.get());
-    message_port_pub(d_port, pmt::cons(meta, data));
-
+    pmt::pmt_t data = pmt::init_c32vector(d_num_samp, d_data.get());
+    message_port_pub(d_port, pmt::cons(d_meta, data));
 
     return block::start();
 }
