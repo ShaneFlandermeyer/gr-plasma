@@ -33,12 +33,11 @@ pcfm_source_impl::pcfm_source_impl(PhaseCode::Code code,
     std::vector<double> codevec = PhaseCode::generate_code(code, n);
     d_code_class = PhaseCode::code_string(code);
     // Convert the code and filter to arrayfire arrays
-    // af::sync();
     d_code = af::array(codevec.size(), f64);
     d_code.write(codevec.data(), codevec.size() * sizeof(double));
     d_filter = af::constant(1, over);
     // Generate the waveform
-    d_waveform = ::plasma::PCFMWaveform(d_code, d_filter, d_samp_rate, 0);
+    d_waveform = ::plasma::PCFMWaveform(d_code, d_filter, d_samp_rate);
     af::array waveform_array = d_waveform.sample().as(c32);
     d_data.reset(reinterpret_cast<gr_complex*>(waveform_array.host<af::cfloat>()));
     d_num_samp = waveform_array.elements();
