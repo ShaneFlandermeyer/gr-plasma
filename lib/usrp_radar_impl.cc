@@ -36,6 +36,11 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
     d_capture = pmt::dict_add(d_capture, PMT_SAMPLE_START, pmt::from_uint64(0));
     d_meta = pmt::dict_add(d_meta, PMT_CAPTURES, d_capture);
 
+    // Add metadata for the first annotation
+    d_annotation = pmt::make_dict();
+    d_annotation = pmt::dict_add(d_annotation,PMT_SAMPLE_START,pmt::from_long(d_sample_count));
+    d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotation);
+
     message_port_register_in(PMT_IN);
     message_port_register_out(PMT_OUT);
     set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
@@ -111,6 +116,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
             }
             num_samp_pulse = d_tx_buff.size();
             // Start a new annotation object
+            d_annotation = pmt::dict_add(d_annotation,PMT_SAMPLE_START,pmt::from_long(d_sample_count));
             d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotation);
         }
         boost::this_thread::disable_interruption disable_interrupt;
