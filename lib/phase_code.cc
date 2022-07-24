@@ -111,5 +111,19 @@ std::vector<double> PhaseCode::generate_code(Code code_type, int n)
     return code;
 }
 
+std::string PhaseCode::code_string(Code type)
+{
+    switch (type) {
+    case BARKER:
+        return "barker";
+    case FRANK:
+        return "frank";
+    case P4:
+        return "p4";
+    default:
+        return "generic";
+    }
+}
+
 } /* namespace plasma */
 } /* namespace gr */

@@ -29,11 +29,13 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
       d_num_pulse_cpi(num_pulse_cpi),
-      d_nfft(nfft)
+      d_fftsize(nfft)
 {
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
     d_meta = pmt::make_dict();
+    d_annotations = pmt::make_dict();
+    d_annotations = pmt::dict_add(d_annotations, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
     d_data = pmt::make_c32vector(0, 0);
     message_port_register_in(d_in_port);
     message_port_register_out(d_out_port);
@@ -58,7 +60,13 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
-        d_meta = pmt::dict_add(d_meta, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
+        // Update the radar annotations in the metadata
+        if (pmt::dict_has_key(d_meta, PMT_ANNOTATIONS)) {
+            pmt::pmt_t annotations = pmt::dict_ref(d_meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
+            annotations = pmt::dict_update(annotations, d_annotations);
+            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, annotations);
+        }
+        
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
@@ -69,8 +77,8 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     // Get pointers to the input and output arrays
     size_t n = pmt::length(samples);
     size_t io(0);
-    if (pmt::length(d_data) != n * d_nfft / d_num_pulse_cpi)
-        d_data = pmt::make_c32vector(n * d_nfft / d_num_pulse_cpi, 0);
+    if (pmt::length(d_data) != n * d_fftsize / d_num_pulse_cpi)
+        d_data = pmt::make_c32vector(n * d_fftsize / d_num_pulse_cpi, 0);
     const gr_complex* in = pmt::c32vector_elements(samples, io);
     gr_complex* out = pmt::c32vector_writable_elements(d_data, io);
     int nrow = n / d_num_pulse_cpi;
@@ -82,7 +90,7 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     // The FFT function transforms each column of the input matrix by default,
     // so we need to transpose it to do the FFT across rows.
     rdm = rdm.T();
-    rdm = af::fftNorm(rdm, 1.0, d_nfft);
+    rdm = af::fftNorm(rdm, 1.0, d_fftsize);
     rdm = fftshift(rdm);
     rdm = rdm.T();
     rdm.host(out);

@@ -20,6 +20,7 @@ private:
     pmt::pmt_t d_in_port;
     pmt::pmt_t d_out_port;
     pmt::pmt_t d_meta;
+    pmt::pmt_t d_annotations;
     std::vector<gr_complex> d_data;
     size_t d_num_pulse_cpi;
     size_t d_pulse_count;

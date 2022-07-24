@@ -29,12 +29,14 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
 {
     message_port_register_in(PMT_IN);
     message_port_register_out(PMT_OUT);
-    set_msg_handler(PMT_IN,
-                    [this](const pmt::pmt_t& msg) { handle_message(msg); });
+    set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_updated = false;
     d_prf = prf;
     d_samp_rate = samp_rate;
     d_num_samp_pri = round(samp_rate / prf);
+
+    d_annotations = pmt::make_dict();
+    d_annotations = pmt::dict_add(d_annotations, PMT_PRF, pmt::from_double(prf));
 }
 
 /*
@@ -42,17 +44,17 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
  */
 waveform_controller_impl::~waveform_controller_impl() {}
 
-bool waveform_controller_impl::start()
-{
-    d_finished = false;
-    return block::start();
-}
+// bool waveform_controller_impl::start()
+// {
+//     d_finished = false;
+//     return block::start();
+// }
 
-bool waveform_controller_impl::stop()
-{
-    d_finished = true;
-    return block::stop();
-}
+// bool waveform_controller_impl::stop()
+// {
+//     d_finished = true;
+//     return block::stop();
+// }
 
 void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
 {
@@ -61,12 +63,14 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
         pmt::pmt_t data = pmt::cdr(msg);
         size_t n = pmt::length(data);
         d_num_samp_waveform = pmt::length(data);
-        // Zero pad to the length of the PRI
-        // d_data = c32vector_elements(data);
-        // d_data.insert(d_data.end(), d_num_samp_pri - d_num_samp_waveform, 0);
-        // Send the new waveform through the message port (with additional
-        // metadata)
-        meta = pmt::dict_add(meta, PMT_PRF, pmt::from_double(d_prf));
+        
+        // Update the radar annotations in the metadata
+        if (pmt::dict_has_key(meta, PMT_ANNOTATIONS)) {
+            pmt::pmt_t annotations = pmt::dict_ref(meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
+            annotations = pmt::dict_update(annotations, d_annotations);
+            meta = pmt::dict_add(meta, PMT_ANNOTATIONS, annotations);
+        }
+
         message_port_pub(
             PMT_OUT,
             pmt::cons(meta, pmt::init_c32vector(n, pmt::c32vector_elements(data, n))));

@@ -27,7 +27,15 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
     d_usrp = uhd::usrp::multi_usrp::make(d_args);
     d_pulse_count = 0;
     d_sample_count = 0;
+    d_prf = 0;
+
     d_meta = pmt::make_dict();
+
+    // Add metadata for the current capture
+    d_capture = pmt::make_dict();
+    d_capture = pmt::dict_add(d_capture, PMT_SAMPLE_START, pmt::from_uint64(0));
+    d_meta = pmt::dict_add(d_meta, PMT_CAPTURES, d_capture);
+
     message_port_register_in(PMT_IN);
     message_port_register_out(PMT_OUT);
     set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
@@ -42,15 +50,22 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
         // Maintain any metadata that was produced by upstream blocks
-        d_meta = pmt::car(msg);
+        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
         // Parse the metadata to update waveform parameters
-        pmt::pmt_t new_prf = pmt::dict_ref(d_meta, PMT_PRF, pmt::PMT_NIL);
-        if (not pmt::is_null(new_prf)) {
-            d_prf = pmt::to_double(new_prf);
+        pmt::pmt_t annotations = pmt::dict_ref(d_meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
+        if (not pmt::is_null(annotations)) {
+            pmt::pmt_t new_prf = pmt::dict_ref(annotations, PMT_PRF, pmt::PMT_NIL);
+            if (not pmt::is_null(new_prf)) {
+                d_prf = pmt::to_double(new_prf);
+            }
         }
-
-        // Append additional metadata to the pmt object
-        d_meta = pmt::dict_add(d_meta, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
+        if (d_prf == 0) {
+            GR_LOG_ERROR(d_logger,
+                         "This block currently only works in pulsed mode. Please specify "
+                         "a nonzero PRF")
+            return;
+        }
+        d_annotation = annotations;
         d_armed = true;
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
@@ -90,13 +105,13 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         // Update the waveform data if it has changed
         if (d_armed) {
             d_armed = false;
-            d_meta =
-                pmt::dict_add(d_meta, PMT_SAMPLE_START, pmt::from_uint64(d_sample_count));
             gr::thread::scoped_lock lock(d_tx_buff_mutex);
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
             }
             num_samp_pulse = d_tx_buff.size();
+            // Start a new annotation object
+            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotation);
         }
         boost::this_thread::disable_interruption disable_interrupt;
         tx_md.start_of_burst = true;
@@ -224,9 +239,10 @@ bool usrp_radar_impl::stop()
 
 void usrp_radar_impl::run()
 {
-    while (d_tx_buff.size() == 0) {
+    while (d_tx_buff.size() == 0 or d_prf == 0) {
         // Wait for data to arrive
-        boost::this_thread::sleep(boost::posix_time::microseconds(1));
+        if (d_finished) return;
+        else boost::this_thread::sleep(boost::posix_time::microseconds(1));
     }
     // Set up Tx buffer
     std::vector<gr_complex*> tx_buff_ptrs;
@@ -303,6 +319,10 @@ void usrp_radar_impl::set_tx_freq(const double freq)
 {
     d_tx_freq = freq;
     d_usrp->set_tx_freq(d_tx_freq);
+
+    // Append additional metadata to the pmt object
+    d_capture = pmt::dict_add(d_capture, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
+    d_meta = pmt::dict_add(d_meta, PMT_CAPTURES, d_capture);
 }
 void usrp_radar_impl::set_rx_freq(const double freq)
 {

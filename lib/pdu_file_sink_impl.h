@@ -121,7 +121,7 @@ private:
      *
      * @param dict
      */
-    void parse_meta(const pmt::pmt_t& dict);
+    void parse_meta(const pmt::pmt_t& dict, nlohmann::json& json);
 
 
 public:

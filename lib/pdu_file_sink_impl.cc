@@ -53,17 +53,13 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
       d_data_filename(data_filename),
       d_meta_filename(meta_filename)
 {
-    // TODO: Declare port names as const in a separate file
+
     message_port_register_in(PMT_IN);
-    set_msg_handler(PMT_IN,
-                    [this](const pmt::pmt_t& msg) { handle_message(msg); });
+    set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
     d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
     if (not d_meta_filename.empty()) {
         d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
-        // Initialize the global metadata fields
-        d_global["core:datatype"] = get_datatype_string();
-        d_global["core:version"] = "1.0.0";
-        d_meta["global"] = d_global;
+        d_meta_dict = pmt::make_dict();
     }
 }
 
@@ -72,13 +68,17 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
  */
 pdu_file_sink_impl::~pdu_file_sink_impl()
 {
+    // The algorithm in parse_meta creates a JSON array of length 1 for the
+    // global field when it should be a JSON object according to the SigMF spec
+    nlohmann::json global;
+    for (size_t i = 0; i < d_meta["global"].size(); i++) {
+        for (auto& x : d_meta["global"][i].items()) {
+            global[x.key()] = x.value();
+        }
+        d_meta["global"].erase(i);
+    }
+    d_meta["global"] = global;
 
-    if (not d_annotation.empty()) {
-        d_meta["annotations"].emplace_back(d_annotation);
-    }
-    if (not d_capture.empty()) {
-        d_meta["captures"].emplace_back(d_capture);
-    }
     // Write the metadata to a file and close both files
     d_meta_file << d_meta.dump(4) << std::endl;
     d_data_file.close();
@@ -114,7 +114,7 @@ bool pdu_file_sink_impl::stop()
 
 void pdu_file_sink_impl::run()
 {
-
+    static bool first = true;
     while (true) {
         {
             gr::thread::scoped_lock lock(d_mutex);
@@ -122,7 +122,21 @@ void pdu_file_sink_impl::run()
             if (d_finished)
                 return;
             d_data = d_data_queue.front();
-            d_meta_dict = d_meta_queue.front();
+            d_meta_dict = pmt::dict_update(d_meta_dict, d_meta_queue.front());
+            if (first) {
+                // Add global metadata fields for the first output dictionary
+                first = false;
+                pmt::pmt_t input_global_dict =
+                    pmt::dict_ref(d_meta_dict, PMT_GLOBAL, pmt::PMT_NIL);
+                pmt::pmt_t global = pmt::make_dict();
+                global = pmt::dict_add(
+                    global, PMT_DATATYPE, pmt::intern(get_datatype_string()));
+                global = pmt::dict_add(global, PMT_VERSION, pmt::intern("1.0.0"));
+                if (not pmt::is_null(input_global_dict))
+                    global = pmt::dict_update(global, input_global_dict);
+                // d_meta[pmt::symbol_to_string(PMT_GLOBAL)] =
+                d_meta_dict = pmt::dict_add(d_meta_dict, PMT_GLOBAL, global);
+            }
             d_data_queue.pop();
             d_meta_queue.pop();
         }
@@ -130,70 +144,38 @@ void pdu_file_sink_impl::run()
         d_data_file.write((char*)pmt::blob_data(d_data), n * d_itemsize);
         // If the user wants metadata and we have some, save it
         if (d_meta_file.is_open() and pmt::length(pmt::dict_keys(d_meta_dict)) > 0) {
-            parse_meta(d_meta_dict);
+            parse_meta(d_meta_dict, d_meta);
+            GR_LOG_DEBUG(d_logger, d_meta.dump(4));
+            d_meta_dict = pmt::make_dict();
         }
     }
 }
 
-void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict)
+void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict, nlohmann::json& json)
 {
-    // Global object fields
-    pmt::pmt_t sample_rate = pmt::dict_ref(dict, PMT_SAMPLE_RATE, pmt::PMT_NIL);
-    // Capture object fields
-    pmt::pmt_t frequency = pmt::dict_ref(dict, PMT_FREQUENCY, pmt::PMT_NIL);
-    // Annotation object fields
-    pmt::pmt_t sample_start = pmt::dict_ref(dict, PMT_SAMPLE_START, pmt::PMT_NIL);
-    pmt::pmt_t sample_count =
-        pmt::dict_ref(dict,PMT_SAMPLE_COUNT , pmt::PMT_NIL);
-    pmt::pmt_t bandwidth = pmt::dict_ref(dict, PMT_BANDWIDTH, pmt::PMT_NIL);
-    pmt::pmt_t label = pmt::dict_ref(dict, PMT_LABEL, pmt::PMT_NIL);
+    pmt::pmt_t items = pmt::dict_items(dict);
+    std::string key;
+    pmt::pmt_t value;
+    for (size_t i = 0; i < pmt::length(items); i++) {
+        key = pmt::symbol_to_string(pmt::car(pmt::nth(i, items)));
+        value = pmt::cdr(pmt::nth(i, items));
 
-
-    // Update global object
-    if (not pmt::is_null(sample_rate))
-        d_capture["core:sample_rate"] = pmt::to_double(sample_rate);
-
-    // Update capture object
-    if (not pmt::is_null(frequency)) {
-        if (d_annotation.contains("core:sample_start")) {
-            // If a new sample start is given on a frequency change, start a new
-            // capture segment
-            d_meta["captures"].emplace_back(d_capture);
-            d_capture.clear();
+        if (pmt::is_number(value)) {
+            if (pmt::is_uint64(value))
+                json[key] = pmt::to_uint64(value);
+            else if (pmt::is_integer(value))
+                json[key] = pmt::to_long(value);
+            else
+                json[key] = pmt::to_double(value);
+        } else if (pmt::is_dict(value)) {
+            // Recursively add the dictionary to the json file
+            nlohmann::json dict;
+            parse_meta(value, dict);
+            json[key].emplace_back(dict);
+        } else {
+            json[key] = pmt::write_string(value);
         }
-        d_capture["core:frequency"] = pmt::to_double(frequency);
     }
-
-
-    // Update annotation object
-    if (not pmt::is_null(sample_start)) {
-        if (d_annotation.contains("core:sample_start")) {
-            // Create a new annotation segment each time a sample start key is sent
-            d_meta["annotations"].emplace_back(d_annotation);
-            d_annotation.clear();
-        }
-        d_annotation["core:sample_start"] = pmt::to_uint64(sample_start);
-    }
-
-    if (not pmt::is_null(sample_count))
-        d_annotation["core:sample_count"] = pmt::to_uint64(sample_count);
-    if (not pmt::is_null(label))
-        d_annotation["core:label"] = pmt::symbol_to_string(label);
-    if (not pmt::is_null(bandwidth)) {
-        double lower = -pmt::to_double(bandwidth) / 2;
-        double upper = pmt::to_double(bandwidth) / 2;
-        if (not pmt::is_null(frequency)) {
-            lower += pmt::to_double(frequency);
-            upper += pmt::to_double(frequency);
-        }
-        d_annotation["core:freq_lower_edge"] = lower;
-        d_annotation["core:freq_upper_edge"] = upper;
-    }
-    // d_meta["captures"].emplace_back(d_capture);
-    // d_meta["annotations"].emplace_back(d_annotation);
-
-    // d_capture.clear();
-    // d_annotation.clear();
 }
 
 std::string pdu_file_sink_impl::get_datatype_string()

@@ -19,15 +19,20 @@ namespace plasma {
 class pcfm_source_impl : public pcfm_source
 {
 private:
-    pmt::pmt_t d_out_port;
-    pmt::pmt_t d_meta;
+    
     ::plasma::PCFMWaveform d_waveform;
     std::unique_ptr<gr_complex> d_data;
-    size_t num_samp;
+    size_t d_num_samp;
     af::array d_code;
     af::array d_filter;
     double d_samp_rate;
     std::atomic<bool> d_finished;
+
+    pmt::pmt_t d_global;
+    pmt::pmt_t d_annotations;
+    pmt::pmt_t d_meta;
+    pmt::pmt_t d_out_port;
+    std::string d_code_class; 
 
 public:
     pcfm_source_impl(PhaseCode::Code code,

@@ -101,14 +101,21 @@ endif(APPLE)
 # Find gnuradio build dependencies
 ########################################################################
 find_package(ArrayFire REQUIRED)
-find_package(doxygen)
-find_package(nlohmann_json REQUIRED)
+find_package(doxygen QUIET)
+find_package(nlohmann_json QUIET)
 find_package(plasma_dsp REQUIRED)
 find_package(PythonLibs 3)
 find_package(pybind11 REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qwt REQUIRED)
 find_package(UHD REQUIRED)
+
+include(FetchContent)
+if (NOT TARGET nlohmann_json)
+message(STATUS "nlohmann JSON not found. Using external module")
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz)
+FetchContent_MakeAvailable(json)
+endif()
 ########################################################################
 # PyBind11 Related
 ########################################################################

@@ -24,10 +24,13 @@ private:
     pmt::pmt_t d_msg;
     ::plasma::LinearFMWaveform d_waveform;
     std::unique_ptr<std::complex<float>> d_data;
-    size_t num_samp;
+    size_t d_num_samp;
     uint64_t d_start_time;
     uint64_t d_send_time;
-    std::atomic<bool> d_finished;
+
+    pmt::pmt_t d_global;
+    pmt::pmt_t d_annotations;
+    pmt::pmt_t d_meta;
 
 
 public:

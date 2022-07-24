@@ -30,9 +30,11 @@ pulse_to_cpi_impl::pulse_to_cpi_impl(size_t num_pulse_cpi)
     d_pulse_count = 0;
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
-    d_meta = pmt::make_dict();
-    // d_data = pmt::make_c32vector(0, 0);
 
+    // Add number of pulses per CPI to radar metadata
+    d_meta = pmt::make_dict();
+    d_annotations = pmt::make_dict();
+    d_annotations = pmt::dict_add(d_annotations,PMT_NUM_PULSE_CPI, pmt::from_long(num_pulse_cpi));
     message_port_register_in(d_in_port);
     message_port_register_out(d_out_port);
 
@@ -48,8 +50,13 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
 {
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
-        d_meta = pmt::dict_add(d_meta, PMT_NUM_PULSE_CPI, pmt::from_long(d_num_pulse_cpi));
+        // Update input metadata
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
+        pmt::pmt_t annotations = pmt::dict_ref(d_meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
+        if (not pmt::is_null(annotations)) {
+            annotations = pmt::dict_update(annotations, d_annotations);
+            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, annotations);
+        }
         samples = pmt::cdr(msg);
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
