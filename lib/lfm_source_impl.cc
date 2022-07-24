@@ -65,7 +65,6 @@ bool lfm_source_impl::start()
     meta = pmt::dict_add(meta, PMT_BANDWIDTH, pmt::from_double(d_waveform.bandwidth()));
     meta =
         pmt::dict_add(meta, PMT_PULSEWIDTH, pmt::from_double(d_waveform.pulse_width()));
-    // meta = pmt::dict_add(meta, PMT_LABEL, pmt::intern("lfm"));
     pmt::pmt_t data = pmt::init_c32vector(num_samp, d_data.get());
     message_port_pub(d_port, pmt::cons(meta, data));
 

@@ -60,15 +60,6 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
     if (not d_meta_filename.empty()) {
         d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
         d_meta_dict = pmt::make_dict();
-        // Initialize the global metadata fields
-        // pmt::pmt_t global = pmt::make_dict();
-        // global = pmt::dict_add(global, PMT_DATATYPE,
-        // pmt::intern(get_datatype_string())); global = pmt::dict_add(global,
-        // PMT_VERSION, pmt::intern("1.0.0")); d_meta_dict = pmt::dict_add(d_meta_dict,
-        // PMT_GLOBAL, global);
-
-        // d_meta["global"]["core:datatype"] = get_datatype_string();
-        // d_meta["global"]["core:version"] = "1.0.0";
     }
 }
 
@@ -77,6 +68,17 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
  */
 pdu_file_sink_impl::~pdu_file_sink_impl()
 {
+    // The algorithm in parse_meta creates a JSON array of length 1 for the
+    // global field when it should be a JSON object according to the SigMF spec
+    nlohmann::json global;
+    for (size_t i = 0; i < d_meta["global"].size(); i++) {
+        for (auto& x : d_meta["global"][i].items()) {
+            global[x.key()] = x.value();
+        }
+        d_meta["global"].erase(i);
+    }
+    d_meta["global"] = global;
+
     // Write the metadata to a file and close both files
     d_meta_file << d_meta.dump(4) << std::endl;
     d_data_file.close();
@@ -132,7 +134,7 @@ void pdu_file_sink_impl::run()
                 global = pmt::dict_add(global, PMT_VERSION, pmt::intern("1.0.0"));
                 if (not pmt::is_null(input_global_dict))
                     global = pmt::dict_update(global, input_global_dict);
-                // d_meta[pmt::symbol_to_string(PMT_GLOBAL)] = 
+                // d_meta[pmt::symbol_to_string(PMT_GLOBAL)] =
                 d_meta_dict = pmt::dict_add(d_meta_dict, PMT_GLOBAL, global);
             }
             d_data_queue.pop();
@@ -169,7 +171,16 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict, nlohmann::json& json
             // Recursively add the dictionary to the json file
             nlohmann::json dict;
             parse_meta(value, dict);
+            // if (pmt::intern(key) == PMT_GLOBAL) {
+            //     // Unlike the other metadata fields in SigMF, the global object
+            //     // should just be a JSON object and not an array. Therefore,
+            //     // copy values over directly rather than pushing them back here
+            //     for (auto& x : dict.items()) {
+            //         json[key][x.key()] = x.value();
+            //     }
+            // } else {
             json[key].emplace_back(dict);
+            // }
         } else {
             json[key] = pmt::write_string(value);
         }
