@@ -118,20 +118,22 @@ void RangeDopplerWindow::customEvent(QEvent* e)
 
         d_plot->replot();
 
-        // TODO: Update the range and doppler axes
-        pmt::pmt_t prf = pmt::dict_ref(meta, PMT_PRF, pmt::PMT_NIL);
-        pmt::pmt_t pulse_width = pmt::dict_ref(meta, PMT_DURATION, pmt::PMT_NIL);
-        pmt::pmt_t samp_rate = pmt::dict_ref(meta, PMT_SAMPLE_RATE, pmt::PMT_NIL);
-        pmt::pmt_t center_freq = pmt::dict_ref(meta, PMT_FREQUENCY, pmt::PMT_NIL);
-        if (not pmt::is_null(prf))
+        pmt::pmt_t global = pmt::dict_ref(meta, PMT_GLOBAL, pmt::PMT_NIL);
+        pmt::pmt_t annotation = pmt::dict_ref(meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
+        pmt::pmt_t capture = pmt::dict_ref(meta, PMT_CAPTURES, pmt::PMT_NIL);
+
+        pmt::pmt_t prf = pmt::dict_ref(annotation, PMT_PRF, pmt::PMT_NIL);
+        pmt::pmt_t duration = pmt::dict_ref(annotation, PMT_DURATION, pmt::PMT_NIL);
+        pmt::pmt_t samp_rate = pmt::dict_ref(global, PMT_SAMPLE_RATE, pmt::PMT_NIL);
+        pmt::pmt_t center_freq = pmt::dict_ref(capture, PMT_FREQUENCY, pmt::PMT_NIL);
+        if (not pmt::is_null(prf)) 
             d_prf = pmt::to_double(prf);
-        if (not pmt::is_null(pulse_width))
-            d_pulsewidth = pmt::to_double(pulse_width);
+        if (not pmt::is_null(duration))
+            d_pulsewidth = pmt::to_double(duration);
         if (not pmt::is_null(samp_rate))
             d_samp_rate = pmt::to_double(samp_rate);
         if (not pmt::is_null(center_freq))
             d_center_freq = pmt::to_double(center_freq);
-
         if (d_prf == 0 or d_pulsewidth == 0 or d_samp_rate == 0) {
             ylim(0, rows);
         } else {

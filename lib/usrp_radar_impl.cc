@@ -27,6 +27,7 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
     d_usrp = uhd::usrp::multi_usrp::make(d_args);
     d_pulse_count = 0;
     d_sample_count = 0;
+    d_prf = 0;
 
     d_meta = pmt::make_dict();
 
@@ -56,7 +57,13 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
             pmt::pmt_t new_prf = pmt::dict_ref(annotations, PMT_PRF, pmt::PMT_NIL);
             if (not pmt::is_null(new_prf)) {
                 d_prf = pmt::to_double(new_prf);
-            } 
+            }
+        }
+        if (d_prf == 0) {
+            GR_LOG_ERROR(d_logger,
+                         "This block currently only works in pulsed mode. Please specify "
+                         "a nonzero PRF")
+            return;
         }
         d_annotation = annotations;
         d_armed = true;
@@ -232,9 +239,10 @@ bool usrp_radar_impl::stop()
 
 void usrp_radar_impl::run()
 {
-    while (d_tx_buff.size() == 0) {
+    while (d_tx_buff.size() == 0 or d_prf == 0) {
         // Wait for data to arrive
-        boost::this_thread::sleep(boost::posix_time::microseconds(1));
+        if (d_finished) return;
+        else boost::this_thread::sleep(boost::posix_time::microseconds(1));
     }
     // Set up Tx buffer
     std::vector<gr_complex*> tx_buff_ptrs;
