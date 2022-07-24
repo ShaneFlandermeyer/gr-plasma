@@ -28,5 +28,9 @@ static const pmt::pmt_t PMT_DURATION = pmt::intern("radar:duration");
 static const pmt::pmt_t PMT_PRF = pmt::intern("radar:prf");
 static const pmt::pmt_t PMT_NUM_PULSE_CPI = pmt::intern("radar:num_pulse_cpi");
 static const pmt::pmt_t PMT_DOPPLER_FFT_SIZE = pmt::intern("radar:doppler_fft_size");
+static const pmt::pmt_t PMT_PHASE_CODE_CLASS = pmt::intern("radar:phase_code_class");
+static const pmt::pmt_t PMT_NUM_PHASE_CODE_CHIPS =
+    pmt::intern("radar:num_phase_code_chips");
+
 
 #endif /* B4AE609D_6687_4998_809D_482441F2B6F9 */

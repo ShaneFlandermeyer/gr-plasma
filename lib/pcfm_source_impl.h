@@ -32,6 +32,7 @@ private:
     pmt::pmt_t d_annotations;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_out_port;
+    std::string d_code_class; 
 
 public:
     pcfm_source_impl(PhaseCode::Code code,

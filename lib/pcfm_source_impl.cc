@@ -31,6 +31,7 @@ pcfm_source_impl::pcfm_source_impl(PhaseCode::Code code,
       d_samp_rate(samp_rate)
 {
     std::vector<double> codevec = PhaseCode::generate_code(code, n);
+    d_code_class = PhaseCode::code_string(code);
     // Convert the code and filter to arrayfire arrays
     // af::sync();
     d_code = af::array(codevec.size(), f64);
@@ -54,6 +55,10 @@ pcfm_source_impl::pcfm_source_impl(PhaseCode::Code code,
     d_annotations = pmt::dict_add(d_annotations, PMT_LABEL, pmt::intern("pcfm"));
     d_annotations = pmt::dict_add(
         d_annotations, PMT_DURATION, pmt::from_double(d_waveform.pulse_width()));
+    d_annotations =
+        pmt::dict_add(d_annotations, PMT_PHASE_CODE_CLASS, pmt::intern(d_code_class));
+    d_annotations =
+        pmt::dict_add(d_annotations, PMT_NUM_PHASE_CODE_CHIPS, pmt::from_long(n));
 
 
     // Add the global and annotations field to the array

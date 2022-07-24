@@ -61,6 +61,8 @@ public:
    */
   static std::vector<double> generate_code(Code type, int n);
 
+  static std::string code_string(Code);
+
   static void wrapToPi(std::vector<double>&);
 };
 

@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(1)                                                       */
 /* BINDTOOL_USE_PYGCCXML(1)                                                        */
 /* BINDTOOL_HEADER_FILE(phase_code.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(7f1fedae8a1be0e07904d89bf1d55543)                     */
+/* BINDTOOL_HEADER_FILE_HASH(63121bae2b51375ead608abab842bf0b)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -47,6 +47,11 @@ void bind_phase_code(py::module& m)
                                 py::arg("type"),
                                 py::arg("n"),
                                 D(PhaseCode, generate_code));
+
+    phase_code_class.def_static("code_string",
+                                &PhaseCode::code_string,
+                                py::arg("type"),
+                                D(PhaseCode, code_string));
 
     phase_code_class.def_static(
         "wrapToPi", &PhaseCode::wrapToPi, py::arg("arg0"), D(PhaseCode, wrapToPi));
