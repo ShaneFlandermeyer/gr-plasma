@@ -70,6 +70,7 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
     setLayout(vLayout);
 
     d_closed = false;
+    d_busy = false;
     d_prf = 0;
     d_pulsewidth = 0;
     d_samp_rate = 0;
@@ -79,6 +80,8 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 RangeDopplerWindow::~RangeDopplerWindow() { d_closed = true; }
 
 bool RangeDopplerWindow::is_closed() const { return d_closed; }
+
+bool RangeDopplerWindow::busy() const { return d_busy; }
 
 void RangeDopplerWindow::xlim(double x1, double x2)
 {
@@ -92,7 +95,9 @@ void RangeDopplerWindow::ylim(double y1, double y2)
 
 void RangeDopplerWindow::customEvent(QEvent* e)
 {
+    d_busy = true;
     if (e->type() == RangeDopplerUpdateEvent::Type()) {
+        
         RangeDopplerUpdateEvent* event = (RangeDopplerUpdateEvent*)e;
         double* data = event->data();
         auto rows = event->rows();
@@ -151,4 +156,5 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             xlim(vmin, vmax);
         }
     }
+    d_busy = false;
 }

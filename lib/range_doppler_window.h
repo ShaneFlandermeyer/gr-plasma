@@ -34,6 +34,7 @@ public:
     ~RangeDopplerWindow();
 
     bool is_closed() const;
+    bool busy() const;
 
     void xlim(double x1, double x2);
     void ylim(double y1, double y2);
@@ -58,6 +59,7 @@ private:
     double d_samp_rate;
     double d_pulsewidth;
     double d_center_freq;
+    std::atomic<bool> d_busy;
 };
 
 #endif /* C63B8235_0BB0_46FF_A644_A4CCB87E809D */
