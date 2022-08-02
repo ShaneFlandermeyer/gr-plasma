@@ -37,7 +37,7 @@ pcfm_source_impl::pcfm_source_impl(PhaseCode::Code code,
     d_code.write(codevec.data(), codevec.size() * sizeof(double));
     d_filter = af::constant(1, over);
     // Generate the waveform
-    d_waveform = ::plasma::PCFMWaveform(d_code, d_filter, d_samp_rate);
+    d_waveform = ::plasma::PCFMWaveform(d_code, d_filter,0, d_samp_rate);
     af::array waveform_array = d_waveform.sample().as(c32);
     d_data.reset(reinterpret_cast<gr_complex*>(waveform_array.host<af::cfloat>()));
     d_num_samp = waveform_array.elements();
