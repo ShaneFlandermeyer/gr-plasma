@@ -33,6 +33,7 @@ namespace py = pybind11;
     void bind_pulse_to_cpi(py::module& m);
     void bind_phase_code(py::module& m);
     void bind_device(py::module& m);
+    void bind_pdu_file_source(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -73,5 +74,6 @@ PYBIND11_MODULE(plasma_python, m)
     bind_pulse_to_cpi(m);
     bind_phase_code(m);
     bind_device(m);
+    bind_pdu_file_source(m);
     // ) END BINDING_FUNCTION_CALLS
 }

@@ -26,6 +26,7 @@ list(APPEND plasma_sources
     pulse_to_cpi_impl.cc
     phase_code.cc
     device.cc
+    pdu_file_source_impl.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
