@@ -36,13 +36,19 @@ pdu_file_source_impl::pdu_file_source_impl(const std::string& data_filename,
       d_offset(offset),
       d_length(length)
 {
-    message_port_register_out(pmt::mp("out"));
+
 
     std::vector<gr_complex> data =
         ::plasma::read<gr_complex>(d_data_filename, d_offset, d_length);
     d_data = pmt::init_c32vector(data.size(), data.data());
+
     // TODO: Load metadata
-    d_meta = pmt::make_dict();
+    std::ifstream meta_file(d_meta_filename);
+    nlohmann::json json = nlohmann::json::parse(meta_file);
+    d_meta = parse_meta(json);
+
+    d_out_port = PMT_OUT;
+    message_port_register_out(d_out_port);
 }
 
 /*
@@ -52,13 +58,11 @@ pdu_file_source_impl::~pdu_file_source_impl() {}
 
 bool pdu_file_source_impl::start()
 {
-    d_finished = false;
     d_thread = gr::thread::thread([this] { run(); });
     return block::start();
 }
 bool pdu_file_source_impl::stop()
 {
-    d_finished = true;
     d_thread.join();
     return block::stop();
 }
@@ -66,5 +70,34 @@ void pdu_file_source_impl::run()
 {
     message_port_pub(pmt::mp("out"), pmt::cons(d_meta, d_data));
 }
+
+pmt::pmt_t pdu_file_source_impl::parse_meta(const nlohmann::json& json)
+{
+    pmt::pmt_t dict = pmt::make_dict();
+    for (const auto& item : json.items()) {
+        pmt::pmt_t pmt_key = pmt::intern(item.key());
+        nlohmann::json value = item.value();
+        if (value.is_structured()) {
+            // Recursively parse the JSON object representing this value
+            dict = pmt::dict_add(dict, pmt_key, parse_meta(value));
+        } else {
+            // Parse the primitive JSON values as dictionary key:value pairs
+            pmt::pmt_t pmt_value;
+            if (value.is_string())
+                pmt_value = pmt::intern(value);
+            else if (value.is_number_float())
+                pmt_value = pmt::from_double(value);
+            else if (value.is_number_integer())
+                pmt_value = pmt::from_long(value);
+            else if (value.is_number_unsigned())
+                pmt_value = pmt::from_uint64(value);
+            else if (value.is_boolean())
+                pmt_value = pmt::from_bool(value);
+            dict = pmt::dict_add(dict, pmt_key, pmt_value);
+        }
+        return dict;
+    }
+}
+
 } /* namespace plasma */
 } /* namespace gr */

@@ -15,13 +15,10 @@
  */
 
 
-
- static const char *__doc_gr_plasma_pdu_file_source = R"doc()doc";
-
-
- static const char *__doc_gr_plasma_pdu_file_source_pdu_file_source = R"doc()doc";
+static const char* __doc_gr_plasma_pdu_file_source = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_pdu_file_source_make = R"doc()doc";
+static const char* __doc_gr_plasma_pdu_file_source_pdu_file_source = R"doc()doc";
 
-  
+
+static const char* __doc_gr_plasma_pdu_file_source_make = R"doc()doc";

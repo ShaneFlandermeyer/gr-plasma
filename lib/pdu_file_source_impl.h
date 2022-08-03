@@ -9,6 +9,8 @@
 #define INCLUDED_PLASMA_PDU_FILE_SOURCE_IMPL_H
 
 #include <gnuradio/plasma/pdu_file_source.h>
+#include <gnuradio/plasma/pmt_constants.h>
+#include <nlohmann/json.hpp>
 #include <plasma_dsp/file.h>
 #include <fstream>
 
@@ -22,13 +24,25 @@ private:
     std::string d_meta_filename;
     int d_offset;
     int d_length;
-    std::atomic<bool> d_finished;
     gr::thread::thread d_thread;
     pmt::pmt_t d_data;
     pmt::pmt_t d_meta;
+    pmt::pmt_t d_out_port;
+
+    /**
+     * @brief Convert a JSON object to a PMT dictionary
+     * 
+     * Note that this function is recursive and will convert nested JSON objects
+     * to dictionaries of dictionaries.
+     * 
+     * @param json 
+     * @return pmt::pmt_t 
+     */
+    pmt::pmt_t parse_meta(const nlohmann::json& json);
+
 public:
-    pdu_file_source_impl(const std::string &data_filename,
-                         const std::string &meta_filename,
+    pdu_file_source_impl(const std::string& data_filename,
+                         const std::string& meta_filename,
                          int offset,
                          int length);
     ~pdu_file_source_impl();

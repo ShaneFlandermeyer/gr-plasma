@@ -30,30 +30,21 @@ namespace py = pybind11;
 void bind_pdu_file_source(py::module& m)
 {
 
-    using pdu_file_source    = gr::plasma::pdu_file_source;
+    using pdu_file_source = ::gr::plasma::pdu_file_source;
 
 
-    py::class_<pdu_file_source, gr::block, gr::basic_block,
-        std::shared_ptr<pdu_file_source>>(m, "pdu_file_source", D(pdu_file_source))
+    py::class_<pdu_file_source,
+               gr::block,
+               gr::basic_block,
+               std::shared_ptr<pdu_file_source>>(m, "pdu_file_source", D(pdu_file_source))
 
         .def(py::init(&pdu_file_source::make),
-           D(pdu_file_source,make)
-        )
-        
-
+             py::arg("data_filename"),
+             py::arg("meta_filename"),
+             py::arg("offset"),
+             py::arg("length"),
+             D(pdu_file_source, make))
 
 
         ;
-
-
-
-
 }
-
-
-
-
-
-
-
-

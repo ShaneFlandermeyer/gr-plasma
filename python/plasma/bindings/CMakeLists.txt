@@ -43,6 +43,7 @@ list(APPEND plasma_python_files
     lfm_source_python.cc
     match_filt_python.cc
     pcfm_source_python.cc
+    pdu_file_source_python.cc
     pdu_file_sink_python.cc
     pdu_head_python.cc
     phase_code_python.cc
