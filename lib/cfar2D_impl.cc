@@ -7,6 +7,7 @@
 
 #include "cfar2D_impl.h"
 #include <gnuradio/io_signature.h>
+#include "arrayfire.h"
 
 namespace gr {
 namespace plasma {
@@ -65,8 +66,7 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     size_t n = pmt::length(samples);
     size_t io(0);
 
-    int num_pulse_cpi = 512; //Hard coded this. Need to add another parameter later for this.
-    int ncol = 512;
+    int ncol = d_num_pulse_cpi;
     int nrow = n / ncol;
     const gr_complex* in = pmt::c32vector_elements(samples, io);
     af::array rdm(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat *>(in));
@@ -75,7 +75,16 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     // Run CFAR
     DetectionReport results = cfarTemp.detect(rdm);
     // Output detections
+    int *coords = results.indices.host<int>();
 
+    size_t num_coords = results.indices.dims(0);
+    std::string info = "";
+    for(int i=0; i<num_coords; ++i){
+        info += coords[i];
+        info += ", ";
+        info += coords[i+num_coords];
+    }
+    message_port_pub(outPort,pmt::mp(info));
 
 }
 

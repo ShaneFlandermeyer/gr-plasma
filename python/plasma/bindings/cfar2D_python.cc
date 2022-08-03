@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(cfar2D.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(25a493f7346f7ff0a7cdb25c5034ab06)                     */
+/* BINDTOOL_HEADER_FILE_HASH(fc4cb11e3b3d4358f49a977f004c8433)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -30,30 +30,19 @@ namespace py = pybind11;
 void bind_cfar2D(py::module& m)
 {
 
-    using cfar2D    = gr::plasma::cfar2D;
+    using cfar2D = ::gr::plasma::cfar2D;
 
 
-    py::class_<cfar2D, gr::block, gr::basic_block,
-        std::shared_ptr<cfar2D>>(m, "cfar2D", D(cfar2D))
+    py::class_<cfar2D, gr::block, gr::basic_block, std::shared_ptr<cfar2D>>(
+        m, "cfar2D", D(cfar2D))
 
         .def(py::init(&cfar2D::make),
-           D(cfar2D,make)
-        )
-        
-
+             py::arg("guard_cells"),
+             py::arg("training_cells"),
+             py::arg("pfa"),
+             py::arg("num_pulse_cpi"),
+             D(cfar2D, make))
 
 
         ;
-
-
-
-
 }
-
-
-
-
-
-
-
-

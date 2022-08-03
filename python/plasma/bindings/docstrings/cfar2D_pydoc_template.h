@@ -15,13 +15,10 @@
  */
 
 
-
- static const char *__doc_gr_plasma_cfar2D = R"doc()doc";
-
-
- static const char *__doc_gr_plasma_cfar2D_cfar2D = R"doc()doc";
+static const char* __doc_gr_plasma_cfar2D = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_cfar2D_make = R"doc()doc";
+static const char* __doc_gr_plasma_cfar2D_cfar2D = R"doc()doc";
 
-  
+
+static const char* __doc_gr_plasma_cfar2D_make = R"doc()doc";
