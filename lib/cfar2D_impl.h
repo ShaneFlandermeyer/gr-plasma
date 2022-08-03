@@ -23,13 +23,15 @@ private:
     std::array<size_t,2> guard_win;
     std::array<size_t,2> train_win;
     float _pfa;
+    
+    size_t d_num_pulse_cpi;
 
     ::plasma::CFARDetector2D cfarTemp;
 
     void recieveMessage(const pmt::pmt_t &msg);
 
 public:
-    cfar2D_impl(std::vector<int> &guard_cells, std::vector<int> &training_cells, float pfa);
+    cfar2D_impl(std::vector<int> &guard_cells, std::vector<int> &training_cells, float pfa, size_t num_pulse_cpi);
     ~cfar2D_impl();
 
 };

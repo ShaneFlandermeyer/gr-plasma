@@ -12,20 +12,21 @@ namespace gr {
 namespace plasma {
 
 
-cfar2D::sptr cfar2D::make(std::vector<int> &guard_cells, std::vector<int> &training_cells, float pfa)
+cfar2D::sptr cfar2D::make(std::vector<int> &guard_cells, std::vector<int> &training_cells, float pfa, size_t num_pulse_cpi)
 {
-    return gnuradio::make_block_sptr<cfar2D_impl>(guard_cells, training_cells, pfa);
+    return gnuradio::make_block_sptr<cfar2D_impl>(guard_cells, training_cells, pfa, num_pulse_cpi);
 }
 
 
 /*
  * The private constructor
  */
-cfar2D_impl::cfar2D_impl(std::vector<int> &guard_cells, std::vector<int> &training_cells, float pfa)
+cfar2D_impl::cfar2D_impl(std::vector<int> &guard_cells, std::vector<int> &training_cells, float pfa, size_t num_pulse_cpi)
     : gr::block("cfar2D",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
-                outPort(pmt::mp("Output"))
+                outPort(pmt::mp("Output")),
+                d_num_pulse_cpi(num_pulse_cpi)
 {   
     //Setting guard window
     guard_win.at(0) = guard_cells[0];

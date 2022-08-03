@@ -25,6 +25,10 @@ parameters:
   label: PFA
   dtype: float
   default: 0.001
+- id: num_pulse_cpi
+  label:  Pulses per CPI
+  dtype:  int
+  default:  128
 
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
