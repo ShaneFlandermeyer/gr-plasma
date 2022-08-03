@@ -36,16 +36,18 @@ pdu_file_source_impl::pdu_file_source_impl(const std::string& data_filename,
       d_offset(offset),
       d_length(length)
 {
-
-
+    // Read I/Q data from file
     std::vector<gr_complex> data =
         ::plasma::read<gr_complex>(d_data_filename, d_offset, d_length);
     d_data = pmt::init_c32vector(data.size(), data.data());
 
-    // TODO: Load metadata
-    std::ifstream meta_file(d_meta_filename);
-    nlohmann::json json = nlohmann::json::parse(meta_file);
-    d_meta = parse_meta(json);
+    // Load metadata
+    d_meta = pmt::make_dict();
+    if (not d_meta_filename.empty()) {
+        std::ifstream meta_file(d_meta_filename);
+        nlohmann::json json = nlohmann::json::parse(meta_file);
+        d_meta = parse_meta(json);
+    }
 
     d_out_port = PMT_OUT;
     message_port_register_out(d_out_port);
@@ -61,11 +63,13 @@ bool pdu_file_source_impl::start()
     d_thread = gr::thread::thread([this] { run(); });
     return block::start();
 }
+
 bool pdu_file_source_impl::stop()
 {
     d_thread.join();
     return block::stop();
 }
+
 void pdu_file_source_impl::run()
 {
     message_port_pub(pmt::mp("out"), pmt::cons(d_meta, d_data));
@@ -95,8 +99,8 @@ pmt::pmt_t pdu_file_source_impl::parse_meta(const nlohmann::json& json)
                 pmt_value = pmt::from_bool(value);
             dict = pmt::dict_add(dict, pmt_key, pmt_value);
         }
-        return dict;
     }
+    return dict;
 }
 
 } /* namespace plasma */
