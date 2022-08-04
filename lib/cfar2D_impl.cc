@@ -57,7 +57,7 @@ cfar2D_impl::cfar2D_impl(std::vector<int> &guard_cells, std::vector<int> &traini
 cfar2D_impl::~cfar2D_impl() {}
 
 void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
-    
+    //Separating the meta data to get the samples and other meta data.
     pmt::pmt_t samples;
     pmt::pmt_t meta = pmt::make_dict();
     if(pmt::is_pdu(msg)){
@@ -65,6 +65,7 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
         meta = pmt::dict_update(meta,pmt::car(msg));
     }
 
+    //Getting the size of the samples.
     size_t n = pmt::length(samples);
     size_t io(0);
 
@@ -73,21 +74,23 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     const gr_complex* in = pmt::c32vector_elements(samples, io);
     af::array rdm(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat *>(in));
     
-    // Mag squared
+    //Mag squared of rdm
     rdm = af::pow(af::abs(rdm),2);
 
-    // Run CFAR
+    //Run CFAR on samples.
     DetectionReport results = cfarTemp.detect(rdm);
 
-    // Output detections
+    //Grab data from arrayfire arrays and store them in a vector.
     int *ind_ptr = results.indices.as(s32).host<int>();
     std::vector<int> ind_vec(ind_ptr, ind_ptr + results.indices.elements());
     pmt::pmt_t indices = pmt::init_s32vector(results.indices.elements(), ind_vec);
     delete ind_ptr;
 
+    //Adding the information to the meta data to be used later.
     meta = pmt::dict_add(meta, pmt::intern("indices"),indices);
     meta = pmt::dict_add(meta, pmt::intern("num_detections"),pmt::from_long(results.num_detections));
 
+    //Passing the information to the next block.
     message_port_pub(outPort, pmt::cons(meta, samples));
 
 
