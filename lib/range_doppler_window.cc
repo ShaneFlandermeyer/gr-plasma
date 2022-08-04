@@ -115,14 +115,14 @@ void RangeDopplerWindow::customEvent(QEvent* e)
                             QwtInterval(af::min<double>(tmp), af::max<double>(tmp)));
         d_data->setValueMatrix(vec, cols);
         d_spectro->setData(d_data);
-        d_zoomer->setZoomBase(d_spectro->boundingRect());
+        
 
         const QwtInterval zInterval = d_spectro->data()->interval(Qt::ZAxis);
         QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
         rightAxis->setColorMap(zInterval, new ColorMap());
         d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
 
-        d_plot->replot();
+        
 
         pmt::pmt_t global = pmt::dict_ref(meta, PMT_GLOBAL, pmt::PMT_NIL);
         pmt::pmt_t annotation = pmt::dict_ref(meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
@@ -155,6 +155,8 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             double vmin = -vmax;
             xlim(vmin, vmax);
         }
+        d_zoomer->setZoomBase(d_spectro->boundingRect());
+        d_plot->replot();
     }
     d_busy = false;
 }
