@@ -1,0 +1,42 @@
+id: plasma_pdu_file_source
+label: PDU File Source
+category: "[plasma]/PDU"
+
+parameters:
+  # TODO: Add type parameter
+  - id: data_filename
+    label: Data File
+    dtype: file_save
+  - id: load_meta
+    label: Load metadata
+    dtype: bool
+    default: False
+    options: [False, True]
+  - id: meta_filename
+    label: Meta filename
+    dtype: file_save
+    default: ''
+    hide: ${ 'all' if load_meta == False else 'none'}
+  - id: offset
+    label: Offset
+    dtype: int
+    default: 0
+  - id: length
+    label: Length
+    dtype: int
+    default: 0
+
+outputs:
+  - id: out
+    domain: message
+
+templates:
+  imports: from gnuradio import plasma
+  make: |-
+    % if load_meta() == True:
+      plasma.pdu_file_source(${data_filename},${meta_filename},${offset},${length})
+    % else:
+      plasma.pdu_file_source(${data_filename},'',${offset},${length})
+    % endif
+  
+file_format: 1

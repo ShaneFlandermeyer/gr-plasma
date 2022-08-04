@@ -75,11 +75,12 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     // Run CFAR
     DetectionReport results = cfarTemp.detect(rdm);
     // Output detections
-    int *coords = results.indices.host<int>();
+    bool *coords = results.indices.host<bool>();
 
-    size_t num_coords = results.indices.dims(0);
+    int num_coords = results.indices.dims(0);
     std::string info = "";
     for(int i=0; i<num_coords; ++i){
+        info += "\n";
         info += coords[i];
         info += ", ";
         info += coords[i+num_coords];

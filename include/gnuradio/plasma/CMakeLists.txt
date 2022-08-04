@@ -25,5 +25,6 @@ install(FILES
     pulse_to_cpi.h
     phase_code.h
     device.h
-    cfar2D.h DESTINATION include/gnuradio/plasma
+    cfar2D.h
+    pdu_file_source.h DESTINATION include/gnuradio/plasma
 )

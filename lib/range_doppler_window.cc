@@ -39,10 +39,10 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
     d_spectro->attach(d_plot);
     d_data = new QwtMatrixRasterData();
     d_plot->setAutoReplot();
-    QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
-    y->setTitle("Range (m)");
-    y = d_plot->axisWidget(QwtPlot::xBottom);
-    y->setTitle("Velocity (m/s)");
+    // QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
+    // y->setTitle("Range (m)");
+    // y = d_plot->axisWidget(QwtPlot::xBottom);
+    // y->setTitle("Velocity (m/s)");
 
     // Colorbar setup
     QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
@@ -97,7 +97,7 @@ void RangeDopplerWindow::customEvent(QEvent* e)
 {
     d_busy = true;
     if (e->type() == RangeDopplerUpdateEvent::Type()) {
-        
+
         RangeDopplerUpdateEvent* event = (RangeDopplerUpdateEvent*)e;
         double* data = event->data();
         auto rows = event->rows();
@@ -115,14 +115,13 @@ void RangeDopplerWindow::customEvent(QEvent* e)
                             QwtInterval(af::min<double>(tmp), af::max<double>(tmp)));
         d_data->setValueMatrix(vec, cols);
         d_spectro->setData(d_data);
-        d_zoomer->setZoomBase(d_spectro->boundingRect());
+
 
         const QwtInterval zInterval = d_spectro->data()->interval(Qt::ZAxis);
         QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
         rightAxis->setColorMap(zInterval, new ColorMap());
         d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
 
-        d_plot->replot();
 
         pmt::pmt_t global = pmt::dict_ref(meta, PMT_GLOBAL, pmt::PMT_NIL);
         pmt::pmt_t annotation = pmt::dict_ref(meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
@@ -144,6 +143,10 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             double rmin = -(c / 2) * d_pulsewidth;
             double rmax = (c / 2) * (1 / d_prf);
             ylim(rmin, rmax);
+            QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
+            y->setTitle("Range (m)");
+            y = d_plot->axisWidget(QwtPlot::xBottom);
+            y->setTitle("Velocity (m/s)");
         }
 
         if (d_center_freq == 0 or d_prf == 0) {
@@ -154,7 +157,13 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             double vmax = (lam / 2) * (d_prf / 2);
             double vmin = -vmax;
             xlim(vmin, vmax);
+            QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
+            y->setTitle("Range (m)");
+            y = d_plot->axisWidget(QwtPlot::xBottom);
+            y->setTitle("Velocity (m/s)");
         }
+        d_zoomer->setZoomBase(d_spectro->boundingRect());
+        d_plot->replot();
     }
     d_busy = false;
 }

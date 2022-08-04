@@ -4,7 +4,7 @@ category: '[plasma]'
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.cfar2D(${guard_cells}, ${training_cells}, ${pfa})
+  make: plasma.cfar2D(${guard_cells}, ${training_cells}, ${pfa}, ${num_pulse_cpi})
 
 #  Make one 'parameters' list entry for every parameter you want settable from the GUI.
 #     Keys include:

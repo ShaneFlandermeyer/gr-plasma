@@ -16,5 +16,6 @@ install(FILES
     plasma_match_filt.block.yml
     plasma_doppler_processing.block.yml
     plasma_pulse_to_cpi.block.yml
-    plasma_cfar2D.block.yml DESTINATION share/gnuradio/grc/blocks
+    plasma_cfar2D.block.yml
+    plasma_pdu_file_source.block.yml DESTINATION share/gnuradio/grc/blocks
 )
