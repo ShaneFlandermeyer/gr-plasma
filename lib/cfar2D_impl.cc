@@ -86,7 +86,7 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     delete ind_ptr;
 
     meta = pmt::dict_add(meta, pmt::intern("indices"),indices);
-    meta = pmt::dict_add(meta, pmt::intern("num_detect"),pmt::from_long(results.indices.elements()/2));
+    meta = pmt::dict_add(meta, pmt::intern("num_detections"),pmt::from_long(results.num_detections));
 
     message_port_pub(outPort, pmt::cons(meta, samples));
 
