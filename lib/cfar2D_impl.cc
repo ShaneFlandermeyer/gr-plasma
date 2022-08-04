@@ -71,21 +71,23 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     const gr_complex* in = pmt::c32vector_elements(samples, io);
     af::array rdm(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat *>(in));
     // Mag squared
-    rdm = af::sqrt(af::pow(rdm,2));
+    rdm = af::pow(af::abs(rdm),2);
     // Run CFAR
     DetectionReport results = cfarTemp.detect(rdm);
     // Output detections
-    bool *coords = results.indices.host<bool>();
-
+    // bool *coords;
+    // results.indices.host(coords);
+    // bool *coords = results.indices.host<bool>();
+    af_print(results.indices);
     int num_coords = results.indices.dims(0);
-    std::string info = "";
-    for(int i=0; i<num_coords; ++i){
-        info += "\n";
-        info += coords[i];
-        info += ", ";
-        info += coords[i+num_coords];
-    }
-    message_port_pub(outPort,pmt::mp(info));
+    // std::string info = "";
+    // for(int i=0; i<num_coords; ++i){
+    //     info += "\n";
+    //     info += coords[i];
+    //     info += ", ";
+    //     info += coords[i+num_coords];
+    // }
+
 
 }
 
