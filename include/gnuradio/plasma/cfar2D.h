@@ -32,7 +32,7 @@ public:
      * class. plasma::cfar2D::make is the public interface for
      * creating new instances.
      */
-    static sptr make(std::vector<int> &guard_cells, std::vector<int> &training_cells, float pfa, size_t num_pulse_cpi);
+    static sptr make(std::vector<int> &guard_win_size, std::vector<int> &train_win_size, double pfa, size_t num_pulse_cpi);
 };
 
 } // namespace plasma

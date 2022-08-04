@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(cfar2D.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(fc4cb11e3b3d4358f49a977f004c8433)                     */
+/* BINDTOOL_HEADER_FILE_HASH(0f777e8a9a40408106d0df654add78ef)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -37,8 +37,8 @@ void bind_cfar2D(py::module& m)
         m, "cfar2D", D(cfar2D))
 
         .def(py::init(&cfar2D::make),
-             py::arg("guard_cells"),
-             py::arg("training_cells"),
+             py::arg("guard_win_size"),
+             py::arg("train_win_size"),
              py::arg("pfa"),
              py::arg("num_pulse_cpi"),
              D(cfar2D, make))
