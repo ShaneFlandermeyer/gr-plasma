@@ -59,8 +59,10 @@ cfar2D_impl::~cfar2D_impl() {}
 void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     
     pmt::pmt_t samples;
+    pmt::pmt_t meta = pmt::make_dict();
     if(pmt::is_pdu(msg)){
         samples = pmt::cdr(msg);
+        meta = pmt::dict_update(meta,pmt::car(msg));
     }
 
     size_t n = pmt::length(samples);
@@ -70,23 +72,23 @@ void cfar2D_impl::recieveMessage(const pmt::pmt_t &msg){
     int nrow = n / ncol;
     const gr_complex* in = pmt::c32vector_elements(samples, io);
     af::array rdm(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat *>(in));
+    
     // Mag squared
     rdm = af::pow(af::abs(rdm),2);
+
     // Run CFAR
     DetectionReport results = cfarTemp.detect(rdm);
+
     // Output detections
-    // bool *coords;
-    // results.indices.host(coords);
-    // bool *coords = results.indices.host<bool>();
-    af_print(results.indices);
-    int num_coords = results.indices.dims(0);
-    // std::string info = "";
-    // for(int i=0; i<num_coords; ++i){
-    //     info += "\n";
-    //     info += coords[i];
-    //     info += ", ";
-    //     info += coords[i+num_coords];
-    // }
+    int *ind_ptr = results.indices.as(s32).host<int>();
+    std::vector<int> ind_vec(ind_ptr, ind_ptr + results.indices.elements());
+    pmt::pmt_t indices = pmt::init_s32vector(results.indices.elements(), ind_vec);
+    delete ind_ptr;
+
+    meta = pmt::dict_add(meta, pmt::intern("indices"),indices);
+    meta = pmt::dict_add(meta, pmt::intern("num_detect"),pmt::from_long(results.indices.elements()/2));
+
+    message_port_pub(outPort, pmt::cons(meta, samples));
 
 
 }
