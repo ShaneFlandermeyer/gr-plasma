@@ -24,5 +24,8 @@ install(FILES
     doppler_processing.h
     pulse_to_cpi.h
     phase_code.h
-    device.h DESTINATION include/gnuradio/plasma
+    device.h
+    cfar2D.h
+    pdu_file_source.h
+    pulse_doppler.h DESTINATION include/gnuradio/plasma
 )

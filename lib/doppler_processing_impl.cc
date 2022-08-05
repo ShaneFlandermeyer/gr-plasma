@@ -10,8 +10,6 @@
 #include <arrayfire.h>
 #include <chrono>
 
-#define fftshift(in) shift(in, in.dims(0) / 2, 0)
-#define ifftshift(in) shift(in, (in.dims(0) + 1) / 2, (in.dims(1) + 1) / 2)
 namespace gr {
 namespace plasma {
 
@@ -51,7 +49,7 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
     // af::timer start = af::timer::start();
 
-    if (this->nmsgs(PMT_IN) > d_queue_depth) {
+    if (this->nmsgs(d_in_port) > d_queue_depth) {
         return;
     }
 
@@ -85,19 +83,18 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     int ncol = d_num_pulse_cpi;
 
     // Take an FFT across each row of the matrix to form a range-doppler map
-
     af::array rdm(af::dim4(nrow, ncol), reinterpret_cast<const af::cfloat*>(in));
     // The FFT function transforms each column of the input matrix by default,
     // so we need to transpose it to do the FFT across rows.
     rdm = rdm.T();
     rdm = af::fftNorm(rdm, 1.0, d_fftsize);
-    rdm = fftshift(rdm);
+    rdm = ::plasma::fftshift(rdm, 0);
     rdm = rdm.T();
     rdm.host(out);
     // Send the data as a message
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
+    // Reset the metadata output
     d_meta = pmt::make_dict();
-    // GR_LOG_DEBUG(d_logger, af::timer::stop(start))
 }
 
 void doppler_processing_impl::set_msg_queue_depth(size_t depth) { d_queue_depth = depth; }

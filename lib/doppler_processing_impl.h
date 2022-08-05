@@ -11,6 +11,7 @@
 #include <gnuradio/plasma/doppler_processing.h>
 #include <gnuradio/plasma/pmt_constants.h>
 #include <gnuradio/plasma/device.h>
+#include <plasma_dsp/fft.h>
 
 namespace gr {
 namespace plasma {

@@ -1,16 +1,23 @@
-id: plasma_doppler_processing
-label: Doppler Processing
+id: plasma_cfar2D
+label: CFAR Detector (2D)
 category: '[plasma]'
 
 parameters:
+- id: guard_win_size
+  label: Guard window size
+  dtype: raw
+  default: (,)
+- id: train_win_size
+  label: Training window size
+  dtype: raw
+  default: (,)
+- id: pfa
+  label: PFA
+  dtype: float
+  default: 0.001
 - id: num_pulse_cpi
-  label: Pulses per CPI
-  dtype: int
-  default: 128
-- id: nfft
-  label: FFT size
-  dtype: int
-  default: 128
+  label:  Pulses per CPI
+  dtype:  int
 - id: backend
   label: Backend
   dtype: enum
@@ -23,20 +30,18 @@ parameters:
   hide: part
 
 inputs:
-- id: in
-  domain: message
+- domain: message
+  id: in
 
 outputs:
-- id: out
-  domain: message
+- domain: message
+  id: out
 
 templates:
   imports: from gnuradio import plasma
   make: |-
-    plasma.doppler_processing(${num_pulse_cpi}, ${nfft})
+    plasma.cfar2D(${guard_win_size}, ${train_win_size}, ${pfa},${num_pulse_cpi})
     self.${id}.set_msg_queue_depth(${depth})
     self.${id}.set_backend(${backend})
 
-#  'file_format' specifies the version of the GRC yml format used in the file
-#  and should usually not be changed.
 file_format: 1

@@ -1,5 +1,5 @@
-id: plasma_match_filt
-label: Matched Filter
+id: plasma_pulse_doppler
+label: Pulse-Doppler Processing
 category: '[plasma]'
 
 parameters:
@@ -7,16 +7,20 @@ parameters:
   label: Pulses per CPI
   dtype: int
   default: 128
-- id: backend
-  label: Backend
-  dtype: enum
-  options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
-  option_labels: [Default, CPU, Cuda, OpenCL]
+- id: nfft
+  label: FFT size
+  dtype: int
+  default: 128
 - id: depth
   label: Message Queue Depth
   dtype: int
   default: 1
   hide: part
+- id: backend
+  label: Backend
+  dtype: enum
+  options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
+  option_labels: [Default, CPU, Cuda, OpenCL]
 
 inputs:
 - id: tx
@@ -31,7 +35,7 @@ outputs:
 templates:
   imports: from gnuradio import plasma
   make: |-
-    plasma.match_filt(${num_pulse_cpi})
+    plasma.pulse_doppler(${num_pulse_cpi}, ${nfft})
     self.${id}.set_msg_queue_depth(${depth})
     self.${id}.set_backend(${backend})
 
