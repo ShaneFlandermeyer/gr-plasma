@@ -35,6 +35,7 @@ namespace py = pybind11;
     void bind_device(py::module& m);
     void bind_cfar2D(py::module& m);
     void bind_pdu_file_source(py::module& m);
+    void bind_pulse_doppler(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -77,5 +78,6 @@ PYBIND11_MODULE(plasma_python, m)
     bind_device(m);
     bind_cfar2D(m);
     bind_pdu_file_source(m);
+    bind_pulse_doppler(m);
     // ) END BINDING_FUNCTION_CALLS
 }

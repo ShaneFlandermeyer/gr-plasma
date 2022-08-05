@@ -50,3 +50,4 @@ GR_ADD_TEST(qa_match_filt ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_ma
 GR_ADD_TEST(qa_doppler_processing ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_doppler_processing.py)
 GR_ADD_TEST(qa_pulse_to_cpi ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pulse_to_cpi.py)
 GR_ADD_TEST(qa_pdu_file_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_file_source.py)
+GR_ADD_TEST(qa_pulse_doppler ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pulse_doppler.py)

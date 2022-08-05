@@ -48,6 +48,7 @@ list(APPEND plasma_python_files
     pdu_file_sink_python.cc
     pdu_head_python.cc
     phase_code_python.cc
+    pulse_doppler_python.cc
     pulse_to_cpi_python.cc
     python_bindings.cc
     range_doppler_sink_python.cc
