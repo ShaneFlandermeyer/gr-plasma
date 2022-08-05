@@ -2,10 +2,6 @@ id: plasma_cfar2D
 label: CFAR Detector (2D)
 category: '[plasma]'
 
-templates:
-  imports: from gnuradio import plasma
-  make: plasma.cfar2D(${guard_win_size}, ${train_win_size}, ${pfa}, ${num_pulse_cpi})
-
 parameters:
 - id: guard_win_size
   label: Guard window size
@@ -22,7 +18,16 @@ parameters:
 - id: num_pulse_cpi
   label:  Pulses per CPI
   dtype:  int
-  default: 
+- id: backend
+  label: Backend
+  dtype: enum
+  options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
+  option_labels: [Default, CPU, Cuda, OpenCL]
+- id: depth
+  label: Message queue depth
+  dtype: int
+  default: 1
+  hide: part
 
 inputs:
 - domain: message
@@ -31,5 +36,12 @@ inputs:
 outputs:
 - domain: message
   id: out
+
+templates:
+  imports: from gnuradio import plasma
+  make: |-
+    plasma.cfar2D(${guard_win_size}, ${train_win_size}, ${pfa},${num_pulse_cpi})
+    self.${id}.set_msg_queue_depth(${depth})
+    self.${id}.set_backend(${backend})
 
 file_format: 1

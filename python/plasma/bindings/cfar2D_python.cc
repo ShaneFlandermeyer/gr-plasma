@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(cfar2D.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(0f777e8a9a40408106d0df654add78ef)                     */
+/* BINDTOOL_HEADER_FILE_HASH(bbcdef427c4a7f994087537034d7d484)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -43,6 +43,14 @@ void bind_cfar2D(py::module& m)
              py::arg("num_pulse_cpi"),
              D(cfar2D, make))
 
+
+        .def("set_msg_queue_depth",
+             &cfar2D::set_msg_queue_depth,
+             py::arg("arg0"),
+             D(cfar2D, set_msg_queue_depth))
+
+
+        .def("set_backend", &cfar2D::set_backend, py::arg("arg0"), D(cfar2D, set_backend))
 
         ;
 }

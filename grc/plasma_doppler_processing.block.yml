@@ -11,16 +11,16 @@ parameters:
   label: FFT size
   dtype: int
   default: 128
-- id: depth
-  label: Message queue depth
-  dtype: int
-  default: 1
-  hide: part
 - id: backend
   label: Backend
   dtype: enum
   options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
   option_labels: [Default, CPU, Cuda, OpenCL]
+- id: depth
+  label: Message queue depth
+  dtype: int
+  default: 1
+  hide: part
 
 inputs:
 - id: in

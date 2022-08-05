@@ -56,6 +56,7 @@ cfar2D_impl::~cfar2D_impl() {}
 
 void cfar2D_impl::handle_message(const pmt::pmt_t& msg)
 {
+    if (this->nmsgs(d_in_port) > d_msg_queue_depth) return;
     // Parse the input message
     pmt::pmt_t samples;
     pmt::pmt_t meta = pmt::make_dict();
@@ -94,6 +95,27 @@ void cfar2D_impl::handle_message(const pmt::pmt_t& msg)
         meta, pmt::intern("num_detections"), pmt::from_long(results.num_detections));
 
     message_port_pub(d_out_port, pmt::cons(meta, samples));
+}
+
+void cfar2D_impl::set_msg_queue_depth(size_t depth) { d_msg_queue_depth = depth; }
+
+void cfar2D_impl::set_backend(Device::Backend backend)
+{
+    switch (backend) {
+    case Device::CPU:
+        d_backend = AF_BACKEND_CPU;
+        break;
+    case Device::CUDA:
+        d_backend = AF_BACKEND_CUDA;
+        break;
+    case Device::OPENCL:
+        d_backend = AF_BACKEND_OPENCL;
+        break;
+    default:
+        d_backend = AF_BACKEND_DEFAULT;
+        break;
+    }
+    af::setBackend(d_backend);
 }
 
 

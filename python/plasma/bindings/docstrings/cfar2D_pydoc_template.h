@@ -18,7 +18,16 @@
 static const char* __doc_gr_plasma_cfar2D = R"doc()doc";
 
 
-static const char* __doc_gr_plasma_cfar2D_cfar2D = R"doc()doc";
+static const char* __doc_gr_plasma_cfar2D_cfar2D_0 = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_cfar2D_cfar2D_1 = R"doc()doc";
 
 
 static const char* __doc_gr_plasma_cfar2D_make = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_cfar2D_set_msg_queue_depth = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_cfar2D_set_backend = R"doc()doc";
