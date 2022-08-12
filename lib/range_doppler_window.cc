@@ -28,10 +28,36 @@ public:
         return text;
     }
 };
+// class CFARCheckBox : public QCheckBox{
+//     public:
+//         CFARCheckBox(const QString &text, QWidget *parent = 0) : QCheckBox(text, parent){
+//             connect(this, SIGNAL(toggled(bool)), this, SLOT(verifyCheck(bool)));
+//         }
+
+//     signals:
+//         void checkBoxChecked();
+
+//     public slots:
+//         void verifyCheck(bool checked){
+//             if(checked){
+//                 emit checkBoxChecked();
+//             }
+//         }
+// };
 
 RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 {
-
+    // CFAR setup
+    d_checkBox = new QCheckBox("Show CFAR");
+    connect(d_checkBox,SIGNAL(toggled(bool)), this, SLOT(showCFAR(bool)), Qt::UniqueConnection);
+    d_curve = new QwtPlotCurve();
+    d_curve->setStyle(QwtPlotCurve::Dots);
+    QwtSymbol* symbol = new QwtSymbol(QwtSymbol::Diamond, 
+                                      QBrush(Qt::yellow),
+                                      QPen(Qt::red, 2),
+                                      QSize(8,8));
+    d_curve->setSymbol(symbol);
+    
     // Spectrogram
     d_plot = new QwtPlot();
     d_spectro = new QwtPlotSpectrogram();
@@ -66,6 +92,7 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
     // GUI layout
     vLayout = new QVBoxLayout();
     // vLayout->addWidget(d_debug_plot);
+    vLayout->addWidget(d_checkBox);
     vLayout->addWidget(d_plot);
     setLayout(vLayout);
 
@@ -91,6 +118,20 @@ void RangeDopplerWindow::xlim(double x1, double x2)
 void RangeDopplerWindow::ylim(double y1, double y2)
 {
     d_data->setInterval(Qt::YAxis, QwtInterval(y1, y2));
+}
+
+void RangeDopplerWindow::showCFAR(bool checked){
+    if (checked) {
+        // show
+        std::cout << "Showing CFAR" << std::endl;
+        d_curve->attach(d_plot);
+
+    } else {
+        // hide
+        std::cout << "Hiding CFAR" << std::endl;
+        d_curve->detach();
+
+    }
 }
 
 void RangeDopplerWindow::customEvent(QEvent* e)
@@ -136,6 +177,8 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         d_center_freq = pmt::to_double(
             pmt::dict_ref(capture, PMT_FREQUENCY, pmt::from_double(d_center_freq)));
 
+        
+
         if (d_prf == 0 or d_pulsewidth == 0 or d_samp_rate == 0) {
             ylim(0, rows);
         } else {
@@ -162,6 +205,36 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             y = d_plot->axisWidget(QwtPlot::xBottom);
             y->setTitle("Velocity (m/s)");
         }
+
+        // CFAR Stuff
+        pmt::pmt_t indices = pmt::dict_ref(meta, pmt::mp("indices"), pmt::PMT_NIL);
+        if (not pmt::is_null(indices)) {
+            // size_t io(0);
+            std::vector<int> idx = pmt::s32vector_elements(indices);
+
+            QVector<double> xData(idx.size());
+            QVector<double> yData(idx.size());
+            for (int i = 0; i < idx.size(); i++) {
+                int detection_col = idx[i] / rows;
+                int detection_row = idx[i] % rows;
+                // Compute xData and yData
+                xData[i] = detection_col / (float)cols *
+               (d_data->interval(Qt::XAxis).maxValue() -
+                d_data->interval(Qt::XAxis).minValue());
+                yData[i] = detection_row / (float)rows *
+               (d_data->interval(Qt::YAxis).maxValue() -
+                d_data->interval(Qt::YAxis).minValue());
+
+            //     yData[i] = d_data->interval(Qt::YAxis).maxValue() -  
+            //     detection_row / (float)rows *
+            //    (d_data->interval(Qt::YAxis).maxValue() -
+            //     d_data->interval(Qt::YAxis).minValue()) + d_data->interval(Qt::YAxis).minValue();
+
+            }
+
+            d_curve->setSamples(xData, yData);
+        }
+
         d_zoomer->setZoomBase(d_spectro->boundingRect());
         d_plot->replot();
     }

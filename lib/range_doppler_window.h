@@ -6,6 +6,7 @@
 #include <plasma_dsp/linear_fm_waveform.h>
 #include <gnuradio/plasma/pmt_constants.h>
 #include <pmt/pmt.h>
+
 #include <qwt/qwt_plot.h>
 #include <qwt/qwt_thermo.h>
 #include <qwt_color_map.h>
@@ -17,11 +18,15 @@
 #include <qwt_plot_panner.h>
 #include <qwt_plot_renderer.h>
 #include <qwt_plot_spectrogram.h>
+#include <qwt_symbol.h>
 #include <qwt_plot_zoomer.h>
 #include <qwt_scale_draw.h>
 #include <qwt_scale_widget.h>
+
+#include <QCheckBox>
 #include <QBoxLayout>
 #include <QWidget>
+
 #include <complex>
 #include <vector>
 
@@ -42,6 +47,8 @@ public:
 public slots:
     void customEvent(QEvent* e) override;
 
+    void showCFAR(bool checked);
+
 private:
     bool d_closed;
     QwtPlotSpectrogram* d_spectro;
@@ -51,6 +58,10 @@ private:
     QwtMatrixRasterData* d_data;
     QwtPlotZoomer* d_zoomer;
     QwtPlotPanner* d_panner;
+
+    //CFAR Stuff
+    QCheckBox* d_checkBox;
+    QwtPlotCurve* d_curve;
 
     QVBoxLayout* vLayout;
     QHBoxLayout* hLayout;
