@@ -28,33 +28,17 @@ public:
         return text;
     }
 };
-// class CFARCheckBox : public QCheckBox{
-//     public:
-//         CFARCheckBox(const QString &text, QWidget *parent = 0) : QCheckBox(text, parent){
-//             connect(this, SIGNAL(toggled(bool)), this, SLOT(verifyCheck(bool)));
-//         }
-
-//     signals:
-//         void checkBoxChecked();
-
-//     public slots:
-//         void verifyCheck(bool checked){
-//             if(checked){
-//                 emit checkBoxChecked();
-//             }
-//         }
-// };
 
 RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 {
-    // CFAR setup
+    // CFAR show/hide setup
     d_checkBox = new QCheckBox("Show CFAR");
     connect(d_checkBox,SIGNAL(toggled(bool)), this, SLOT(showCFAR(bool)), Qt::UniqueConnection);
     d_curve = new QwtPlotCurve();
-    d_curve->setStyle(QwtPlotCurve::Dots);
+    d_curve->setStyle(QwtPlotCurve::NoCurve);
     QwtSymbol* symbol = new QwtSymbol(QwtSymbol::Diamond, 
-                                      QBrush(Qt::yellow),
-                                      QPen(Qt::red, 2),
+                                      QBrush(Qt::green),
+                                      QPen(Qt::black, 1),
                                       QSize(8,8));
     d_curve->setSymbol(symbol);
     
@@ -209,26 +193,24 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         // CFAR Stuff
         pmt::pmt_t indices = pmt::dict_ref(meta, pmt::mp("indices"), pmt::PMT_NIL);
         if (not pmt::is_null(indices)) {
-            // size_t io(0);
             std::vector<int> idx = pmt::s32vector_elements(indices);
-
+            
+            //Create the x and y coordinates
             QVector<double> xData(idx.size());
             QVector<double> yData(idx.size());
+
+            //Loop through idx array
             for (int i = 0; i < idx.size(); i++) {
+                //Get the x and y coordinate with respect to result.detections array
                 int detection_col = idx[i] / rows;
                 int detection_row = idx[i] % rows;
-                // Compute xData and yData
-                xData[i] = detection_col / (float)cols *
+                //Compute xData and yData with respect to actual spectrogram scaling, then move the "dot" to the center of the cell
+                xData[i] = (detection_col + .5) / (float)cols *
                (d_data->interval(Qt::XAxis).maxValue() -
                 d_data->interval(Qt::XAxis).minValue());
-                yData[i] = detection_row / (float)rows *
+                yData[i] = (detection_row + .5) / (float)rows *
                (d_data->interval(Qt::YAxis).maxValue() -
                 d_data->interval(Qt::YAxis).minValue());
-
-            //     yData[i] = d_data->interval(Qt::YAxis).maxValue() -  
-            //     detection_row / (float)rows *
-            //    (d_data->interval(Qt::YAxis).maxValue() -
-            //     d_data->interval(Qt::YAxis).minValue()) + d_data->interval(Qt::YAxis).minValue();
 
             }
 
