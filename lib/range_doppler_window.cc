@@ -31,28 +31,26 @@ public:
 
 RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
 {
-    // CFAR show/hide setup
-    d_checkBox = new QCheckBox("Show CFAR");
-    connect(d_checkBox,SIGNAL(toggled(bool)), this, SLOT(showCFAR(bool)), Qt::UniqueConnection);
+    // CFAR detection visualization setup
+    d_checkBox = new QCheckBox("Show detections");
+    connect(d_checkBox,
+            SIGNAL(toggled(bool)),
+            this,
+            SLOT(show_detections(bool)),
+            Qt::UniqueConnection);
     d_curve = new QwtPlotCurve();
-    d_curve->setStyle(QwtPlotCurve::NoCurve);
-    QwtSymbol* symbol = new QwtSymbol(QwtSymbol::Diamond, 
-                                      QBrush(Qt::green),
-                                      QPen(Qt::black, 1),
-                                      QSize(8,8));
+    d_curve->setStyle(QwtPlotCurve::Dots);
+    QwtSymbol* symbol = new QwtSymbol(
+        QwtSymbol::Diamond, QBrush(Qt::yellow), QPen(Qt::red, 2), QSize(8, 8));
     d_curve->setSymbol(symbol);
-    
+
     // Spectrogram
     d_plot = new QwtPlot();
     d_spectro = new QwtPlotSpectrogram();
     d_spectro->setColorMap(new ColorMap());
     d_spectro->attach(d_plot);
-    d_data = new QwtMatrixRasterData();
-    d_plot->setAutoReplot();
-    // QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
-    // y->setTitle("Range (m)");
-    // y = d_plot->axisWidget(QwtPlot::xBottom);
-    // y->setTitle("Velocity (m/s)");
+    d_data = new RangeDopplerData();
+    d_plot->setAutoReplot(true);
 
     // Colorbar setup
     QwtScaleWidget* rightAxis = d_plot->axisWidget(QwtPlot::yRight);
@@ -74,11 +72,11 @@ RangeDopplerWindow::RangeDopplerWindow(QWidget* parent) : QWidget(parent)
     d_panner->setMouseButton(Qt::MiddleButton);
 
     // GUI layout
-    vLayout = new QVBoxLayout();
-    // vLayout->addWidget(d_debug_plot);
-    vLayout->addWidget(d_checkBox);
-    vLayout->addWidget(d_plot);
-    setLayout(vLayout);
+    v_layout = new QVBoxLayout();
+    // v_layout->addWidget(d_debug_plot);
+    v_layout->addWidget(d_checkBox);
+    v_layout->addWidget(d_plot);
+    setLayout(v_layout);
 
     d_closed = false;
     d_busy = false;
@@ -104,18 +102,13 @@ void RangeDopplerWindow::ylim(double y1, double y2)
     d_data->setInterval(Qt::YAxis, QwtInterval(y1, y2));
 }
 
-void RangeDopplerWindow::showCFAR(bool checked){
-    if (checked) {
-        // show
-        std::cout << "Showing CFAR" << std::endl;
+void RangeDopplerWindow::show_detections(bool checked)
+{
+    if (checked)
         d_curve->attach(d_plot);
 
-    } else {
-        // hide
-        std::cout << "Hiding CFAR" << std::endl;
+    else
         d_curve->detach();
-
-    }
 }
 
 void RangeDopplerWindow::customEvent(QEvent* e)
@@ -148,10 +141,10 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         d_plot->setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue());
 
 
+        // Parse the input metadata
         pmt::pmt_t global = pmt::dict_ref(meta, PMT_GLOBAL, pmt::PMT_NIL);
         pmt::pmt_t annotation = pmt::dict_ref(meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
         pmt::pmt_t capture = pmt::dict_ref(meta, PMT_CAPTURES, pmt::PMT_NIL);
-
         d_prf =
             pmt::to_double(pmt::dict_ref(annotation, PMT_PRF, pmt::from_double(d_prf)));
         d_pulsewidth = pmt::to_double(
@@ -161,7 +154,6 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         d_center_freq = pmt::to_double(
             pmt::dict_ref(capture, PMT_FREQUENCY, pmt::from_double(d_center_freq)));
 
-        
 
         if (d_prf == 0 or d_pulsewidth == 0 or d_samp_rate == 0) {
             ylim(0, rows);
@@ -170,6 +162,7 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             double rmin = -(c / 2) * d_pulsewidth;
             double rmax = (c / 2) * (1 / d_prf);
             ylim(rmin, rmax);
+            // Update the axes if we're plotting range and doppler
             QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
             y->setTitle("Range (m)");
             y = d_plot->axisWidget(QwtPlot::xBottom);
@@ -184,6 +177,7 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             double vmax = (lam / 2) * (d_prf / 2);
             double vmin = -vmax;
             xlim(vmin, vmax);
+            // Update the axes if we're plotting range and doppler
             QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
             y->setTitle("Range (m)");
             y = d_plot->axisWidget(QwtPlot::xBottom);
@@ -194,29 +188,23 @@ void RangeDopplerWindow::customEvent(QEvent* e)
         pmt::pmt_t indices = pmt::dict_ref(meta, pmt::mp("indices"), pmt::PMT_NIL);
         if (not pmt::is_null(indices)) {
             std::vector<int> idx = pmt::s32vector_elements(indices);
-            
-            //Create the x and y coordinates
+
             QVector<double> xData(idx.size());
             QVector<double> yData(idx.size());
-
-            //Loop through idx array
-            for (int i = 0; i < idx.size(); i++) {
-                //Get the x and y coordinate with respect to result.detections array
+            for (size_t i = 0; i < idx.size(); i++) {
                 int detection_col = idx[i] / rows;
                 int detection_row = idx[i] % rows;
-                //Compute xData and yData with respect to actual spectrogram scaling, then move the "dot" to the center of the cell
-                xData[i] = (detection_col + .5) / (float)cols *
-               (d_data->interval(Qt::XAxis).maxValue() -
-                d_data->interval(Qt::XAxis).minValue());
-                yData[i] = (detection_row + .5) / (float)rows *
-               (d_data->interval(Qt::YAxis).maxValue() -
-                d_data->interval(Qt::YAxis).minValue());
-
+                // Compute the x and y values
+                xData[i] =
+                    detection_col / (float)cols * d_data->interval(Qt::XAxis).width() +
+                    d_data->interval(Qt::XAxis).minValue();
+                yData[i] =
+                    detection_row / (float)rows * d_data->interval(Qt::YAxis).width() +
+                    d_data->interval(Qt::YAxis).minValue();
             }
 
             d_curve->setSamples(xData, yData);
         }
-
         d_zoomer->setZoomBase(d_spectro->boundingRect());
         d_plot->replot();
     }

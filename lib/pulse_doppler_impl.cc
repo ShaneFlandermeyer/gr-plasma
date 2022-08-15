@@ -99,8 +99,8 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
     size_t ncol = d_num_pulse_cpi;
     size_t nrow = n / ncol;
     size_t nconv = nrow + d_match_filt.elements() - 1;
-    if (pmt::length(d_data) != n)
-        d_data = pmt::make_c32vector(nconv * ncol, 0);
+    if (pmt::length(d_data) != nconv * d_fftsize)
+        d_data = pmt::make_c32vector(nconv * d_fftsize, 0);
 
     // Get input and output data
     size_t io(0);
