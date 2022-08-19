@@ -20,6 +20,7 @@
 namespace gr {
 namespace plasma {
 static const double BURST_MODE_DELAY = 2e-6;
+// static const double BURST_MODE_DELAY = 0;
 class usrp_radar_impl : public usrp_radar
 {
 private:
@@ -43,26 +44,47 @@ private:
     pmt::pmt_t d_rx_data;
     pmt::pmt_t d_capture;
     pmt::pmt_t d_annotation;
+    pmt::pmt_t d_in_port;
+    pmt::pmt_t d_out_port;
+    
     gr::thread::thread d_main_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::mutex d_tx_buff_mutex;
     std::atomic<bool> d_finished;
     std::atomic<bool> d_armed;
+    std::atomic<bool> d_burst_mode;
     
 
 
     /**
-     * @brief Transmit the data in the tx buffer until
+     * @brief Transmit the data in the tx buffer in burst mode, where the
+     * repetition time is given by a field called "radar:prf" in a PMT dictionary
+     * called "annotations"
      *
      * @param usrp
      * @param buff_ptrs
      * @param num_samps_pulse
      * @param start_time
      */
-    void transmit(uhd::usrp::multi_usrp::sptr usrp,
+    void transmit_bursts(uhd::usrp::multi_usrp::sptr usrp,
                   std::vector<std::complex<float>*> buff_ptrs,
                   size_t num_samps_pulse,
                   uhd::time_spec_t start_time);
+
+    /**
+     * @brief Transmit the data in the tx buffer continuously, with no delay
+     * between repetitions.
+     * 
+     * @param usrp 
+     * @param buff_ptrs 
+     * @param num_samps_pulse 
+     * @param start_time 
+     */
+    void transmit_continuous(uhd::usrp::multi_usrp::sptr usrp,
+                  std::vector<std::complex<float>*> buff_ptrs,
+                  size_t num_samps_pulse,
+                  uhd::time_spec_t start_time);
+                  
     /**
      * @brief Receive a CPI of samples from the USRP, then package them into a PDU
      *
