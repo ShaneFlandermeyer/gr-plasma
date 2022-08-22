@@ -21,6 +21,21 @@ namespace py = pybind11;
 // Please do not delete
 /**************************************/
 // BINDING_FUNCTION_PROTOTYPES(
+    void bind_lfm_source(py::module& m);
+    void bind_waveform_controller(py::module& m);
+    void bind_usrp_radar(py::module& m);
+    void bind_pdu_file_sink(py::module& m);
+    void bind_pdu_head(py::module& m);
+    void bind_pcfm_source(py::module& m);
+    void bind_range_doppler_sink(py::module& m);
+    void bind_match_filt(py::module& m);
+    void bind_doppler_processing(py::module& m);
+    void bind_pulse_to_cpi(py::module& m);
+    void bind_phase_code(py::module& m);
+    void bind_device(py::module& m);
+    void bind_cfar2D(py::module& m);
+    void bind_pdu_file_source(py::module& m);
+    void bind_pulse_doppler(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -42,12 +57,27 @@ PYBIND11_MODULE(plasma_python, m)
 
     // Allow access to base block methods
     py::module::import("gnuradio.gr");
-
+    py::module::import("gnuradio.qtgui.qtgui_python");
     /**************************************/
     // The following comment block is used for
     // gr_modtool to insert binding function calls
     // Please do not delete
     /**************************************/
     // BINDING_FUNCTION_CALLS(
+    bind_lfm_source(m);
+    bind_waveform_controller(m);
+    bind_usrp_radar(m);
+    bind_pdu_file_sink(m);
+    bind_pdu_head(m);
+    bind_pcfm_source(m);
+    bind_range_doppler_sink(m);
+    bind_match_filt(m);
+    bind_doppler_processing(m);
+    bind_pulse_to_cpi(m);
+    bind_phase_code(m);
+    bind_device(m);
+    bind_cfar2D(m);
+    bind_pdu_file_source(m);
+    bind_pulse_doppler(m);
     // ) END BINDING_FUNCTION_CALLS
 }

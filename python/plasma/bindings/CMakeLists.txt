@@ -27,9 +27,35 @@ include(GrPybind)
 ########################################################################
 # Python Bindings
 ########################################################################
+message(STATUS "Extra includes: ${Qt5Widgets_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} ")
+set(extra_includes ${Qt5Widgets_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+get_directory_property( DirDefs COMPILE_DEFINITIONS )
+message(STATUS "COMPILE_DEFINITIONS = ${DirDefs}" )
+set(define_symbols ${DirDefs};__PIC__)
+message(STATUS "OLd defines: $CACHE{OLD_DEFINES}" )
+message(STATUS "Definitions = ${define_symbols}" )
+string(COMPARE NOTEQUAL "$CACHE{OLD_DEFINES}" "${define_symbols}" FORCE_REBUILD )
+set(OLD_DEFINES "${define_symbols}" CACHE STRING "Save old defines" FORCE)
+message(STATUS "Bindings rebuild forced ${FORCE_REBUILD}")
 
 list(APPEND plasma_python_files
-    python_bindings.cc)
+    cfar2D_python.cc
+    doppler_processing_python.cc
+    lfm_source_python.cc
+    match_filt_python.cc
+    pcfm_source_python.cc
+    pdu_file_source_python.cc
+    pdu_file_sink_python.cc
+    pdu_head_python.cc
+    phase_code_python.cc
+    pulse_doppler_python.cc
+    pulse_to_cpi_python.cc
+    python_bindings.cc
+    range_doppler_sink_python.cc
+    usrp_radar_python.cc
+    waveform_controller_python.cc
+    device_python.cc
+)
 
 GR_PYBIND_MAKE_OOT(plasma
    ../../..
@@ -40,7 +66,7 @@ GR_PYBIND_MAKE_OOT(plasma
 add_custom_target(
   copy_bindings_for_tests ALL
   COMMAND
-    ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/*.so"
+    ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib/*.so"
     ${CMAKE_BINARY_DIR}/test_modules/gnuradio/plasma/
   DEPENDS plasma_python)
 

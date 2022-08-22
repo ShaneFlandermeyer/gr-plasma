@@ -10,8 +10,25 @@
 # Setup library
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
-
 list(APPEND plasma_sources
+    lfm_source_impl.cc
+    waveform_controller_impl.cc
+    usrp_radar_impl.cc
+    pdu_file_sink_impl.cc
+    pdu_head_impl.cc
+    pcfm_source_impl.cc
+    qt_update_events.cc
+    range_doppler_sink_impl.cc
+    range_doppler_window.cc
+    range_doppler_window.h
+    match_filt_impl.cc
+    doppler_processing_impl.cc
+    pulse_to_cpi_impl.cc
+    phase_code.cc
+    device.cc
+    cfar2D_impl.cc
+    pdu_file_source_impl.cc
+    pulse_doppler_impl.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)
@@ -20,8 +37,18 @@ if(NOT plasma_sources)
     return()
 endif(NOT plasma_sources)
 
-add_library(gnuradio-plasma SHARED ${plasma_sources})
-target_link_libraries(gnuradio-plasma gnuradio::gnuradio-runtime)
+add_library(gnuradio-plasma ${plasma_sources})
+target_link_libraries(gnuradio-plasma 
+    PUBLIC
+    gnuradio::gnuradio-runtime
+    Qt5::Widgets
+    qwt::qwt
+    Python::Python
+    ${UHD_LIBRARIES}
+    nlohmann_json::nlohmann_json
+    plasma_dsp
+    ArrayFire::af)
+
 target_include_directories(gnuradio-plasma
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     PUBLIC $<INSTALL_INTERFACE:include>
@@ -55,6 +82,8 @@ include(GrTest)
 #include_directories()
 # List all files that contain Boost.UTF unit tests here
 list(APPEND test_plasma_sources
+qa_cfar2D.cc
+qa_phase_code.cc
 )
 # Anything we need to link to for the unit tests go here
 list(APPEND GR_TEST_TARGET_DEPS gnuradio-plasma)

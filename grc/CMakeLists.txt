@@ -5,7 +5,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-
 install(FILES
-    DESTINATION share/gnuradio/grc/blocks
+    plasma_lfm_source.block.yml
+    plasma_waveform_controller.block.yml
+    plasma_usrp_radar.block.yml
+    plasma_pdu_file_sink.block.yml
+    plasma_pdu_head.block.yml
+    plasma_pcfm_source.block.yml
+    plasma_range_doppler_sink.block.yml
+    plasma_match_filt.block.yml
+    plasma_doppler_processing.block.yml
+    plasma_pulse_to_cpi.block.yml
+    plasma_cfar2D.block.yml
+    plasma_pdu_file_source.block.yml
+    plasma_pulse_doppler.block.yml DESTINATION share/gnuradio/grc/blocks
 )

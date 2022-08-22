@@ -1,0 +1,233 @@
+options:
+  parameters:
+    author: Shane Flandermeyer
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: Example of range and doppler processing
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: pulse_doppler
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: Pulse Doppler Processing
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: center_freq
+  id: variable
+  parameters:
+    comment: ''
+    value: 5e9
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [288, 12.0]
+    rotation: 0
+    state: enabled
+- name: num_pulse_cpi
+  id: variable
+  parameters:
+    comment: ''
+    value: '512'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [392, 12.0]
+    rotation: 0
+    state: enabled
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: 50e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 12]
+    rotation: 0
+    state: enabled
+- name: plasma_doppler_processing_0
+  id: plasma_doppler_processing
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    depth: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    nfft: num_pulse_cpi
+    num_pulse_cpi: num_pulse_cpi
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [952, 332.0]
+    rotation: 0
+    state: enabled
+- name: plasma_lfm_source_0
+  id: plasma_lfm_source
+  parameters:
+    affinity: ''
+    alias: ''
+    bandwidth: 0.8*samp_rate
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    pulse_width: 20e-6
+    samp_rate: samp_rate
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [56, 252.0]
+    rotation: 0
+    state: enabled
+- name: plasma_match_filt_0
+  id: plasma_match_filt
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    depth: '1'
+    device: plasma.match_filt.CPU
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_pulse_cpi: num_pulse_cpi
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [768, 272.0]
+    rotation: 0
+    state: enabled
+- name: plasma_pdu_file_sink_0
+  id: plasma_pdu_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    data_filename: /home/shane/gpu.dat
+    meta_filename: ''
+    save_meta: 'False'
+    type: complex
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1184, 404.0]
+    rotation: 0
+    state: true
+- name: plasma_pulse_to_cpi_0
+  id: plasma_pulse_to_cpi
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_pulse_cpi: num_pulse_cpi
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [640, 388.0]
+    rotation: 0
+    state: true
+- name: plasma_range_doppler_sink_0
+  id: plasma_range_doppler_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    center_freq: center_freq
+    comment: ''
+    depth: '1'
+    dynamic_range: '80'
+    gui_hint: ''
+    num_pulse_cpi: num_pulse_cpi
+    samp_rate: samp_rate
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1120, 244.0]
+    rotation: 0
+    state: true
+- name: plasma_usrp_radar_0
+  id: plasma_usrp_radar
+  parameters:
+    affinity: ''
+    alias: ''
+    args: num_send_frames=512,num_recv_frames=512
+    cal_file: '"/home/shane/.uhd/delay_calibration.json"'
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    rx_freq: center_freq
+    rx_gain: '50'
+    rx_priority: '1.0'
+    samp_rate: samp_rate
+    start_time: '0.2'
+    tx_freq: center_freq
+    tx_gain: '50'
+    tx_priority: '1.0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [408, 348.0]
+    rotation: 0
+    state: enabled
+- name: plasma_waveform_controller_0
+  id: plasma_waveform_controller
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    prf: '10000'
+    samp_rate: samp_rate
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 412.0]
+    rotation: 0
+    state: enabled
+
+connections:
+- [plasma_doppler_processing_0, out, plasma_pdu_file_sink_0, in]
+- [plasma_doppler_processing_0, out, plasma_range_doppler_sink_0, in]
+- [plasma_lfm_source_0, pdu, plasma_match_filt_0, tx]
+- [plasma_lfm_source_0, pdu, plasma_waveform_controller_0, in]
+- [plasma_match_filt_0, out, plasma_doppler_processing_0, in]
+- [plasma_pulse_to_cpi_0, out, plasma_match_filt_0, rx]
+- [plasma_usrp_radar_0, out, plasma_pulse_to_cpi_0, in]
+- [plasma_waveform_controller_0, out, plasma_usrp_radar_0, in]
+
+metadata:
+  file_format: 1
+  grc_version: 3.10.3.0

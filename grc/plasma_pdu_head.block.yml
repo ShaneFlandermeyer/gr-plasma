@@ -1,0 +1,27 @@
+id: plasma_pdu_head
+label: PDU Head
+category: '[plasma]/PDU'
+
+templates:
+  imports: from gnuradio import plasma
+  make: plasma.pdu_head(${nitems})
+
+parameters:
+- id: nitems
+  label: Number of items
+  dtype: int
+  default: 1024
+
+inputs:
+- id: in
+  domain: message
+  optional: False
+
+outputs:
+- id: out
+  domain: message
+  optional: False
+
+#  'file_format' specifies the version of the GRC yml format used in the file
+#  and should usually not be changed.
+file_format: 1

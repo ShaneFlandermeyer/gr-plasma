@@ -39,3 +39,15 @@ add_custom_target(
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}
           ${CMAKE_BINARY_DIR}/test_modules/gnuradio/plasma/
 )
+GR_ADD_TEST(qa_lfm_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_lfm_source.py)
+GR_ADD_TEST(qa_waveform_controller ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_waveform_controller.py)
+GR_ADD_TEST(qa_usrp_radar ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_usrp_radar.py)
+GR_ADD_TEST(qa_pdu_file_sink ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_file_sink.py)
+GR_ADD_TEST(qa_pdu_head ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_head.py)
+GR_ADD_TEST(qa_pcfm_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pcfm_source.py)
+GR_ADD_TEST(qa_range_doppler_sink ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_range_doppler_sink.py)
+GR_ADD_TEST(qa_match_filt ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_match_filt.py)
+GR_ADD_TEST(qa_doppler_processing ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_doppler_processing.py)
+GR_ADD_TEST(qa_pulse_to_cpi ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pulse_to_cpi.py)
+GR_ADD_TEST(qa_pdu_file_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_file_source.py)
+GR_ADD_TEST(qa_pulse_doppler ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pulse_doppler.py)

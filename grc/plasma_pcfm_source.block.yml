@@ -1,0 +1,31 @@
+id: plasma_pcfm_source
+label: PCFM Source
+category: '[plasma]'
+
+parameters:
+- id: code
+  label: Code vector
+  dtype: enum
+  options: [plasma.PhaseCode.BARKER, plasma.PhaseCode.FRANK, plasma.PhaseCode.P4]
+  option_labels: [Barker, Frank, P4]
+- id: n
+  label: Code length
+  dtype: int
+- id: over
+  label: Oversampling factor
+  dtype: int
+- id: samp_rate
+  label: Sample Rate
+  dtype: float
+  default: 'samp_rate'
+
+outputs:
+  - id: out
+    domain: message
+
+
+templates:
+  imports: from gnuradio import plasma
+  make: plasma.pcfm_source(${code}, ${n}, ${over}, ${samp_rate})
+
+file_format: 1
