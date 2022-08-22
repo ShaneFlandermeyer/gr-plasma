@@ -27,6 +27,8 @@ private:
     std::atomic<bool> d_updated;
     std::atomic<bool> d_finished;
     pmt::pmt_t d_annotations;
+    pmt::pmt_t d_in_port;
+    pmt::pmt_t d_out_port;
 
     /**
      * @brief Message handler function
