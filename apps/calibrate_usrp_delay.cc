@@ -6,8 +6,8 @@
 #include <boost/program_options.hpp>
 #include <boost/thread.hpp>
 #include <filesystem>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 namespace po = boost::program_options;
 
@@ -122,24 +122,13 @@ inline void handle_receive_errors(const uhd::rx_metadata_t& rx_meta)
 
 int UHD_SAFE_MAIN(int argc, char* argv[])
 {
+    af::info();
     // Save the calibration results to a json file
     const std::string homedir = getenv("HOME");
-    // // Create uhd hidden folder if it doesn't already exist
-    // if (not std::filesystem::exists(homedir + "/.uhd")) {
-    //     std::filesystem::create_directory(homedir + "/.uhd");
-    // }
-    // // If data already exists in the file, keep it
-    // nlohmann::json json;
-    // std::ifstream prev_data(homedir + "/.uhd/delay_calibration.json");
-    // if (prev_data)
-    //     prev_data >> json;
-    // prev_data.close();
-    // // Write the data to delay_calibration.json
-    // std::ofstream outfile(homedir + "/.uhd/delay_calibration.json");
 
     // Initialzie the USRP object
     uhd::usrp::multi_usrp::sptr usrp;
-    usrp = uhd::usrp::multi_usrp::make("");
+
     // TODO: These should be program option parameters
     std::vector<double> rates;
     std::string args;
@@ -151,11 +140,12 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     desc.add_options()("help", "help message")
     ("rates", po::value<std::vector<double>>()->multitoken(), "List of samples rates")
     ("args", po::value<std::string>(&args)->default_value(""), "single uhd device address args")
-    ("tx_gain", po::value<double>(&tx_gain)->default_value(usrp->get_tx_gain_range().stop() * 0.5), "Transmit gain")
-    ("rx_gain", po::value<double>(&rx_gain)->default_value(usrp->get_rx_gain_range().stop() * 0.5), "Receive gain")
+    ("tx_gain", po::value<double>(&tx_gain), "Transmit gain")
+    ("rx_gain", po::value<double>(&rx_gain), "Receive gain")
     ("freq", po::value<double>(&freq)->default_value(5e9), "Center Frequency")
     ("filename", po::value<std::string>(&filename)->default_value(homedir + "/.uhd/delay_calibration.json"), "Output json file")
     ;
+    usrp = uhd::usrp::multi_usrp::make(args);
     // clang-format on
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -173,20 +163,35 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
                   << std::endl;
         return ~0;
     }
+
     if (not vm["rates"].empty()) {
         rates = vm["rates"].as<std::vector<double>>();
     } else {
-        UHD_LOG_ERROR("CALIBRATE_DELAY",
-                      "You must specify a list of sample rates to calibrate");
+        UHD_LOG_ERROR(
+            "CALIBRATE_DELAY",
+            "You must specify a list of sample rates to calibrate with the --rates flag");
         return EXIT_FAILURE;
     }
+
+    if (not vm.count("tx_gain")) {
+        UHD_LOG_ERROR("CALIBRATE_DELAY",
+                      "You must specify a transmit gain with the --tx_gain flag");
+        return EXIT_FAILURE;
+    }
+
+    if (not vm.count("rx_gain")) {
+        UHD_LOG_ERROR("CALIBRATE_DELAY",
+                      "You must specify a receive gain with the --rx_gain flag");
+        return EXIT_FAILURE;
+    }
+
+
     // Get the directory of the output file
     std::string directory;
     const size_t last_slash_idx = filename.rfind('/');
     if (std::string::npos != last_slash_idx) {
         directory = filename.substr(0, last_slash_idx);
     }
-
     double start_time = 0.2;
     boost::thread_group tx_thread;
     std::vector<double> master_clock_rates(rates.size());
@@ -212,11 +217,10 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         double bandwidth = rates[i] / 2;
         double pulse_width = 20e-6;
         double prf = 10e3;
-        plasma::LinearFMWaveform waveform(bandwidth, pulse_width, prf, rates[i]);
+        plasma::LinearFMWaveform waveform(bandwidth, pulse_width, rates[i], prf);
         af::array waveform_array = waveform.step().as(c32);
         std::unique_ptr<std::complex<float>> waveform_data(
-            reinterpret_cast<std::complex<float>*>(
-                waveform_array.host<af::cfloat>()));
+            reinterpret_cast<std::complex<float>*>(waveform_array.host<af::cfloat>()));
 
         // Set up Rx buffer
         size_t num_samp_rx = waveform_array.elements();

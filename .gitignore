@@ -34,4 +34,4 @@
 # Build folders
 .vscode/*
 build/*
-
+.history/
