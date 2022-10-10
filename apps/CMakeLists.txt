@@ -8,8 +8,8 @@
 
 include(GrPython)
 
-# add_executable(plasma_calibrate_delay calibrate_usrp_delay.cc)
-# target_link_libraries(plasma_calibrate_delay gnuradio-plasma)
+add_executable(plasma_calibrate_delay calibrate_usrp_delay.cc)
+target_link_libraries(plasma_calibrate_delay gnuradio-plasma)
 
 GR_PYTHON_INSTALL(
     PROGRAMS
