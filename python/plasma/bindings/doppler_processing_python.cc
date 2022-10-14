@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(doppler_processing.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(351b84d208f6c75be2fbd9fd2c2e3295)                     */
+/* BINDTOOL_HEADER_FILE_HASH(83cfc6df25d44cfdbcce5b46fc333337)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -55,6 +55,13 @@ void bind_doppler_processing(py::module& m)
              &doppler_processing::set_backend,
              py::arg("arg0"),
              D(doppler_processing, set_backend))
+
+
+        .def("set_metadata_keys",
+             &doppler_processing::set_metadata_keys,
+             py::arg("n_pulse_cpi_key"),
+             py::arg("doppler_fft_size_key"),
+             D(doppler_processing, set_metadata_keys))
 
         ;
 }

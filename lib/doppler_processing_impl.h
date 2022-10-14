@@ -8,9 +8,9 @@
 #ifndef INCLUDED_PLASMA_DOPPLER_PROCESSING_IMPL_H
 #define INCLUDED_PLASMA_DOPPLER_PROCESSING_IMPL_H
 
+#include <gnuradio/plasma/device.h>
 #include <gnuradio/plasma/doppler_processing.h>
 #include <gnuradio/plasma/pmt_constants.h>
-#include <gnuradio/plasma/device.h>
 #include <plasma_dsp/fft.h>
 
 namespace gr {
@@ -27,15 +27,19 @@ private:
 
     pmt::pmt_t d_out_port;
     pmt::pmt_t d_in_port;
-    pmt::pmt_t d_meta;
     pmt::pmt_t d_data;
-    pmt::pmt_t d_annotations;
+    pmt::pmt_t d_meta;
+    pmt::pmt_t d_n_pulse_cpi_key;
+    pmt::pmt_t d_doppler_fft_size_key;
+
     af::Backend d_backend;
 
 public:
     doppler_processing_impl(size_t num_pulse_cpi, size_t nfft);
     ~doppler_processing_impl();
 
+    void set_metadata_keys(const std::string& n_pulse_cpi_key,
+                           const std::string& doppler_fft_size_key);
     void set_msg_queue_depth(size_t) override;
     void set_backend(Device::Backend) override;
 };

@@ -21,6 +21,19 @@ parameters:
   dtype: int
   default: 1
   hide: part
+# Metadata keys
+- id: n_pulse_cpi_key
+  label: Number of pulses per CPI key
+  dtype: string
+  default: 'n_pulse_cpi'
+  hide: part
+  category: Metadata
+- id: doppler_fft_size
+  label: Doppler FFT size key
+  dtype: string
+  default: 'doppler_fft_size'
+  hide: part
+  category: Metadata
 
 inputs:
 - id: in
@@ -36,6 +49,7 @@ templates:
     plasma.doppler_processing(${num_pulse_cpi}, ${nfft})
     self.${id}.set_msg_queue_depth(${depth})
     self.${id}.set_backend(${backend})
+    self.${id}.set_metadata_keys(${n_pulse_cpi_key}, ${doppler_fft_size})
 
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.
