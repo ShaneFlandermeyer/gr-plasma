@@ -59,7 +59,7 @@ bool lfm_source_impl::start()
     return block::start();
 }
 
-void lfm_source_impl::set_metadata_keys(std::string label_key,
+void lfm_source_impl::init_meta_dict(std::string label_key,
                                         std::string sample_rate_key,
                                         std::string bandwidth_key,
                                         std::string duration_key)

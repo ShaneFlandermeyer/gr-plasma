@@ -64,7 +64,7 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
     }
 }
 
-void waveform_controller_impl::set_metadata_keys(std::string prf_key,
+void waveform_controller_impl::init_meta_dict(std::string prf_key,
                                                  std::string samp_rate_key)
 {
     d_prf_key = pmt::intern(prf_key);

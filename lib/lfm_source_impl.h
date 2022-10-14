@@ -53,7 +53,7 @@ public:
 
     bool start() override;
 
-    void set_metadata_keys(std::string label,
+    void init_meta_dict(std::string label,
                            std::string sample_rate,
                            std::string bandwidth,
                            std::string duration);

@@ -27,4 +27,4 @@ static const char* __doc_gr_plasma_lfm_source_lfm_source_1 = R"doc()doc";
 static const char* __doc_gr_plasma_lfm_source_make = R"doc()doc";
 
 
-static const char* __doc_gr_plasma_lfm_source_set_metadata_keys = R"doc()doc";
+static const char* __doc_gr_plasma_lfm_source_init_meta_dict = R"doc()doc";

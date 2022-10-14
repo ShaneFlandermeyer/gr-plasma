@@ -56,7 +56,7 @@ public:
     waveform_controller_impl(double prf, double samp_rate);
     ~waveform_controller_impl();
 
-    void set_metadata_keys(std::string prf_key, std::string samp_rate_key) override;
+    void init_meta_dict(std::string prf_key, std::string samp_rate_key) override;
 };
 
 } // namespace plasma

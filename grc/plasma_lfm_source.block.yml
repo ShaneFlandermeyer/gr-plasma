@@ -48,7 +48,7 @@ templates:
   imports: from gnuradio import plasma
   make: |-
     plasma.lfm_source(${bandwidth}, ${pulse_width}, ${samp_rate})
-    self.${id}.set_metadata_keys(${label_key}, ${sample_rate_key}, ${bandwidth_key}, ${duration_key})
+    self.${id}.init_meta_dict(${label_key}, ${sample_rate_key}, ${bandwidth_key}, ${duration_key})
 
 documentation: |-
   Generates a linear frequency modulated (LFM) radar waveform.

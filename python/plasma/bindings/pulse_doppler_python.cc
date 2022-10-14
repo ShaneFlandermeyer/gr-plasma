@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(pulse_doppler.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(7710cdbb5d8d78265196704d9fbfafd3)                     */
+/* BINDTOOL_HEADER_FILE_HASH(ab2a4b45ac773efa322f73c5754f9a32)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -37,7 +37,7 @@ void bind_pulse_doppler(py::module& m)
         m, "pulse_doppler", D(pulse_doppler))
 
         .def(py::init(&pulse_doppler::make),
-             py::arg("num_pulse_cpi"),
+             py::arg("n_pulse_cpi"),
              py::arg("doppler_fft_size"),
              D(pulse_doppler, make))
 
@@ -52,6 +52,12 @@ void bind_pulse_doppler(py::module& m)
              &pulse_doppler::set_backend,
              py::arg("arg0"),
              D(pulse_doppler, set_backend))
+
+
+        .def("init_meta_dict",
+             &pulse_doppler::init_meta_dict,
+             py::arg("doppler_fft_size_key"),
+             D(pulse_doppler, init_meta_dict))
 
         ;
 }

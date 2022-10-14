@@ -32,7 +32,9 @@ public:
      * class. plasma::pulse_to_cpi::make is the public interface for
      * creating new instances.
      */
-    static sptr make(size_t num_pulse_cpi);
+    static sptr make(size_t n_pulse_cpi);
+
+    virtual void init_meta_dict(std::string n_pulse_cpi_key) = 0;
 };
 
 } // namespace plasma

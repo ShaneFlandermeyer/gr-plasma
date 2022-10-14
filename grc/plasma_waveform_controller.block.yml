@@ -42,5 +42,5 @@ templates:
   imports: from gnuradio import plasma
   make: |-
     plasma.waveform_controller(${prf}, ${samp_rate})
-    self.${id}.set_metadata_keys(${prf_key}, ${samp_rate_key})
+    self.${id}.init_meta_dict(${prf_key}, ${samp_rate_key})
 file_format: 1

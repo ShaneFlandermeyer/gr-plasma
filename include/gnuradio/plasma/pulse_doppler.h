@@ -34,10 +34,12 @@ public:
      * class. plasma::pulse_doppler::make is the public interface for
      * creating new instances.
      */
-    static sptr make(int num_pulse_cpi, int doppler_fft_size);
+    static sptr make(int n_pulse_cpi, int doppler_fft_size);
 
     virtual void set_msg_queue_depth(size_t depth) = 0;
     virtual void set_backend(Device::Backend) = 0;
+
+    virtual void init_meta_dict(std::string doppler_fft_size_key) = 0;
 };
 
 } // namespace plasma

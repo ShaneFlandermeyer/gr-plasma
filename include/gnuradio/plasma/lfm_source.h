@@ -42,7 +42,7 @@ public:
      * @param bandwidth 
      * @param duration 
      */
-    virtual void set_metadata_keys(std::string label_key,
+    virtual void init_meta_dict(std::string label_key,
                                    std::string sample_rate_key,
                                    std::string bandwidth_key,
                                    std::string duration_key) = 0;

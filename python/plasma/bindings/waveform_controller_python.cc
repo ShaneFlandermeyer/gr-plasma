@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(waveform_controller.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(0479d722385de783cec1e3258089296d)                     */
+/* BINDTOOL_HEADER_FILE_HASH(338d303e75b69f584a70ed095c35332d)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -45,11 +45,11 @@ void bind_waveform_controller(py::module& m)
              D(waveform_controller, make))
 
 
-        .def("set_metadata_keys",
-             &waveform_controller::set_metadata_keys,
+        .def("init_meta_dict",
+             &waveform_controller::init_meta_dict,
              py::arg("prf_key"),
              py::arg("samp_rate_key"),
-             D(waveform_controller, set_metadata_keys))
+             D(waveform_controller, init_meta_dict))
 
         ;
 }

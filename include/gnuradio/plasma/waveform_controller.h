@@ -40,7 +40,7 @@ public:
      */
     static sptr make(double prf, double samp_rate);
 
-    virtual void set_metadata_keys(std::string prf_key, std::string samp_rate_key) = 0;
+    virtual void init_meta_dict(std::string prf_key, std::string samp_rate_key) = 0;
 };
 
 } // namespace plasma

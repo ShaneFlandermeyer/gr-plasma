@@ -29,4 +29,4 @@ static const char* __doc_gr_plasma_waveform_controller_waveform_controller_1 =
 static const char* __doc_gr_plasma_waveform_controller_make = R"doc()doc";
 
 
-static const char* __doc_gr_plasma_waveform_controller_set_metadata_keys = R"doc()doc";
+static const char* __doc_gr_plasma_waveform_controller_init_meta_dict = R"doc()doc";
