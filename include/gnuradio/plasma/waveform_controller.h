@@ -18,10 +18,10 @@ namespace plasma {
  * \brief A block that generates a continuous stream of data for the USRP radar
  * block by zero-padding the input waveform to match the number of samples in a
  * pulse repetition interval (PRI).
- * 
+ *
  * \details In the future, this will serve as a cognitive radar controller that
- * does more than simple pulse repetition frequency manipulation. 
- * 
+ * does more than simple pulse repetition frequency manipulation.
+ *
  * \ingroup plasma
  *
  */
@@ -39,6 +39,8 @@ public:
      * creating new instances.
      */
     static sptr make(double prf, double samp_rate);
+
+    virtual void set_metadata_keys(std::string prf_key, std::string samp_rate_key) = 0;
 };
 
 } // namespace plasma

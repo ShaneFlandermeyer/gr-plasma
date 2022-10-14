@@ -28,14 +28,10 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
                 gr::io_signature::make(0, 0, 0))
 {
 
-
-    d_updated = false;
     d_prf = prf;
     d_samp_rate = samp_rate;
     d_num_samp_pri = round(samp_rate / prf);
-
-    d_annotations = pmt::make_dict();
-    d_annotations = pmt::dict_add(d_annotations, PMT_PRF, pmt::from_double(prf));
+    d_updated = false;
 
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
@@ -49,18 +45,6 @@ waveform_controller_impl::waveform_controller_impl(double prf, double samp_rate)
  */
 waveform_controller_impl::~waveform_controller_impl() {}
 
-// bool waveform_controller_impl::start()
-// {
-//     d_finished = false;
-//     return block::start();
-// }
-
-// bool waveform_controller_impl::stop()
-// {
-//     d_finished = true;
-//     return block::stop();
-// }
-
 void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
@@ -69,23 +53,27 @@ void waveform_controller_impl::handle_message(const pmt::pmt_t& msg)
         size_t n = pmt::length(data);
         d_num_samp_waveform = pmt::length(data);
 
-        // Update the radar annotations in the metadata
-        if (pmt::dict_has_key(meta, PMT_ANNOTATIONS)) {
-            pmt::pmt_t annotations = pmt::dict_ref(meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
-            annotations = pmt::dict_update(annotations, d_annotations);
-            meta = pmt::dict_add(meta, PMT_ANNOTATIONS, annotations);
-        } else {
-            meta = pmt::dict_add(meta, PMT_ANNOTATIONS, d_annotations);
-        }
+        // Add metadata to the existing PDU
+        meta = pmt::dict_update(meta, d_meta);
 
         message_port_pub(
             d_out_port,
             pmt::cons(meta, pmt::init_c32vector(n, pmt::c32vector_elements(data, n))));
-
-
     } else {
         GR_LOG_ERROR(d_logger, "Waveform controller input must be a PDU")
     }
+}
+
+void waveform_controller_impl::set_metadata_keys(std::string prf_key,
+                                                 std::string samp_rate_key)
+{
+    d_prf_key = pmt::intern(prf_key);
+    d_sample_rate_key = pmt::intern(samp_rate_key);
+
+    // Add metadata to the dictionary
+    d_meta = pmt::make_dict();
+    d_meta = pmt::dict_add(d_meta, d_prf_key, pmt::from_double(d_prf));
+    d_meta = pmt::dict_add(d_meta, d_sample_rate_key, pmt::from_double(d_samp_rate));
 }
 
 } /* namespace plasma */

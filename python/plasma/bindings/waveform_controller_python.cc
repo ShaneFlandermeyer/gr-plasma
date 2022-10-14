@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(waveform_controller.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(2861d6aaa927ed5dbb1fb6bf4efc5aaa)                     */
+/* BINDTOOL_HEADER_FILE_HASH(0479d722385de783cec1e3258089296d)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -30,32 +30,26 @@ namespace py = pybind11;
 void bind_waveform_controller(py::module& m)
 {
 
-    using waveform_controller    = ::gr::plasma::waveform_controller;
+    using waveform_controller = ::gr::plasma::waveform_controller;
 
 
-    py::class_<waveform_controller, gr::block, gr::basic_block,
-        std::shared_ptr<waveform_controller>>(m, "waveform_controller", D(waveform_controller))
+    py::class_<waveform_controller,
+               gr::block,
+               gr::basic_block,
+               std::shared_ptr<waveform_controller>>(
+        m, "waveform_controller", D(waveform_controller))
 
         .def(py::init(&waveform_controller::make),
-           py::arg("prf"),
-           py::arg("samp_rate"),
-           D(waveform_controller,make)
-        )
-        
+             py::arg("prf"),
+             py::arg("samp_rate"),
+             D(waveform_controller, make))
 
 
+        .def("set_metadata_keys",
+             &waveform_controller::set_metadata_keys,
+             py::arg("prf_key"),
+             py::arg("samp_rate_key"),
+             D(waveform_controller, set_metadata_keys))
 
         ;
-
-
-
-
 }
-
-
-
-
-
-
-
-
