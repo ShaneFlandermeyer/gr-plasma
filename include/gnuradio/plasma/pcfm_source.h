@@ -34,6 +34,12 @@ public:
      * creating new instances.
      */
     static sptr make(PhaseCode::Code code, int n, int over, double samp_rate);
+
+    virtual void set_metadata_keys(const std::string& label_key,
+                                   const std::string& phase_code_class_key,
+                                   const std::string& n_phase_code_chips_key,
+                                   const std::string& duration_key,
+                                   const std::string& sample_rate_key) = 0;
 };
 
 } // namespace plasma
