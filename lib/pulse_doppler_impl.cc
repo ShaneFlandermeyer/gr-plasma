@@ -111,7 +111,8 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
     rdm.host(out);
 
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
-    init_meta_dict(pmt::symbol_to_string(d_doppler_fft_size_key));
+    d_meta = pmt::make_dict();
+    // init_meta_dict(pmt::symbol_to_string(d_doppler_fft_size_key));
 }
 
 void pulse_doppler_impl::set_msg_queue_depth(size_t depth) { d_msg_queue_depth = depth; }

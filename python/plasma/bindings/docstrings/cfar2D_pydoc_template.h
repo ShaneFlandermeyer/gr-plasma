@@ -31,3 +31,6 @@ static const char* __doc_gr_plasma_cfar2D_set_msg_queue_depth = R"doc()doc";
 
 
 static const char* __doc_gr_plasma_cfar2D_set_backend = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_cfar2D_set_metadata_keys = R"doc()doc";

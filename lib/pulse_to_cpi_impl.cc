@@ -62,7 +62,7 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
                          pmt::cons(d_meta, pmt::init_c32vector(d_data.size(), d_data)));
         d_data.clear();
         // Reset the metadata
-        init_meta_dict(pmt::symbol_to_string(d_n_pulse_cpi_key));
+        d_meta = pmt::make_dict();
         d_pulse_count = 0;
     }
 }

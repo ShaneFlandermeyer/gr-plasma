@@ -1,41 +1,66 @@
 id: plasma_cfar2D
 label: CFAR Detector (2D)
-category: '[plasma]'
+category: "[plasma]"
 
 parameters:
-- id: guard_win_size
-  label: Guard window size
-  dtype: raw
-  default: (,)
-- id: train_win_size
-  label: Training window size
-  dtype: raw
-  default: (,)
-- id: pfa
-  label: PFA
-  dtype: float
-  default: 0.001
-- id: num_pulse_cpi
-  label:  Pulses per CPI
-  dtype:  int
-- id: backend
-  label: Backend
-  dtype: enum
-  options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
-  option_labels: [Default, CPU, Cuda, OpenCL]
-- id: depth
-  label: Message queue depth
-  dtype: int
-  default: 1
-  hide: part
+  - id: guard_win_size
+    label: Guard window size
+    dtype: raw
+    default: (,)
+  - id: train_win_size
+    label: Training window size
+    dtype: raw
+    default: (,)
+  - id: pfa
+    label: PFA
+    dtype: float
+    default: 0.001
+  - id: num_pulse_cpi
+    label: Pulses per CPI
+    dtype: int
+  - id: backend
+    label: Backend
+    dtype: enum
+    options:
+      [
+        plasma.Device.DEFAULT,
+        plasma.Device.CPU,
+        plasma.Device.CUDA,
+        plasma.Device.OPENCL,
+      ]
+    option_labels: [Default, CPU, Cuda, OpenCL]
+  - id: depth
+    label: Message queue depth
+    dtype: int
+    default: 1
+    hide: part
+  # Metadata keys
+  - id: detection_indices_key
+    label: Detection indices key
+    dtype: string
+    default: detection_indices
+    hide: part
+    category: Metadata
+  - id: n_pulse_cpi_key
+    label: Num. pulses per CPI key
+    dtype: string
+    default: n_pulse_cpi
+    hide: part
+    category: Metadata
+  - id: n_detections_key
+    label: Num. of detections key
+    dtype: string
+    default: n_detections
+    hide: part
+    category: Metadata
 
 inputs:
-- domain: message
-  id: in
+  - domain: message
+    id: in
 
 outputs:
-- domain: message
-  id: out
+  - domain: message
+    id: out
 
 templates:
   imports: from gnuradio import plasma
@@ -43,5 +68,6 @@ templates:
     plasma.cfar2D(${guard_win_size}, ${train_win_size}, ${pfa},${num_pulse_cpi})
     self.${id}.set_msg_queue_depth(${depth})
     self.${id}.set_backend(${backend})
+    self.${id}.set_metadata_keys(${detection_indices_key}, ${n_detections_key}, ${n_pulse_cpi_key})
 
 file_format: 1
