@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(1)                                                       */
 /* BINDTOOL_USE_PYGCCXML(1)                                                        */
 /* BINDTOOL_HEADER_FILE(range_doppler_sink.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(7b7111c73b7e246283edbf286fddfc31)                     */
+/* BINDTOOL_HEADER_FILE_HASH(1e1aec46d53ce715c43cb3e8dee8ae35)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -76,6 +76,18 @@ void bind_range_doppler_sink(py::module& m)
              &range_doppler_sink::set_msg_queue_depth,
              py::arg("depth"),
              D(range_doppler_sink, set_msg_queue_depth))
+
+
+        .def("set_metadata_keys",
+             &range_doppler_sink::set_metadata_keys,
+             py::arg("samp_rate_key"),
+             py::arg("n_matrix_col_key"),
+             py::arg("center_freq_key"),
+             py::arg("dynamic_range_key"),
+             py::arg("prf_key"),
+             py::arg("pulsewidth_key"),
+             py::arg("detection_indices_key"),
+             D(range_doppler_sink, set_metadata_keys))
 
         ;
 }

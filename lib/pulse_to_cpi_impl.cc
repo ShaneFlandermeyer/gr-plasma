@@ -12,32 +12,28 @@
 namespace gr {
 namespace plasma {
 
-pulse_to_cpi::sptr pulse_to_cpi::make(size_t num_pulse_cpi)
+pulse_to_cpi::sptr pulse_to_cpi::make(size_t n_pulse_cpi)
 {
-    return gnuradio::make_block_sptr<pulse_to_cpi_impl>(num_pulse_cpi);
+    return gnuradio::make_block_sptr<pulse_to_cpi_impl>(n_pulse_cpi);
 }
 
 
 /*
  * The private constructor
  */
-pulse_to_cpi_impl::pulse_to_cpi_impl(size_t num_pulse_cpi)
+pulse_to_cpi_impl::pulse_to_cpi_impl(size_t n_pulse_cpi)
     : gr::block("pulse_to_cpi",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
-      d_num_pulse_cpi(num_pulse_cpi)
+      d_n_pulse_cpi(n_pulse_cpi)
 {
     d_pulse_count = 0;
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
 
-    // Add number of pulses per CPI to radar metadata
-    d_meta = pmt::make_dict();
-    d_annotations = pmt::make_dict();
-    d_annotations = pmt::dict_add(d_annotations,PMT_NUM_PULSE_CPI, pmt::from_long(num_pulse_cpi));
+
     message_port_register_in(d_in_port);
     message_port_register_out(d_out_port);
-
     set_msg_handler(d_in_port, [this](pmt::pmt_t msg) { handle_msg(msg); });
 }
 
@@ -52,27 +48,30 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
     if (pmt::is_pdu(msg)) {
         // Update input metadata
         d_meta = pmt::dict_update(d_meta, pmt::car(msg));
-        pmt::pmt_t annotations = pmt::dict_ref(d_meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
-        if (not pmt::is_null(annotations)) {
-            annotations = pmt::dict_update(annotations, d_annotations);
-            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, annotations);
-        }
         samples = pmt::cdr(msg);
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
     }
     // Store the new PDU data
-    std::vector<gr_complex> newdata = pmt::c32vector_elements(samples);
-    d_data.insert(d_data.end(), newdata.begin(), newdata.end());
+    std::vector<gr_complex> new_data = pmt::c32vector_elements(samples);
+    d_data.insert(d_data.end(), new_data.begin(), new_data.end());
     d_pulse_count++;
     // Output a PDU containing all the pulses in a column-major format
-    if (d_pulse_count == d_num_pulse_cpi) {
+    if (d_pulse_count == d_n_pulse_cpi) {
         message_port_pub(d_out_port,
                          pmt::cons(d_meta, pmt::init_c32vector(d_data.size(), d_data)));
         d_data.clear();
+        // Reset the metadata
         d_meta = pmt::make_dict();
         d_pulse_count = 0;
     }
+}
+
+void pulse_to_cpi_impl::init_meta_dict(std::string n_pulse_cpi_key)
+{
+    d_n_pulse_cpi_key = pmt::string_to_symbol(n_pulse_cpi_key);
+    d_meta = pmt::make_dict();
+    d_meta = pmt::dict_add(d_meta, d_n_pulse_cpi_key, pmt::from_long(d_n_pulse_cpi));
 }
 } /* namespace plasma */
 } /* namespace gr */

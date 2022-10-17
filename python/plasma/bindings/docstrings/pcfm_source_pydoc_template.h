@@ -18,7 +18,13 @@
 static const char* __doc_gr_plasma_pcfm_source = R"doc()doc";
 
 
-static const char* __doc_gr_plasma_pcfm_source_pcfm_source = R"doc()doc";
+static const char* __doc_gr_plasma_pcfm_source_pcfm_source_0 = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_pcfm_source_pcfm_source_1 = R"doc()doc";
 
 
 static const char* __doc_gr_plasma_pcfm_source_make = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_pcfm_source_set_metadata_keys = R"doc()doc";

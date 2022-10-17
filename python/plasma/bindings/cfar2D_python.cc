@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(cfar2D.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(bbcdef427c4a7f994087537034d7d484)                     */
+/* BINDTOOL_HEADER_FILE_HASH(9a7d1d20b6773b7fe6a4a2191e3a7ab3)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -51,6 +51,14 @@ void bind_cfar2D(py::module& m)
 
 
         .def("set_backend", &cfar2D::set_backend, py::arg("arg0"), D(cfar2D, set_backend))
+
+
+        .def("set_metadata_keys",
+             &cfar2D::set_metadata_keys,
+             py::arg("detction_indices_key"),
+             py::arg("n_detections_key"),
+             py::arg("n_pulse_cpi_key"),
+             D(cfar2D, set_metadata_keys))
 
         ;
 }

@@ -32,8 +32,6 @@ doppler_processing_impl::doppler_processing_impl(size_t num_pulse_cpi, size_t nf
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
     d_meta = pmt::make_dict();
-    d_annotations = pmt::make_dict();
-    d_annotations = pmt::dict_add(d_annotations, PMT_DOPPLER_FFT_SIZE, pmt::from_long(d_fftsize));
     d_data = pmt::make_c32vector(0, 0);
     message_port_register_in(d_in_port);
     message_port_register_out(d_out_port);
@@ -47,8 +45,6 @@ doppler_processing_impl::~doppler_processing_impl() {}
 
 void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
 {
-    // af::timer start = af::timer::start();
-
     if (this->nmsgs(d_in_port) > d_queue_depth) {
         return;
     }
@@ -56,15 +52,17 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     // Read the input PDU
     pmt::pmt_t samples;
     if (pmt::is_pdu(msg)) {
+        pmt::pmt_t meta = pmt::car(msg);
         samples = pmt::cdr(msg);
-        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
-        // Update the radar annotations in the metadata
-        if (pmt::dict_has_key(d_meta, PMT_ANNOTATIONS)) {
-            pmt::pmt_t annotations = pmt::dict_ref(d_meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
-            annotations = pmt::dict_update(annotations, d_annotations);
-            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, annotations);
+
+        // Update block parameters with new metadata
+        if (pmt::dict_has_key(meta, d_n_pulse_cpi_key)) {
+            d_num_pulse_cpi =
+                pmt::to_long(pmt::dict_ref(meta, d_n_pulse_cpi_key, pmt::PMT_NIL));
         }
-        
+        d_meta = pmt::dict_update(d_meta, meta);
+
+
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
@@ -95,6 +93,15 @@ void doppler_processing_impl::handle_msg(pmt::pmt_t msg)
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
     // Reset the metadata output
     d_meta = pmt::make_dict();
+}
+
+void doppler_processing_impl::set_metadata_keys(const std::string& n_pulse_cpi_key,
+                                                const std::string& doppler_fft_size_key)
+{
+    d_n_pulse_cpi_key = pmt::intern(n_pulse_cpi_key);
+    d_doppler_fft_size_key = pmt::intern(doppler_fft_size_key);
+
+    d_meta = pmt::dict_add(d_meta, d_doppler_fft_size_key, pmt::from_long(d_fftsize));
 }
 
 void doppler_processing_impl::set_msg_queue_depth(size_t depth) { d_queue_depth = depth; }

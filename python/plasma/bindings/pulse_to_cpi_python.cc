@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(pulse_to_cpi.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(5e796015804aa97720c71a83242124e8)                     */
+/* BINDTOOL_HEADER_FILE_HASH(0d94c4fd9ee8007b413a1fc98b134a61)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -36,10 +36,13 @@ void bind_pulse_to_cpi(py::module& m)
     py::class_<pulse_to_cpi, gr::block, gr::basic_block, std::shared_ptr<pulse_to_cpi>>(
         m, "pulse_to_cpi", D(pulse_to_cpi))
 
-        .def(py::init(&pulse_to_cpi::make),
-             py::arg("num_pulse_cpi"),
-             D(pulse_to_cpi, make))
+        .def(py::init(&pulse_to_cpi::make), py::arg("n_pulse_cpi"), D(pulse_to_cpi, make))
 
+
+        .def("init_meta_dict",
+             &pulse_to_cpi::init_meta_dict,
+             py::arg("n_pulse_cpi_key"),
+             D(pulse_to_cpi, init_meta_dict))
 
         ;
 }

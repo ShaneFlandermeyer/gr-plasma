@@ -33,11 +33,18 @@ public:
      * class. plasma::cfar2D::make is the public interface for
      * creating new instances.
      */
-    static sptr make(std::vector<int> &guard_win_size, std::vector<int> &train_win_size, double pfa, size_t num_pulse_cpi);
+    static sptr make(std::vector<int>& guard_win_size,
+                     std::vector<int>& train_win_size,
+                     double pfa,
+                     size_t num_pulse_cpi);
 
     virtual void set_msg_queue_depth(size_t) = 0;
 
     virtual void set_backend(Device::Backend) = 0;
+
+    virtual void set_metadata_keys(std::string detction_indices_key,
+                                   std::string n_detections_key,
+                                   std::string n_pulse_cpi_key) = 0;
 };
 
 } // namespace plasma

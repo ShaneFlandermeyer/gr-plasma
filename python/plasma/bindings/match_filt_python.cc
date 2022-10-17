@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(match_filt.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(2c990ed3abd1367112e4844238f039ae)                     */
+/* BINDTOOL_HEADER_FILE_HASH(430965c145731e994034d27cc5deefb5)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -49,6 +49,12 @@ void bind_match_filt(py::module& m)
              &match_filt::set_backend,
              py::arg("arg0"),
              D(match_filt, set_backend))
+
+
+        .def("set_metadata_keys",
+             &match_filt::set_metadata_keys,
+             py::arg("n_pulse_cpi_key"),
+             D(match_filt, set_metadata_keys))
 
         ;
 }

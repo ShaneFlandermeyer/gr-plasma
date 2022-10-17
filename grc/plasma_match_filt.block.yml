@@ -17,6 +17,13 @@ parameters:
   dtype: int
   default: 1
   hide: part
+# Metadata keys
+- id: n_pulse_cpi_key
+  label: Pulses per CPI Key
+  dtype: string
+  default: n_pulse_cpi
+  hide: part
+  category: Metadata
 
 inputs:
 - id: tx
@@ -32,7 +39,9 @@ templates:
   imports: from gnuradio import plasma
   make: |-
     plasma.match_filt(${num_pulse_cpi})
+    self.${id}.set_metadata_keys(${n_pulse_cpi_key})
     self.${id}.set_msg_queue_depth(${depth})
     self.${id}.set_backend(${backend})
+
 
 file_format: 1

@@ -41,10 +41,8 @@ public:
      * class. plasma::range_doppler_sink::make is the public interface for
      * creating new instances.
      */
-    static sptr make(double samp_rate,
-                     size_t ncol,
-                     double center_freq,
-                     QWidget* parent = nullptr);
+    static sptr
+    make(double samp_rate, size_t ncol, double center_freq, QWidget* parent = nullptr);
     virtual void exec_() = 0;
     virtual QWidget* qwidget() = 0;
 #ifdef ENABLE_PYTHON
@@ -55,6 +53,14 @@ public:
 
     virtual void set_dynamic_range(const double) = 0;
     virtual void set_msg_queue_depth(size_t depth) = 0;
+
+    virtual void set_metadata_keys(std::string samp_rate_key,
+                                   std::string n_matrix_col_key,
+                                   std::string center_freq_key,
+                                   std::string dynamic_range_key,
+                                   std::string prf_key,
+                                   std::string pulsewidth_key,
+                                   std::string detection_indices_key) = 0;
 };
 
 } // namespace plasma

@@ -40,32 +40,9 @@ pcfm_source_impl::pcfm_source_impl(PhaseCode::Code code,
     d_waveform = ::plasma::PCFMWaveform(d_code, d_filter, d_samp_rate);
     af::array waveform_array = d_waveform.sample().as(c32);
     d_data.reset(reinterpret_cast<gr_complex*>(waveform_array.host<af::cfloat>()));
-    d_num_samp = waveform_array.elements();
-
-    // Set up metadata
-    d_meta = pmt::make_dict();
-    // Global object
-    d_global = pmt::make_dict();
-    d_global = pmt::dict_add(
-        d_global, PMT_SAMPLE_RATE, pmt::from_double(d_waveform.samp_rate()));
-
-    // Annotations array
-    d_annotations = pmt::make_dict();
-    d_annotations = pmt::dict_add(d_annotations, PMT_LABEL, pmt::intern("pcfm"));
-    d_annotations = pmt::dict_add(
-        d_annotations, PMT_DURATION, pmt::from_double(d_waveform.pulse_width()));
-    d_annotations =
-        pmt::dict_add(d_annotations, PMT_PHASE_CODE_CLASS, pmt::intern(d_code_class));
-    d_annotations =
-        pmt::dict_add(d_annotations, PMT_NUM_PHASE_CODE_CHIPS, pmt::from_long(n));
-
-
-    // Add the global and annotations field to the array
-    d_meta = pmt::dict_add(d_meta, PMT_GLOBAL, d_global);
-    d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotations);
-
-    d_out_port = PMT_OUT;
-    message_port_register_out(d_out_port);
+    d_n_samp = waveform_array.elements();
+    d_n_chips = n;
+   
 }
 
 /*
@@ -76,10 +53,38 @@ pcfm_source_impl::~pcfm_source_impl() {}
 bool pcfm_source_impl::start()
 {
     d_finished = false;
-    pmt::pmt_t data = pmt::init_c32vector(d_num_samp, d_data.get());
+    pmt::pmt_t data = pmt::init_c32vector(d_n_samp, d_data.get());
     message_port_pub(d_out_port, pmt::cons(d_meta, data));
 
     return block::start();
+}
+
+void pcfm_source_impl::set_metadata_keys(const std::string& label_key,
+                                         const std::string& phase_code_class_key,
+                                         const std::string& n_phase_code_chips_key,
+                                         const std::string& duration_key,
+                                         const std::string& sample_rate_key)
+{
+    d_label_key = pmt::intern(label_key);
+    d_phase_code_class_key = pmt::intern(phase_code_class_key);
+    d_n_phase_code_chips_key = pmt::intern(n_phase_code_chips_key);
+    d_duration_key = pmt::intern(duration_key);
+    d_sample_rate_key = pmt::intern(sample_rate_key);
+
+    // Set up metadata
+    d_meta = pmt::make_dict();
+
+    d_meta = pmt::dict_add(
+        d_meta, d_sample_rate_key, pmt::from_double(d_waveform.samp_rate()));
+
+    d_meta = pmt::dict_add(d_meta, d_label_key, pmt::intern("pcfm"));
+    d_meta =
+        pmt::dict_add(d_meta, d_duration_key, pmt::from_double(d_waveform.pulse_width()));
+    d_meta = pmt::dict_add(d_meta, d_phase_code_class_key, pmt::intern(d_code_class));
+    d_meta = pmt::dict_add(d_meta, d_n_phase_code_chips_key, pmt::from_long(d_n_chips));
+
+    d_out_port = PMT_OUT;
+    message_port_register_out(d_out_port);
 }
 
 

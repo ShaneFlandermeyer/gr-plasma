@@ -30,17 +30,7 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
     d_prf = 0;
 
     d_meta = pmt::make_dict();
-
-    // Add metadata for the current capture
-    d_capture = pmt::make_dict();
-    d_capture = pmt::dict_add(d_capture, PMT_SAMPLE_START, pmt::from_uint64(0));
-    d_meta = pmt::dict_add(d_meta, PMT_CAPTURES, d_capture);
-
-    // Add metadata for the first annotation
-    d_annotation = pmt::make_dict();
-    d_annotation =
-        pmt::dict_add(d_annotation, PMT_SAMPLE_START, pmt::from_long(d_sample_count));
-    d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotation);
+    
 
     d_in_port = PMT_IN;
     d_out_port = PMT_OUT;
@@ -98,7 +88,6 @@ void usrp_radar_impl::run()
     rx_buff_ptrs.push_back(&d_rx_buff.front());
     std::vector<std::vector<gr_complex>> rx_buffs;
     rx_buffs.push_back(d_rx_buff);
-
     // Start the transmit and receive threads
     // If a time in the future is given
     uhd::time_spec_t time_now = uhd::time_spec_t(0.0);
@@ -130,11 +119,11 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
         // Maintain any metadata that was produced by upstream blocks
-        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
-        // Parse the metadata to update waveform parameters
-        pmt::pmt_t annotations = pmt::dict_ref(d_meta, PMT_ANNOTATIONS, pmt::PMT_NIL);
-        if (not pmt::is_null(annotations)) {
-            pmt::pmt_t new_prf = pmt::dict_ref(annotations, PMT_PRF, pmt::PMT_NIL);
+        pmt::pmt_t meta = pmt::car(msg);
+
+
+        if (pmt::dict_has_key(meta, d_prf_key)) {
+            pmt::pmt_t new_prf = pmt::dict_ref(meta, d_prf_key, pmt::PMT_NIL);
             if (pmt::is_null(new_prf)) {
                 d_burst_mode = false;
             } else {
@@ -142,7 +131,9 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
                 d_burst_mode = true;
             }
         }
-        d_annotation = annotations;
+
+        d_meta = pmt::dict_update(d_meta, meta);
+
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
         if (d_burst_mode) {
@@ -189,10 +180,9 @@ void usrp_radar_impl::transmit_bursts(uhd::usrp::multi_usrp::sptr usrp,
                 buff_ptrs[i] = d_tx_buff.data();
             }
             num_samp_pulse = d_tx_buff.size();
-            // Start a new annotation object
-            d_annotation = pmt::dict_add(
-                d_annotation, PMT_SAMPLE_START, pmt::from_long(d_sample_count));
-            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotation);
+
+            d_meta =
+                pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_sample_count));
         }
         boost::this_thread::disable_interruption disable_interrupt;
         tx_md.start_of_burst = true;
@@ -240,10 +230,8 @@ void usrp_radar_impl::transmit_continuous(uhd::usrp::multi_usrp::sptr usrp,
             for (size_t i = 0; i < buff_ptrs.size(); i++) {
                 buff_ptrs[i] = d_tx_buff.data();
             }
-            // Start a new annotation object
-            d_annotation = pmt::dict_add(
-                d_annotation, PMT_SAMPLE_START, pmt::from_long(d_sample_count));
-            d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotation);
+            d_meta =
+                pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_sample_count));
         }
         boost::this_thread::disable_interruption disable_interrupt;
         tx_stream->send(buff_ptrs, d_tx_buff.size(), tx_md, 0.5);
@@ -324,26 +312,15 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
         // Send the pdu for the PRI
         if (num_samps_received == num_samps_buffer) {
             // Copy the received data into the message PDU and send it
+
             gr_complex* ptr =
                 pmt::c32vector_writable_elements(d_rx_data, num_samps_buffer);
             std::copy(buffs[0].begin(), buffs[0].end(), ptr);
+
             message_port_pub(d_out_port, pmt::cons(d_meta, d_rx_data));
             // Reset the metadata
             d_meta = pmt::make_dict();
             num_samps_received = 0;
-            // If the PRF has changed, resize the buffers
-            // size_t tx_buff_size;
-            // TODO: Account for this in the metadata
-            // {
-            //     gr::thread::scoped_lock lock(d_tx_buff_mutex);
-            //     tx_buff_size = d_tx_buff.size();
-            // }
-            // if (tx_buff_size != num_samps_pri) {
-            //     num_samps_pri = tx_buff_size;
-            //     for (size_t i = 0; i < buffs.size(); i++) {
-            //         buffs[i].resize(num_samps_pri);
-            //     }
-            // }
         }
     }
 
@@ -380,6 +357,17 @@ void usrp_radar_impl::read_calibration_file(const std::string& filename)
     file.close();
 }
 
+void usrp_radar_impl::set_metadata_keys(std::string center_freq_key,
+                                        std::string prf_key,
+                                        std::string sample_count_key)
+{
+    d_center_freq_key = pmt::intern(center_freq_key);
+    d_prf_key = pmt::intern(prf_key);
+    d_sample_start_key = pmt::intern(sample_count_key);
+
+    d_meta = pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_sample_count));
+}
+
 void usrp_radar_impl::set_samp_rate(const double rate)
 {
     d_samp_rate = rate;
@@ -405,8 +393,7 @@ void usrp_radar_impl::set_tx_freq(const double freq)
     d_usrp->set_tx_freq(d_tx_freq);
 
     // Append additional metadata to the pmt object
-    d_capture = pmt::dict_add(d_capture, PMT_FREQUENCY, pmt::from_double(d_tx_freq));
-    d_meta = pmt::dict_add(d_meta, PMT_CAPTURES, d_capture);
+    d_meta = pmt::dict_add(d_meta, d_center_freq_key, pmt::from_double(d_tx_freq));
 }
 
 void usrp_radar_impl::set_rx_freq(const double freq)
