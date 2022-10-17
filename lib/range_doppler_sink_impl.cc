@@ -47,7 +47,7 @@ range_doppler_sink_impl::range_doppler_sink_impl(double samp_rate,
         d_qapp = qApp;
     else
         d_qapp = new QApplication(d_argc, &d_argv);
-    d_main_gui = new RangeDopplerWindow(parent);
+    d_main_gui = new RangeDopplerWindow(parent, samp_rate, center_freq);
 
     // Initialize message ports
     d_in_port = PMT_IN;
@@ -110,9 +110,8 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     plot_data -= af::tile(af::max(af::flat(plot_data)), nrow, d_ncol);
     plot_data = af::clamp(plot_data, -d_dynamic_range_db, 0);
     plot_data = plot_data.T();
-    double *out = plot_data.as(f64).host<double>();
-    d_qapp->postEvent(d_main_gui, new RangeDopplerUpdateEvent(
-        out, nrow, d_ncol, d_meta));
+    double* out = plot_data.as(f64).host<double>();
+    d_qapp->postEvent(d_main_gui, new RangeDopplerUpdateEvent(out, nrow, d_ncol, d_meta));
     delete[] out;
 }
 
@@ -125,6 +124,22 @@ void range_doppler_sink_impl::set_dynamic_range(const double r)
 void range_doppler_sink_impl::set_msg_queue_depth(size_t depth)
 {
     d_msg_queue_depth = depth;
+}
+
+void range_doppler_sink_impl::set_metadata_keys(std::string samp_rate_key,
+                                                std::string n_matrix_col_key,
+                                                std::string center_freq_key,
+                                                std::string dynamic_range_key,
+                                                std::string prf_key,
+                                                std::string pulsewidth_key,
+                                                std::string detection_indices_key)
+{
+    d_samp_rate_key     = pmt::intern(samp_rate_key);
+    d_n_matrix_col_key  = pmt::intern(n_matrix_col_key);
+    d_center_freq_key   = pmt::intern(center_freq_key);
+    d_dynamic_range_key = pmt::intern(dynamic_range_key);
+    // TODO: Pass the last 4 keys to the window object
+    d_main_gui->set_metadata_keys(prf_key, pulsewidth_key, samp_rate_key, center_freq_key, detection_indices_key);
 }
 
 } /* namespace plasma */

@@ -40,20 +40,23 @@ private:
     uhd::time_spec_t d_start_time;
     std::vector<gr_complex> d_tx_buff;
     std::vector<gr_complex> d_rx_buff;
+
     pmt::pmt_t d_meta;
+    // Metadata keys
+    pmt::pmt_t d_center_freq_key;
+    pmt::pmt_t d_prf_key;
+    pmt::pmt_t d_sample_start_key;
+
     pmt::pmt_t d_rx_data;
-    pmt::pmt_t d_capture;
-    pmt::pmt_t d_annotation;
     pmt::pmt_t d_in_port;
     pmt::pmt_t d_out_port;
-    
+
     gr::thread::thread d_main_thread;
     gr::thread::thread d_tx_thread;
     gr::thread::mutex d_tx_buff_mutex;
     std::atomic<bool> d_finished;
     std::atomic<bool> d_armed;
     std::atomic<bool> d_burst_mode;
-    
 
 
     /**
@@ -67,24 +70,24 @@ private:
      * @param start_time
      */
     void transmit_bursts(uhd::usrp::multi_usrp::sptr usrp,
-                  std::vector<std::complex<float>*> buff_ptrs,
-                  size_t num_samps_pulse,
-                  uhd::time_spec_t start_time);
+                         std::vector<std::complex<float>*> buff_ptrs,
+                         size_t num_samps_pulse,
+                         uhd::time_spec_t start_time);
 
     /**
      * @brief Transmit the data in the tx buffer continuously, with no delay
      * between repetitions.
-     * 
-     * @param usrp 
-     * @param buff_ptrs 
-     * @param num_samps_pulse 
-     * @param start_time 
+     *
+     * @param usrp
+     * @param buff_ptrs
+     * @param num_samps_pulse
+     * @param start_time
      */
     void transmit_continuous(uhd::usrp::multi_usrp::sptr usrp,
-                  std::vector<std::complex<float>*> buff_ptrs,
-                  size_t num_samps_pulse,
-                  uhd::time_spec_t start_time);
-                  
+                             std::vector<std::complex<float>*> buff_ptrs,
+                             size_t num_samps_pulse,
+                             uhd::time_spec_t start_time);
+
     /**
      * @brief Receive a CPI of samples from the USRP, then package them into a PDU
      *
@@ -151,6 +154,9 @@ public:
     void set_tx_freq(const double) override;
     void set_rx_freq(const double) override;
     void set_start_time(const double) override;
+    void set_metadata_keys(std::string center_freq_key,
+                           std::string prf_key,
+                           std::string sample_start_key) override;
 };
 
 } // namespace plasma

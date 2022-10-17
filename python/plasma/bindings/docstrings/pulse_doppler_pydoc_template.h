@@ -31,3 +31,6 @@ static const char* __doc_gr_plasma_pulse_doppler_set_msg_queue_depth = R"doc()do
 
 
 static const char* __doc_gr_plasma_pulse_doppler_set_backend = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_pulse_doppler_init_meta_dict = R"doc()doc";

@@ -27,6 +27,7 @@
 #include <QCheckBox>
 #include <QWidget>
 
+#include <pmt/pmt.h>
 #include <complex>
 #include <iostream>
 #include <vector>
@@ -52,7 +53,7 @@ public:
 
     virtual void setInterval(Qt::Axis axis, const QwtInterval& interval)
     {
-        QwtRasterData::setInterval( axis, interval );
+        QwtRasterData::setInterval(axis, interval);
         if (axis == Qt::XAxis) {
             dx = interval.width() / numColumns;
         } else if (axis == Qt::YAxis) {
@@ -97,7 +98,9 @@ class RangeDopplerWindow : public QWidget
     Q_OBJECT
 
 public:
-    RangeDopplerWindow(QWidget* parent = nullptr);
+    RangeDopplerWindow(QWidget* parent = nullptr,
+                       double samp_rate = 0,
+                       double center_freq = 0);
     ~RangeDopplerWindow();
 
     bool is_closed() const;
@@ -106,13 +109,19 @@ public:
     void xlim(double x1, double x2);
     void ylim(double y1, double y2);
 
+
+    void set_metadata_keys(std::string prf_key,
+                           std::string pulsewidth_key,
+                           std::string samp_rate_key,
+                           std::string center_freq_key,
+                           std::string detection_indices_key);
 public slots:
     void customEvent(QEvent* e) override;
 
     void show_detections(bool checked);
 
 private:
-    bool d_closed;
+    // Qwt plot objects
     QwtPlotSpectrogram* d_spectro;
     QwtPlot* d_debug_plot;
     QwtPlot* d_plot;
@@ -121,18 +130,32 @@ private:
     QwtPlotZoomer* d_zoomer;
     QwtPlotPanner* d_panner;
 
-    // CFAR Stuff
+    // QT widgets
     QCheckBox* d_checkBox;
     QwtPlotCurve* d_curve;
-
     QVBoxLayout* v_layout;
     QHBoxLayout* h_layout;
 
+    // Parameters
     double d_prf;
     double d_samp_rate;
     double d_pulsewidth;
     double d_center_freq;
+
+    // Status variables
     std::atomic<bool> d_busy;
+    bool d_closed;
+
+    // Metadata keys
+    pmt::pmt_t d_prf_key;
+    pmt::pmt_t d_pulsewidth_key;
+    pmt::pmt_t d_samp_rate_key;
+    pmt::pmt_t d_center_freq_key;
+    pmt::pmt_t d_detection_indices_key;
+
+    void set_range_axis();
+    void set_velocity_axis();
+    void plot_detections(pmt::pmt_t indices, int nrow, int ncol);
 };
 
 #endif /* C63B8235_0BB0_46FF_A644_A4CCB87E809D */

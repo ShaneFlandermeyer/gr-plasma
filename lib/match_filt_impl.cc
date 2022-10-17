@@ -70,21 +70,30 @@ void match_filt_impl::handle_tx_msg(pmt::pmt_t msg)
         d_match_filt = af::constant(0, n, c32);
     }
     // Create the matched filter
-    d_match_filt = af::array(af::dim4(n),reinterpret_cast<const af::cfloat*>(tx_data));
+    d_match_filt = af::array(af::dim4(n), reinterpret_cast<const af::cfloat*>(tx_data));
     d_match_filt = af::conjg(d_match_filt);
     d_match_filt = af::flip(d_match_filt, 0);
 }
 
 void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
 {
-    pmt::pmt_t samples;
+
     if (this->nmsgs(d_rx_port) > d_msg_queue_depth or d_match_filt.elements() == 0) {
         return;
     }
     // Get a copy of the input samples
+    pmt::pmt_t samples, meta;
     if (pmt::is_pdu(msg)) {
+        meta = pmt::car(msg);
         samples = pmt::cdr(msg);
-        d_meta = pmt::dict_update(d_meta, pmt::car(msg));
+        
+
+        // Update pulses per CPI parameter if it has changed
+        if (pmt::dict_has_key(meta, d_n_pulse_cpi_key)) {
+            d_num_pulse_cpi =
+                pmt::to_long(pmt::dict_ref(meta, d_n_pulse_cpi_key, pmt::PMT_NIL));
+        }
+        d_meta = pmt::dict_update(d_meta, meta);
     } else if (pmt::is_uniform_vector(msg)) {
         samples = msg;
     } else {
@@ -112,6 +121,11 @@ void match_filt_impl::handle_rx_msg(pmt::pmt_t msg)
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
     // Reset the metadata output
     d_meta = pmt::make_dict();
+}
+
+void match_filt_impl::set_metadata_keys(const std::string& n_pulse_cpi_key)
+{
+    d_n_pulse_cpi_key = pmt::intern(n_pulse_cpi_key);
 }
 
 void match_filt_impl::set_msg_queue_depth(size_t depth) { d_msg_queue_depth = depth; }

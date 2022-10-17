@@ -3,7 +3,7 @@ label: Pulse-Doppler Processing
 category: '[plasma]'
 
 parameters:
-- id: num_pulse_cpi
+- id: n_pulse_cpi
   label: Pulses per CPI
   dtype: int
   default: 128
@@ -21,6 +21,14 @@ parameters:
   dtype: enum
   options: [plasma.Device.DEFAULT, plasma.Device.CPU, plasma.Device.CUDA, plasma.Device.OPENCL]
   option_labels: [Default, CPU, Cuda, OpenCL]
+# Metadata fields
+# TODO: Implement this feature for this block
+- id: doppler_fft_size_key
+  label: Doppler FFT Size Key
+  dtype: string
+  default: doppler_fft_size
+  category: Metadata
+  hide: part
 
 inputs:
 - id: tx
@@ -35,8 +43,9 @@ outputs:
 templates:
   imports: from gnuradio import plasma
   make: |-
-    plasma.pulse_doppler(${num_pulse_cpi}, ${nfft})
+    plasma.pulse_doppler(${n_pulse_cpi}, ${nfft})
     self.${id}.set_msg_queue_depth(${depth})
     self.${id}.set_backend(${backend})
+    self.${id}.init_meta_dict(${doppler_fft_size_key})
 
 file_format: 1

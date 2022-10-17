@@ -13,44 +13,36 @@ namespace gr {
 namespace plasma {
 
 using output_type = gr_complex;
-lfm_source::sptr lfm_source::make(double bandwidth, double pulse_width, double samp_rate)
+lfm_source::sptr lfm_source::make(double bandwidth,
+                                  double start_freq,
+                                  double pulse_width,
+                                  double samp_rate)
 {
-    return gnuradio::make_block_sptr<lfm_source_impl>(bandwidth, pulse_width, samp_rate);
+    return gnuradio::make_block_sptr<lfm_source_impl>(bandwidth, start_freq, pulse_width, samp_rate);
 }
 
 
 /*
  * The private constructor
  */
-lfm_source_impl::lfm_source_impl(double bandwidth, double pulse_width, double samp_rate)
+lfm_source_impl::lfm_source_impl(double bandwidth,
+                                 double start_freq,
+                                 double pulse_width,
+                                 double samp_rate)
     : gr::block(
           "lfm_source", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
-      d_port(PMT_PDU)
+      d_port(PMT_OUT),
+      d_bandwidth(bandwidth),
+      d_start_freq(start_freq),
+      d_pulse_width(pulse_width),
+      d_samp_rate(samp_rate)
 {
-    d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, samp_rate);
+    // TODO: Add sweep offset parameter
+    d_waveform = ::plasma::LinearFMWaveform(bandwidth, pulse_width, samp_rate, 0, start_freq);
     // Generate the waveform data
     af::array waveform_array = d_waveform.sample().as(c32);
     d_num_samp = waveform_array.elements();
     d_data.reset(reinterpret_cast<gr_complex*>(waveform_array.host<af::cfloat>()));
-
-    // Set up metadata
-    d_meta = pmt::make_dict();
-    // Global object
-    d_global = pmt::make_dict();
-    d_global = pmt::dict_add(
-        d_global, PMT_SAMPLE_RATE, pmt::from_double(d_waveform.samp_rate()));
-
-    // Annotations array
-    d_annotations = pmt::make_dict();
-    d_annotations = pmt::dict_add(d_annotations, PMT_LABEL, pmt::intern("lfm"));
-    d_annotations = pmt::dict_add(
-        d_annotations, PMT_BANDWIDTH, pmt::from_double(d_waveform.bandwidth()));
-    d_annotations = pmt::dict_add(
-        d_annotations, PMT_DURATION, pmt::from_double(d_waveform.pulse_width()));
-
-    // Add the global and annotations field to the array
-    d_meta = pmt::dict_add(d_meta, PMT_GLOBAL, d_global);
-    d_meta = pmt::dict_add(d_meta, PMT_ANNOTATIONS, d_annotations);
 
     message_port_register_out(d_port);
 }
@@ -75,6 +67,26 @@ bool lfm_source_impl::start()
     return block::start();
 }
 
+void lfm_source_impl::init_meta_dict(const std::string& bandwidth_key,
+                                     const std::string& start_freq_key,
+                                     const std::string& duration_key,
+                                     const std::string& sample_rate_key,
+                                     const std::string& label_key)
+{
+    d_bandwidth_key = pmt::intern(bandwidth_key);
+    d_start_freq_key = pmt::intern(start_freq_key);
+    d_duration_key = pmt::intern(duration_key);
+    d_sample_rate_key = pmt::intern(sample_rate_key);
+    d_label_key = pmt::intern(label_key);
+
+
+    d_meta = pmt::make_dict();
+    d_meta = pmt::dict_add(d_meta, d_bandwidth_key, pmt::from_double(d_bandwidth));
+    d_meta = pmt::dict_add(d_meta, d_start_freq_key, pmt::from_double(d_start_freq));
+    d_meta = pmt::dict_add(d_meta, d_duration_key, pmt::from_double(d_pulse_width));
+    d_meta = pmt::dict_add(d_meta, d_sample_rate_key, pmt::from_double(d_samp_rate));
+    d_meta = pmt::dict_add(d_meta, d_label_key, pmt::intern("lfm"));
+}
 
 } /* namespace plasma */
 } /* namespace gr */

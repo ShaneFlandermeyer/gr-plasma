@@ -39,6 +39,8 @@ The following features have been implemented:
   in the same format as the file source block in the main tree, and the PMT
   metadata dictionary can optionally be stored as a JSON object.  
 
+**NOTE**: Most work in this repository is done in the develop branch. If master does not have a feature you want, be sure to check out develop before filing an issue. The develop branch tracks the develop branch of [plasma-dsp](https://github.com/ShaneFlandermeyer/plasma-dsp), so you must check that out as well.
+
 ## Installation
 
 To install gr-plasma system-wide, you should first install
@@ -67,8 +69,3 @@ cd build
 sudo make uninstall
 sudo ldconfig
 ```
-
-## Publications and Presentations
-
-- https://pubs.gnuradio.org/index.php/grcon/article/view/121
-- https://events.gnuradio.org/event/18/contributions/253/

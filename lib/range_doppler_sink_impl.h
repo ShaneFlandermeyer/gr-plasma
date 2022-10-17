@@ -34,6 +34,12 @@ private:
     size_t d_msg_queue_depth;
 
     pmt::pmt_t d_meta;
+    // Metadata keys
+    pmt::pmt_t d_samp_rate_key;
+    pmt::pmt_t d_center_freq_key;
+    pmt::pmt_t d_n_matrix_col_key;
+    pmt::pmt_t d_dynamic_range_key;
+
 
 public:
     range_doppler_sink_impl(double samp_rate,
@@ -57,6 +63,13 @@ public:
 
     void set_dynamic_range(const double) override;
     void set_msg_queue_depth(size_t) override;
+    void set_metadata_keys(std::string samp_rate_key,
+                           std::string n_matrix_col_key,
+                           std::string center_freq_key,
+                           std::string dynamic_range_key,
+                           std::string prf_key,
+                           std::string pulsewidth_key,
+                           std::string detection_indices_key) override;
 };
 
 } // namespace plasma

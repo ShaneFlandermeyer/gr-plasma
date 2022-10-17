@@ -52,3 +52,6 @@ static const char* __doc_gr_plasma_usrp_radar_set_rx_thread_priority = R"doc()do
 
 
 static const char* __doc_gr_plasma_usrp_radar_read_calibration_file = R"doc()doc";
+
+
+static const char* __doc_gr_plasma_usrp_radar_set_metadata_keys = R"doc()doc";

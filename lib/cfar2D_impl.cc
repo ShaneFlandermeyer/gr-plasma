@@ -56,13 +56,21 @@ cfar2D_impl::~cfar2D_impl() {}
 
 void cfar2D_impl::handle_message(const pmt::pmt_t& msg)
 {
-    if (this->nmsgs(d_in_port) > d_msg_queue_depth) return;
+    if (this->nmsgs(d_in_port) > d_msg_queue_depth)
+        return;
     // Parse the input message
     pmt::pmt_t samples;
     pmt::pmt_t meta = pmt::make_dict();
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         meta = pmt::dict_update(meta, pmt::car(msg));
+
+        // Update number of pulses per CPI if it changed
+        if (pmt::dict_has_key(meta, d_n_pulse_cpi_key)) {
+            d_num_pulse_cpi =
+                pmt::to_long(pmt::dict_ref(meta, d_n_pulse_cpi_key, pmt::PMT_NIL));
+        }
+
     } else if (pmt::is_uniform_vector(msg)) {
         samples = pmt::cdr(msg);
     } else {
@@ -90,11 +98,20 @@ void cfar2D_impl::handle_message(const pmt::pmt_t& msg)
     delete ind_ptr;
 
     // Add detection metadata (directly passing the input data)
-    meta = pmt::dict_add(meta, pmt::intern("indices"), indices);
-    meta = pmt::dict_add(
-        meta, pmt::intern("num_detections"), pmt::from_long(results.num_detections));
+    meta = pmt::dict_add(meta, d_detection_indices_key, indices);
+    meta =
+        pmt::dict_add(meta, d_n_detections_key, pmt::from_long(results.num_detections));
 
     message_port_pub(d_out_port, pmt::cons(meta, samples));
+}
+
+void cfar2D_impl::set_metadata_keys(std::string detction_indices_key,
+                                    std::string n_detections_key,
+                                    std::string n_pulse_cpi_key)
+{
+    d_detection_indices_key = pmt::intern(detction_indices_key);
+    d_n_detections_key = pmt::intern(n_detections_key);
+    d_n_pulse_cpi_key = pmt::intern(n_pulse_cpi_key);
 }
 
 void cfar2D_impl::set_msg_queue_depth(size_t depth) { d_msg_queue_depth = depth; }

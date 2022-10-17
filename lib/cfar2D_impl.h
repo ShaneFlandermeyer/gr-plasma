@@ -9,8 +9,8 @@
 #define INCLUDED_PLASMA_CFAR2D_IMPL_H
 
 #include <gnuradio/plasma/cfar2D.h>
-#include <plasma_dsp/cfar2d.h>
 #include <gnuradio/plasma/pmt_constants.h>
+#include <plasma_dsp/cfar2d.h>
 
 namespace gr {
 namespace plasma {
@@ -18,8 +18,15 @@ namespace plasma {
 class cfar2D_impl : public cfar2D
 {
 private:
-    const pmt::pmt_t d_in_port; 
+    // Metadata keys
+    pmt::pmt_t d_detection_indices_key;
+    pmt::pmt_t d_n_detections_key;
+    pmt::pmt_t d_n_pulse_cpi_key;
+
+    // Port names
+    const pmt::pmt_t d_in_port;
     const pmt::pmt_t d_out_port;
+
     af::Backend d_backend;
 
     // Parameters for CFAR Object
@@ -41,6 +48,10 @@ public:
 
     void set_msg_queue_depth(size_t) override;
     void set_backend(Device::Backend) override;
+
+    void set_metadata_keys(std::string detction_indices_key,
+                           std::string n_detections_key,
+                           std::string n_pulse_cpi_key) override;
 };
 
 } // namespace plasma

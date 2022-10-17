@@ -25,6 +25,8 @@ private:
     size_t d_msg_queue_depth;
     
     pmt::pmt_t d_meta;
+    pmt::pmt_t d_n_pulse_cpi_key;
+
     pmt::pmt_t d_data;
     pmt::pmt_t d_tx_port;
     pmt::pmt_t d_rx_port;
@@ -38,6 +40,7 @@ public:
 
     void set_msg_queue_depth(size_t) override;
     void set_backend(Device::Backend) override;
+    void set_metadata_keys(const std::string& n_pulse_cpi_key) override;
 };
 
 } // namespace plasma

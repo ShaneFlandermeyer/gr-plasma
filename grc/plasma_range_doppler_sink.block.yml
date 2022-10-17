@@ -30,6 +30,52 @@ parameters:
     label: GUI Hint
     dtype: gui_hint
     hide: part
+  # Metadata fields
+  - id: center_freq_key
+    label: Center Frequency Key
+    dtype: string
+    default: core:frequency
+    hide: part
+    category: Metadata
+  - id: dynamic_range_key
+    label: Dynamic Range Key
+    dtype: string
+    default: dynamic_range
+    hide: part
+    category: Metadata
+  - id: n_matrix_col_key
+    label: Num. Matrix Cols Key
+    dtype: string
+    default: n_matrix_col
+    hide: part
+    category: Metadata
+  - id: samp_rate_key
+    label: Sample Rate Key
+    dtype: string
+    default: core:sample_rate
+    hide: part
+    category: Metadata
+  
+  # QT window metadata fields
+  - id: detection_indices_key
+    label: Detection Indices Key
+    dtype: string
+    default: 'detection_indices'
+    hide: part
+    category: Metadata
+  - id: prf_key
+    label: PRF Key
+    dtype: string
+    default: 'radar:prf'
+    hide: part
+    category: Metadata
+  - id: pulsewidth_key
+    label: Pulse Width Key
+    dtype: string
+    default: 'radar:duration'
+    hide: part
+    category: Metadata
+  
   
 inputs:
   - domain: message
@@ -45,6 +91,7 @@ templates:
       win = 'self._%s_win'%id
     %>\
     plasma.range_doppler_sink(${samp_rate}, ${nrow}, ${center_freq})
+    self.${id}.set_metadata_keys(${samp_rate_key}, ${n_matrix_col_key}, ${center_freq_key}, ${dynamic_range_key}, ${prf_key}, ${pulsewidth_key}, ${detection_indices_key})
     self.${id}.set_dynamic_range(${dynamic_range})
     self.${id}.set_msg_queue_depth(${depth})
     ${win} = sip.wrapinstance(self.${id}.pyqwidget(), Qt.QWidget)

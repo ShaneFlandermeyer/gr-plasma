@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(pcfm_source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(c669e2bd38ec3b4200841c31b303bd23)                     */
+/* BINDTOOL_HEADER_FILE_HASH(c5e9c666cc3514405a1511c3bf93eede)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -43,6 +43,15 @@ void bind_pcfm_source(py::module& m)
              py::arg("samp_rate"),
              D(pcfm_source, make))
 
+
+        .def("set_metadata_keys",
+             &pcfm_source::set_metadata_keys,
+             py::arg("label_key"),
+             py::arg("phase_code_class_key"),
+             py::arg("n_phase_code_chips_key"),
+             py::arg("duration_key"),
+             py::arg("sample_rate_key"),
+             D(pcfm_source, set_metadata_keys))
 
         ;
 }

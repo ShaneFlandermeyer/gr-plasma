@@ -38,6 +38,7 @@ public:
 
     virtual void set_msg_queue_depth(size_t depth) = 0;
     virtual void set_backend(Device::Backend) = 0;
+    virtual void set_metadata_keys(const std::string& n_pulse_cpi_key) = 0;
 };
 
 } // namespace plasma

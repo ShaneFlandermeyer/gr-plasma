@@ -18,6 +18,37 @@ parameters:
   label: Sample Rate
   dtype: float
   default: 'samp_rate'
+# Metadata keys
+- id: label_key
+  label: Label Key
+  dtype: string
+  default: core:label
+  category: Metadata
+  hide: part
+- id: phase_code_class_key
+  label: Phase code class key
+  dtype: string
+  default: radar:phase_code_class
+  category: Metadata
+  hide: part
+- id: n_phase_code_chips_key
+  label: Num. phase code chips key
+  dtype: string
+  default: radar:n_phase_code_chips
+  category: Metadata
+  hide: part
+- id: duration_key
+  label: Duration key
+  dtype: string
+  default: radar:duration
+  category: Metadata
+  hide: part
+- id: sample_rate_key
+  label: Sample rate key
+  dtype: string
+  default: core:samp_rate
+  category: Metadata
+  hide: part
 
 outputs:
   - id: out
@@ -26,6 +57,14 @@ outputs:
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.pcfm_source(${code}, ${n}, ${over}, ${samp_rate})
+  make: |-
+    plasma.pcfm_source(${code}, ${n}, ${over}, ${samp_rate})
+    self.${id}.set_metadata_keys(
+        ${label_key},
+        ${phase_code_class_key},
+        ${n_phase_code_chips_key},
+        ${duration_key},
+        ${sample_rate_key},
+    )
 
 file_format: 1
