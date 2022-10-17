@@ -1,54 +1,67 @@
 id: plasma_lfm_source
 label: Linear FM Source
-category: '[plasma]'
+category: "[plasma]"
 
 parameters:
-# Waveform parameters
-- id: bandwidth
-  label: Bandwidth
-  dtype: float
-- id: pulse_width
-  label: Pulse width
-  dtype: float
-- id: samp_rate
-  label: Sample rate
-  dtype: float
-# Metadata fields
-- id: bandwidth_key
-  label: Bandwidth Key
-  dtype: string
-  category: Metadata
-  hide: part
-  default: radar:bandwidth
-- id: duration_key
-  label: Duration Key
-  dtype: string
-  category: Metadata
-  hide: part
-  default: radar:duration
-- id: sample_rate_key
-  label: Sample Rate Key
-  dtype: string
-  category: Metadata
-  hide: part
-  default: core:sample_rate
-- id: label_key
-  label: Label Key
-  dtype: string
-  category: Metadata
-  hide: part
-  default: core:label
+  # Waveform parameters
+  - id: bandwidth
+    label: Bandwidth
+    dtype: float
+    default: "bandwidth"
+  - id: start_freq
+    label: Sweep start freq
+    dtype: float
+    default: "-bandwidth/2"
+  - id: pulse_width
+    label: Pulse width
+    dtype: float
+    default: "10e-6"
+  - id: samp_rate
+    label: Sample rate
+    dtype: float
+    default: "samp_rate"
+  # Metadata fields
+  - id: bandwidth_key
+    label: Bandwidth Key
+    dtype: string
+    category: Metadata
+    hide: part
+    default: radar:bandwidth
+  - id: start_freq_key
+    label: Sweep offset Key
+    dtype: string
+    category: Metadata
+    hide: part
+    default: radar:start_freq
+  - id: duration_key
+    label: Duration Key
+    dtype: string
+    category: Metadata
+    hide: part
+    default: radar:duration
+  - id: sample_rate_key
+    label: Sample Rate Key
+    dtype: string
+    category: Metadata
+    hide: part
+    default: core:sample_rate
+  - id: label_key
+    label: Label Key
+    dtype: string
+    category: Metadata
+    hide: part
+    default: core:label
 
 outputs:
-- domain: message
-  id: out
-  optional: false
+  - domain: message
+    id: out
+    optional: false
 
 templates:
   imports: from gnuradio import plasma
   make: |-
-    plasma.lfm_source(${bandwidth}, ${pulse_width}, ${samp_rate})
-    self.${id}.init_meta_dict(${label_key}, ${sample_rate_key}, ${bandwidth_key}, ${duration_key})
+    plasma.lfm_source(${bandwidth}, ${start_freq}, ${pulse_width}, ${samp_rate})
+    self.${id}.init_meta_dict(${bandwidth_key}, ${start_freq_key}, ${duration_key}, ${sample_rate_key}, ${label_key})
 
 documentation: |-
   Generates a linear frequency modulated (LFM) radar waveform.

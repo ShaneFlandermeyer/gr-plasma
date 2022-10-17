@@ -26,6 +26,7 @@ private:
     
     // Waveform parameters
     double d_bandwidth;
+    double d_start_freq;
     double d_pulse_width;
     double d_samp_rate;
     
@@ -40,6 +41,7 @@ private:
     pmt::pmt_t d_label_key;
     pmt::pmt_t d_sample_rate_key;
     pmt::pmt_t d_bandwidth_key;
+    pmt::pmt_t d_start_freq_key;
     pmt::pmt_t d_duration_key;
     // Metadata dict(s)
     pmt::pmt_t d_global;
@@ -48,15 +50,17 @@ private:
 
 
 public:
-    lfm_source_impl(double bandwidth, double pulse_width, double samp_rate);
+    lfm_source_impl(double bandwidth, double start_freq, double pulse_width, double samp_rate);
     ~lfm_source_impl();
 
     bool start() override;
 
-    void init_meta_dict(std::string label,
-                           std::string sample_rate,
-                           std::string bandwidth,
-                           std::string duration);
+    void init_meta_dict(
+        const std::string& bandwidth_key,
+        const std::string& start_freq_key,
+        const std::string& duration_key,
+        const std::string& sample_rate_key,
+        const std::string& label_key);
 };
 
 } // namespace plasma

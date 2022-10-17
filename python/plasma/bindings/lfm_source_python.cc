@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(lfm_source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(917124bb9ccf47edc43defffa10909f6)                     */
+/* BINDTOOL_HEADER_FILE_HASH(07de02988a23dca5cd5d35e009af9d71)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -38,6 +38,7 @@ void bind_lfm_source(py::module& m)
 
         .def(py::init(&lfm_source::make),
              py::arg("bandwidth"),
+             py::arg("start_freq"),
              py::arg("pulse_width"),
              py::arg("samp_rate"),
              D(lfm_source, make))
@@ -45,10 +46,11 @@ void bind_lfm_source(py::module& m)
 
         .def("init_meta_dict",
              &lfm_source::init_meta_dict,
-             py::arg("label_key"),
-             py::arg("sample_rate_key"),
              py::arg("bandwidth_key"),
+             py::arg("start_freq_key"),
              py::arg("duration_key"),
+             py::arg("sample_rate_key"),
+             py::arg("label_key"),
              D(lfm_source, init_meta_dict))
 
         ;

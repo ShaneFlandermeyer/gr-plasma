@@ -39,6 +39,8 @@ The following features have been implemented:
   in the same format as the file source block in the main tree, and the PMT
   metadata dictionary can optionally be stored as a JSON object.  
 
+**NOTE**: Most work in this repository is done in the develop branch. If master does not have a feature you want, be sure to check out develop before filing an issue.
+
 ## Installation
 
 To install gr-plasma system-wide, you should first install

@@ -32,20 +32,22 @@ public:
      * class. plasma::lfm_source::make is the public interface for
      * creating new instances.
      */
-    static sptr make(double bandwidth, double pulse_width, double samp_rate);
+    static sptr
+    make(double bandwidth, double start_freq, double pulse_width, double samp_rate);
 
     /**
      * @brief Set the metadata keys in the PDU output
-     * 
-     * @param label 
-     * @param sample_rate 
-     * @param bandwidth 
-     * @param duration 
+     *
+     * @param label
+     * @param sample_rate
+     * @param bandwidth
+     * @param duration
      */
-    virtual void init_meta_dict(std::string label_key,
-                                   std::string sample_rate_key,
-                                   std::string bandwidth_key,
-                                   std::string duration_key) = 0;
+    virtual void init_meta_dict(const std::string& bandwidth_key,
+                                const std::string& start_freq_key,
+                                const std::string& duration_key,
+                                const std::string& sample_rate_key,
+                                const std::string& label_key) = 0;
 };
 
 } // namespace plasma
