@@ -21,15 +21,16 @@ class lfm_source_impl : public lfm_source
 {
 private:
     // Message ports
-    const pmt::pmt_t d_port;
+    const pmt::pmt_t d_msg_port;
+    const pmt::pmt_t d_out_port;
     pmt::pmt_t d_msg;
-    
+
     // Waveform parameters
     double d_bandwidth;
     double d_start_freq;
     double d_pulse_width;
     double d_samp_rate;
-    
+
     // Waveform object and IQ data
     ::plasma::LinearFMWaveform d_waveform;
     std::unique_ptr<std::complex<float>> d_data;
@@ -48,19 +49,23 @@ private:
     pmt::pmt_t d_annotations;
     pmt::pmt_t d_meta;
 
+    void handle_msg(pmt::pmt_t msg);
+
 
 public:
-    lfm_source_impl(double bandwidth, double start_freq, double pulse_width, double samp_rate);
+    lfm_source_impl(double bandwidth,
+                    double start_freq,
+                    double pulse_width,
+                    double samp_rate);
     ~lfm_source_impl();
 
     bool start() override;
 
-    void init_meta_dict(
-        const std::string& bandwidth_key,
-        const std::string& start_freq_key,
-        const std::string& duration_key,
-        const std::string& sample_rate_key,
-        const std::string& label_key);
+    void init_meta_dict(const std::string& bandwidth_key,
+                        const std::string& start_freq_key,
+                        const std::string& duration_key,
+                        const std::string& sample_rate_key,
+                        const std::string& label_key);
 };
 
 } // namespace plasma
