@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Free Software Foundation, Inc.
+ * Copyright 2023 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(pdu_file_source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(e1f85c2a1b2ee49c668f7e78a90531a5)                     */
+/* BINDTOOL_HEADER_FILE_HASH(e97ef8ed7a0fce08f72887e6a0c366f4)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -43,6 +43,7 @@ void bind_pdu_file_source(py::module& m)
              py::arg("meta_filename"),
              py::arg("offset"),
              py::arg("length"),
+             py::arg("pdu_length"),
              D(pdu_file_source, make))
 
 

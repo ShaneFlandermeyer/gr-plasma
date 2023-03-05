@@ -16,7 +16,7 @@ parameters:
     label: Meta filename
     dtype: file_save
     default: ''
-    hide: ${ 'all' if load_meta == False else 'none'}
+    hide: ${'all' if load_meta == False else 'none'}
   - id: offset
     label: Offset
     dtype: int
@@ -25,6 +25,11 @@ parameters:
     label: Length
     dtype: int
     default: 0
+  - id: pdu_length
+    label: PDU length
+    dtype: int
+    default: -1
+    hide: ${'part' if pdu_length == -1 else 'none'}
 
 outputs:
   - id: out
@@ -33,10 +38,6 @@ outputs:
 templates:
   imports: from gnuradio import plasma
   make: |-
-    % if load_meta() == True:
-      plasma.pdu_file_source(${data_filename},${meta_filename},${offset},${length})
-    % else:
-      plasma.pdu_file_source(${data_filename},'',${offset},${length})
-    % endif
+    plasma.pdu_file_source(${data_filename},${meta_filename},${offset},${length}, ${pdu_length})
   
 file_format: 1

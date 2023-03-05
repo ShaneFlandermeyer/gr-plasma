@@ -24,8 +24,9 @@ private:
     std::string d_meta_filename;
     int d_offset;
     int d_length;
+    int d_pdu_length;
     gr::thread::thread d_thread;
-    pmt::pmt_t d_data;
+    std::vector<gr_complex> d_data;
     pmt::pmt_t d_meta;
     pmt::pmt_t d_out_port;
 
@@ -44,7 +45,8 @@ public:
     pdu_file_source_impl(const std::string& data_filename,
                          const std::string& meta_filename,
                          int offset,
-                         int length);
+                         int length,
+                         int pdu_length);
     ~pdu_file_source_impl();
 
     bool start() override;

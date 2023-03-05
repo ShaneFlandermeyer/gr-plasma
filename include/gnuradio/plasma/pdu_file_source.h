@@ -35,7 +35,8 @@ public:
     static sptr make(const std::string& data_filename,
                      const std::string& meta_filename,
                      int offset,
-                     int length);
+                     int length,
+                     int pdu_length);
 };
 
 } // namespace plasma
