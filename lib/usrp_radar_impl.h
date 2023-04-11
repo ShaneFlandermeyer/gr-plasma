@@ -25,7 +25,6 @@ class usrp_radar_impl : public usrp_radar
 {
 private:
     uhd::usrp::multi_usrp::sptr d_usrp;
-    std::string d_args;
     double d_samp_rate;
     double d_tx_gain;
     double d_rx_gain;
@@ -34,12 +33,12 @@ private:
     double d_prf;
     double d_tx_thread_priority;
     double d_rx_thread_priority;
+    size_t d_n_samp_pri;
     size_t d_delay_samps;
     size_t d_pulse_count;
     size_t d_sample_count;
     uhd::time_spec_t d_start_time;
     std::vector<gr_complex> d_tx_buff;
-    std::vector<gr_complex> d_rx_buff;
 
     pmt::pmt_t d_meta;
     // Metadata keys
@@ -47,16 +46,14 @@ private:
     pmt::pmt_t d_prf_key;
     pmt::pmt_t d_sample_start_key;
 
-    pmt::pmt_t d_rx_data;
+    pmt::pmt_t rx_data_pmt;
     pmt::pmt_t d_in_port;
     pmt::pmt_t d_out_port;
 
     gr::thread::thread d_main_thread;
-    gr::thread::thread d_tx_thread;
     gr::thread::mutex d_tx_buff_mutex;
     std::atomic<bool> d_finished;
     std::atomic<bool> d_armed;
-    std::atomic<bool> d_burst_mode;
 
 
     /**
@@ -69,24 +66,8 @@ private:
      * @param num_samps_pulse
      * @param start_time
      */
-    void transmit_bursts(uhd::usrp::multi_usrp::sptr usrp,
-                         std::vector<std::complex<float>*> buff_ptrs,
-                         size_t num_samps_pulse,
+    void transmit(uhd::usrp::multi_usrp::sptr usrp,
                          uhd::time_spec_t start_time);
-
-    /**
-     * @brief Transmit the data in the tx buffer continuously, with no delay
-     * between repetitions.
-     *
-     * @param usrp
-     * @param buff_ptrs
-     * @param num_samps_pulse
-     * @param start_time
-     */
-    void transmit_continuous(uhd::usrp::multi_usrp::sptr usrp,
-                             std::vector<std::complex<float>*> buff_ptrs,
-                             size_t num_samps_pulse,
-                             uhd::time_spec_t start_time);
 
     /**
      * @brief Receive a CPI of samples from the USRP, then package them into a PDU
@@ -97,19 +78,6 @@ private:
      * @param start_time
      */
     void receive(uhd::usrp::multi_usrp::sptr usrp,
-                 std::vector<std::complex<float>*> buff_ptrs,
-                 size_t num_samp_cpi,
-                 uhd::time_spec_t start_time);
-
-    /**
-     * @brief Receive a pulse of samples from the USRP, then package them into a PDU
-     *
-     * @param usrp
-     * @param buff_ptrs
-     * @param start_time
-     */
-    void receive(uhd::usrp::multi_usrp::sptr usrp,
-                 std::vector<std::vector<gr_complex>> buff_ptrs,
                  uhd::time_spec_t start_time);
 
 public:
