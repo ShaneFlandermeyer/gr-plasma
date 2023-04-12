@@ -30,7 +30,6 @@ private:
     double d_rx_gain;
     double d_tx_freq;
     double d_rx_freq;
-    double d_prf;
     double d_tx_thread_priority;
     double d_rx_thread_priority;
     size_t d_n_samp_pri;

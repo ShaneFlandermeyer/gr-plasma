@@ -27,7 +27,6 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
     d_pulse_count = 0;
     d_tx_sample_count = 0;
     d_rx_sample_count = 0;
-    d_prf = 0;
 
     d_meta = pmt::make_dict();
 
@@ -65,8 +64,9 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         pmt::pmt_t meta = pmt::car(msg);
 
 
+        double prf = 0;
         if (pmt::dict_has_key(meta, d_prf_key)) {
-            d_prf = pmt::to_double(pmt::dict_ref(meta, d_prf_key, pmt::PMT_NIL));
+            prf = pmt::to_double(pmt::dict_ref(meta, d_prf_key, pmt::PMT_NIL));
         }
 
         d_meta = pmt::dict_update(d_meta, meta);
@@ -74,8 +74,8 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
         // Copy Tx data into buffer
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
-        if (d_prf > 0) {
-            int n_zeros = round(d_samp_rate / d_prf);
+        if (prf > 0) {
+            int n_zeros = round(d_samp_rate / prf);
             int n_zeros_end = n_zeros - d_tx_buff.size();
             std::vector<gr_complex> end_zeros(n_zeros_end, 0);
             d_tx_buff.insert(
