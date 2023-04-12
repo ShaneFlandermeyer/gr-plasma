@@ -36,7 +36,7 @@ parameters:
   - id: args
     label: Device Arguments
     dtype: string
-    default: '""'
+    default: '"num_send_frames=512,num_recv_frames=512"'
     hide: ${ ('part' if args == "" else 'none') }
   - id: cal_file
     label: Calibration file
