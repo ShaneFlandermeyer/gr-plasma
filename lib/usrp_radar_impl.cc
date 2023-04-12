@@ -25,7 +25,8 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
 {
     d_usrp = uhd::usrp::multi_usrp::make(args);
     d_pulse_count = 0;
-    d_sample_count = 0;
+    d_tx_sample_count = 0;
+    d_rx_sample_count = 0;
     d_prf = 0;
 
     d_meta = pmt::make_dict();
@@ -128,7 +129,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     tx_stream_args.channels.push_back(0);
     tx_stream = usrp->get_tx_stream(tx_stream_args);
     uhd::tx_metadata_t tx_md;
-    tx_md.start_of_burst = false;
+    tx_md.start_of_burst = true;
     tx_md.end_of_burst = false;
     tx_md.has_time_spec = true;
     tx_md.time_spec = start_time;
@@ -137,15 +138,17 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
         if (d_armed) {
             // Record when the new waveform actually started in the metadata
             d_meta =
-                pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_sample_count));
+                pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_tx_sample_count));
             d_armed = false;
         }
 
+        
         tx_stream->send(d_tx_buff.data(), d_tx_buff.size(), tx_md);
+        tx_md.start_of_burst = false;
         tx_md.has_time_spec = false;
 
         d_pulse_count++;
-        d_sample_count += d_tx_buff.size();
+        d_tx_sample_count += d_tx_buff.size();
     }
     // Send a mini EOB packet
     tx_md.end_of_burst = true;
@@ -209,6 +212,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             stop = std::min(n_rx_samps, start + d_n_samp_pri - n_samps_written);
             d_delay_samps = 0; // Only used for first receive call
         }
+        d_rx_sample_count += n_rx_samps;
     }
 
     // Shut down the stream
@@ -251,7 +255,7 @@ void usrp_radar_impl::set_metadata_keys(std::string center_freq_key,
     d_prf_key = pmt::intern(prf_key);
     d_sample_start_key = pmt::intern(sample_count_key);
 
-    d_meta = pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_sample_count));
+    d_meta = pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_tx_sample_count));
 }
 
 void usrp_radar_impl::set_samp_rate(const double rate)

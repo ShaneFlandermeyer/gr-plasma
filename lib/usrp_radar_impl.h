@@ -36,7 +36,8 @@ private:
     size_t d_n_samp_pri;
     size_t d_delay_samps;
     size_t d_pulse_count;
-    size_t d_sample_count;
+    size_t d_tx_sample_count;
+    size_t d_rx_sample_count;
     uhd::time_spec_t d_start_time;
     std::vector<gr_complex> d_tx_buff;
 
