@@ -52,6 +52,11 @@ parameters:
     hide: part
     default: core:label
 
+inputs:
+  - domain: message
+    id: in
+    optional: true
+    
 outputs:
   - domain: message
     id: out
