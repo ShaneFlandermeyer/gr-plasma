@@ -4,7 +4,7 @@
 #include <gnuradio/plasma/pmt_constants.h>
 #include <gnuradio/plasma/qt_update_events.h>
 #include <plasma_dsp/file.h>
-#include <plasma_dsp/linear_fm_waveform.h>
+#include <plasma_dsp/lfm.h>
 #include <pmt/pmt.h>
 
 #include <qwt/qwt_plot.h>

@@ -40,12 +40,14 @@ lfm_source_impl::lfm_source_impl(double bandwidth,
       d_samp_rate(samp_rate)
 {
     // TODO: Add sweep offset parameter
-    d_waveform =
-        ::plasma::LinearFMWaveform(bandwidth, pulse_width, samp_rate, 0, start_freq);
-    // Generate the waveform data
-    af::array waveform_array = d_waveform.sample().as(c32);
-    d_num_samp = waveform_array.elements();
-    d_data.reset(reinterpret_cast<gr_complex*>(waveform_array.host<af::cfloat>()));
+    // d_waveform =
+    //     ::plasma::LinearFMWaveform(bandwidth, pulse_width, samp_rate, 0, start_freq);
+    // // Generate the waveform data
+    // af::array x = d_waveform.sample().as(c32);
+    double prf = 0;
+    af::array x = ::plasma::lfm(start_freq, bandwidth, pulse_width, samp_rate, prf).as(c32);
+    d_num_samp = x.elements();
+    d_data.reset(reinterpret_cast<gr_complex*>(x.host<af::cfloat>()));
 
     message_port_register_in(d_msg_port);
     message_port_register_out(d_out_port);
@@ -94,11 +96,9 @@ void lfm_source_impl::handle_msg(pmt::pmt_t msg)
     }
 
     // Create the new waveform vector and emit it as a PDU
-    d_waveform = ::plasma::LinearFMWaveform(
-        d_bandwidth, d_pulse_width, d_samp_rate, 0, d_start_freq);
-    af::array waveform_array = d_waveform.sample().as(c32);
-    d_num_samp = waveform_array.elements();
-    d_data.reset(reinterpret_cast<gr_complex*>(waveform_array.host<af::cfloat>()));
+    af::array x = ::plasma::lfm(d_start_freq, d_bandwidth, d_pulse_width, d_samp_rate, 0).as(c32);
+    d_num_samp = x.elements();
+    d_data.reset(reinterpret_cast<gr_complex*>(x.host<af::cfloat>()));
     pmt::pmt_t data = pmt::init_c32vector(d_num_samp, d_data.get());
     message_port_pub(d_out_port, pmt::cons(d_meta, data));
 

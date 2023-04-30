@@ -11,7 +11,7 @@
 #include <gnuradio/plasma/lfm_source.h>
 #include <gnuradio/plasma/pmt_constants.h>
 #include <arrayfire.h>
-#include <plasma_dsp/linear_fm_waveform.h>
+#include <plasma_dsp/lfm.h>
 
 namespace gr {
 namespace plasma {
@@ -32,7 +32,6 @@ private:
     double d_samp_rate;
 
     // Waveform object and IQ data
-    ::plasma::LinearFMWaveform d_waveform;
     std::unique_ptr<std::complex<float>> d_data;
     size_t d_num_samp;
     uint64_t d_start_time;
