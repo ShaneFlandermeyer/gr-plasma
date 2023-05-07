@@ -20,6 +20,11 @@ parameters:
     label: Sample rate
     dtype: float
     default: "samp_rate"
+  - id: prf
+    label: PRF
+    dtype: float
+    default: 0
+    hide: ${ ('part' if prf == 0 else 'none') }
   # Metadata fields
   - id: bandwidth_key
     label: Bandwidth Key
@@ -51,6 +56,12 @@ parameters:
     category: Metadata
     hide: part
     default: core:label
+  - id: prf_key
+    label: PRF Key
+    dtype: string
+    category: Metadata
+    hide: part
+    default: radar:prf
 
 inputs:
   - domain: message
@@ -65,8 +76,8 @@ outputs:
 templates:
   imports: from gnuradio import plasma
   make: |-
-    plasma.lfm_source(${bandwidth}, ${start_freq}, ${pulse_width}, ${samp_rate})
-    self.${id}.init_meta_dict(${bandwidth_key}, ${start_freq_key}, ${duration_key}, ${sample_rate_key}, ${label_key})
+    plasma.lfm_source(${bandwidth}, ${start_freq}, ${pulse_width}, ${samp_rate}, ${prf})
+    self.${id}.init_meta_dict(${bandwidth_key}, ${start_freq_key}, ${duration_key}, ${sample_rate_key}, ${label_key}, ${prf_key})
 
 documentation: |-
   Generates a linear frequency modulated (LFM) radar waveform.

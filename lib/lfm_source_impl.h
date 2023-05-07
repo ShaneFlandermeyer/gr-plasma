@@ -30,9 +30,11 @@ private:
     double d_start_freq;
     double d_pulse_width;
     double d_samp_rate;
+    double d_prf;
 
     // Waveform object and IQ data
-    std::unique_ptr<std::complex<float>> d_data;
+    pmt::pmt_t d_data;
+    // std::unique_ptr<std::complex<float>> d_data;
     size_t d_num_samp;
     uint64_t d_start_time;
     uint64_t d_send_time;
@@ -43,6 +45,7 @@ private:
     pmt::pmt_t d_bandwidth_key;
     pmt::pmt_t d_start_freq_key;
     pmt::pmt_t d_duration_key;
+    pmt::pmt_t d_prf_key;
     // Metadata dict(s)
     pmt::pmt_t d_global;
     pmt::pmt_t d_annotations;
@@ -55,7 +58,8 @@ public:
     lfm_source_impl(double bandwidth,
                     double start_freq,
                     double pulse_width,
-                    double samp_rate);
+                    double samp_rate,
+                    double prf);
     ~lfm_source_impl();
 
     bool start() override;
@@ -64,7 +68,8 @@ public:
                         const std::string& start_freq_key,
                         const std::string& duration_key,
                         const std::string& sample_rate_key,
-                        const std::string& label_key);
+                        const std::string& label_key,
+                        const std::string& prf_key);
 };
 
 } // namespace plasma

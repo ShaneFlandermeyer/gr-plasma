@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Free Software Foundation, Inc.
+ * Copyright 2023 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(lfm_source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(07de02988a23dca5cd5d35e009af9d71)                     */
+/* BINDTOOL_HEADER_FILE_HASH(badb1b368ff643c8b0409e5069ad2586)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -41,6 +41,7 @@ void bind_lfm_source(py::module& m)
              py::arg("start_freq"),
              py::arg("pulse_width"),
              py::arg("samp_rate"),
+             py::arg("prf"),
              D(lfm_source, make))
 
 
@@ -51,6 +52,7 @@ void bind_lfm_source(py::module& m)
              py::arg("duration_key"),
              py::arg("sample_rate_key"),
              py::arg("label_key"),
+             py::arg("prf_key"),
              D(lfm_source, init_meta_dict))
 
         ;
