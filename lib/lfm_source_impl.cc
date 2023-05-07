@@ -37,7 +37,7 @@ lfm_source_impl::lfm_source_impl(
       d_prf(prf)
 {
     af::array waveform =
-        ::plasma::lfm(start_freq, bandwidth, pulse_width, samp_rate, prf).as(c32);
+        ::plasma::lfm(start_freq, bandwidth, pulse_width, samp_rate).as(c32);
     d_data = pmt::init_c32vector(
         waveform.elements(), reinterpret_cast<gr_complex*>(waveform.host<af::cfloat>()));
 
@@ -91,10 +91,11 @@ void lfm_source_impl::handle_msg(pmt::pmt_t msg)
 
     // Create the new waveform vector and emit it as a PDU
     af::array waveform =
-        ::plasma::lfm(d_start_freq, d_bandwidth, d_pulse_width, d_samp_rate, d_prf).as(c32);
+        ::plasma::lfm(d_start_freq, d_bandwidth, d_pulse_width, d_samp_rate).as(c32);
     d_data = pmt::init_c32vector(
         waveform.elements(), reinterpret_cast<gr_complex*>(waveform.host<af::cfloat>()));
     message_port_pub(d_out_port, pmt::cons(d_meta, d_data));
+
 }
 
 void lfm_source_impl::init_meta_dict(const std::string& bandwidth_key,

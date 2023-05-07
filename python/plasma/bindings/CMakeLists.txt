@@ -40,6 +40,7 @@ message(STATUS "Bindings rebuild forced ${FORCE_REBUILD}")
 
 list(APPEND plasma_python_files
     cfar2D_python.cc
+    cw_to_pulsed_python.cc
     doppler_processing_python.cc
     lfm_source_python.cc
     match_filt_python.cc
