@@ -44,15 +44,16 @@ void cw_to_pulsed_impl::handle_msg(pmt::pmt_t msg)
         meta = pmt::PMT_NIL;
         samples = msg;
     }
+    size_t n_nonzero = pmt::length(samples);
 
     // Update PRI parameters from metadata
     parse_meta(meta);
     meta = pmt::dict_add(meta, d_sample_rate_key, pmt::from_double(d_sample_rate));
     meta = pmt::dict_add(meta, d_prf_key, pmt::from_double(d_prf));
+    meta = pmt::dict_add(meta, d_nonzero_key, pmt::from_long(n_nonzero));
 
     // Copy the data into a zero-padded vector
-    size_t n_nonzero = pmt::length(samples);
-    size_t n_pri = d_sample_rate / d_prf;
+    size_t n_pri = round(d_sample_rate / d_prf);
     std::vector<gr_complex> data(n_pri, 0);
     std::copy(pmt::c32vector_elements(samples, n_nonzero),
               pmt::c32vector_elements(samples, n_nonzero) + n_nonzero,

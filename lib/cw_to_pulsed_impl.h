@@ -20,6 +20,8 @@ private:
     double d_prf;
     double d_sample_rate;
 
+    // TODO: Make this key user-configurable
+    pmt::pmt_t d_nonzero_key = pmt::string_to_symbol("n_nonzero");
     pmt::pmt_t d_sample_rate_key;
     pmt::pmt_t d_prf_key;
 
