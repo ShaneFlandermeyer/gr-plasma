@@ -64,12 +64,6 @@ parameters:
     default: core:frequency
     hide: part
     category: Metadata
-  - id: prf_key
-    label: PRF key
-    dtype: string
-    default: radar:prf
-    hide: part
-    category: Metadata
   - id: sample_start_key
     label: Sample start key
     dtype: string
@@ -90,7 +84,7 @@ templates:
   imports: from gnuradio import plasma
   make: |-
     plasma.usrp_radar(${args})
-    self.${id}.set_metadata_keys(${center_freq_key}, ${prf_key}, ${sample_start_key})
+    self.${id}.set_metadata_keys(${center_freq_key}, ${sample_start_key})
     self.${id}.set_samp_rate(${samp_rate})
     self.${id}.set_tx_gain(${tx_gain})
     self.${id}.set_rx_gain(${rx_gain})

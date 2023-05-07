@@ -43,7 +43,6 @@ private:
     pmt::pmt_t d_meta;
     // Metadata keys
     pmt::pmt_t d_center_freq_key;
-    pmt::pmt_t d_prf_key;
     pmt::pmt_t d_sample_start_key;
 
     pmt::pmt_t rx_data_pmt;
@@ -123,7 +122,6 @@ public:
     void set_rx_freq(const double) override;
     void set_start_time(const double) override;
     void set_metadata_keys(std::string center_freq_key,
-                           std::string prf_key,
                            std::string sample_start_key) override;
 };
 

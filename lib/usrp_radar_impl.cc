@@ -62,25 +62,11 @@ void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
     if (pmt::is_pdu(msg)) {
         // Maintain any metadata that was produced by upstream blocks
         pmt::pmt_t meta = pmt::car(msg);
-
-
-        double prf = 0;
-        if (pmt::dict_has_key(meta, d_prf_key)) {
-            prf = pmt::to_double(pmt::dict_ref(meta, d_prf_key, pmt::PMT_NIL));
-        }
-
         d_meta = pmt::dict_update(d_meta, meta);
 
         // Copy Tx data into buffer
         gr::thread::scoped_lock lock(d_tx_buff_mutex);
         d_tx_buff = c32vector_elements(pmt::cdr(msg));
-        if (prf > 0) {
-            int n_zeros = round(d_samp_rate / prf);
-            int n_zeros_end = n_zeros - d_tx_buff.size();
-            std::vector<gr_complex> end_zeros(n_zeros_end, 0);
-            d_tx_buff.insert(
-                std::end(d_tx_buff), std::begin(end_zeros), std::end(end_zeros));
-        }
         d_n_samp_pri = d_tx_buff.size();
 
         // The USRP will underflow on transmit if there are less than 1000 samples in the buffer. Therefore, repeat the data until there are at least 1000 samples.
@@ -248,11 +234,9 @@ void usrp_radar_impl::read_calibration_file(const std::string& filename)
 }
 
 void usrp_radar_impl::set_metadata_keys(std::string center_freq_key,
-                                        std::string prf_key,
                                         std::string sample_count_key)
 {
     d_center_freq_key = pmt::intern(center_freq_key);
-    d_prf_key = pmt::intern(prf_key);
     d_sample_start_key = pmt::intern(sample_count_key);
 
     d_meta = pmt::dict_add(d_meta, d_sample_start_key, pmt::from_long(d_tx_sample_count));

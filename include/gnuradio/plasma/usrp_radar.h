@@ -43,7 +43,6 @@ public:
     virtual void set_rx_thread_priority(const double) = 0;
     virtual void read_calibration_file(const std::string&) = 0;
     virtual void set_metadata_keys(std::string center_freq_key,
-                                   std::string prf_key,
                                    std::string sample_start_key) = 0;
 };
 

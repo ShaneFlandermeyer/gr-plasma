@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Free Software Foundation, Inc.
+ * Copyright 2023 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(usrp_radar.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(dadc65782f311a69d7b19f22a7299cf2)                     */
+/* BINDTOOL_HEADER_FILE_HASH(d2e2527b1c297a036f564f7cfcb1e354)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -96,7 +96,6 @@ void bind_usrp_radar(py::module& m)
         .def("set_metadata_keys",
              &usrp_radar::set_metadata_keys,
              py::arg("center_freq_key"),
-             py::arg("prf_key"),
              py::arg("sample_start_key"),
              D(usrp_radar, set_metadata_keys))
 
