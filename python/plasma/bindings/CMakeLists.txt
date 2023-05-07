@@ -37,7 +37,6 @@ message(STATUS "Definitions = ${define_symbols}" )
 string(COMPARE NOTEQUAL "$CACHE{OLD_DEFINES}" "${define_symbols}" FORCE_REBUILD )
 set(OLD_DEFINES "${define_symbols}" CACHE STRING "Save old defines" FORCE)
 message(STATUS "Bindings rebuild forced ${FORCE_REBUILD}")
-
 list(APPEND plasma_python_files
     cfar2D_python.cc
     cw_to_pulsed_python.cc
@@ -53,7 +52,6 @@ list(APPEND plasma_python_files
     pulse_to_cpi_python.cc
     python_bindings.cc
     range_doppler_sink_python.cc
-    simulate_rx_python.cc
     usrp_radar_python.cc
     waveform_controller_python.cc
     device_python.cc
