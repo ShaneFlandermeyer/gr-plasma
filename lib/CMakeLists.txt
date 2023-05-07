@@ -29,6 +29,7 @@ list(APPEND plasma_sources
     cfar2D_impl.cc
     pdu_file_source_impl.cc
     pulse_doppler_impl.cc
+    simulate_rx_impl.cc
 )
 
 set(plasma_sources "${plasma_sources}" PARENT_SCOPE)

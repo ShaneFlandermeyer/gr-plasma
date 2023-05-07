@@ -27,5 +27,6 @@ install(FILES
     device.h
     cfar2D.h
     pdu_file_source.h
-    pulse_doppler.h DESTINATION include/gnuradio/plasma
+    pulse_doppler.h
+    simulate_rx.h DESTINATION include/gnuradio/plasma
 )
