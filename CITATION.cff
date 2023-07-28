@@ -1,0 +1,19 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: gr-plasma
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Shane
+    family-names: Flandermeyer
+    email: shaneflandermeyer@gmail.com
+    affiliation: The University of Oklahoma
+    orcid: 'https://orcid.org/0009-0001-9395-5396'
+repository-code: 'https://github.com/ShaneFlandermeyer/gr-plasma'
+abstract: >-
+  gr-plasma is a GPU-accelerated signal processing toolbox for GNU Radio. The primary purpose of this repository is to provide block interfaces for the processing defined in the plasma-dsp library, although this repository contains many visualization tools that are separate from plasma-dsp.
+license: MIT
