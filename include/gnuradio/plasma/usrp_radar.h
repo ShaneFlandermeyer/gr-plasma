@@ -33,17 +33,6 @@ public:
      * creating new instances.
      */
     static sptr make(const std::string& args);
-    virtual void set_samp_rate(const double) = 0;
-    virtual void set_tx_gain(const double) = 0;
-    virtual void set_rx_gain(const double) = 0;
-    virtual void set_tx_freq(const double) = 0;
-    virtual void set_rx_freq(const double) = 0;
-    virtual void set_start_time(const double) = 0;
-    virtual void set_tx_thread_priority(const double) = 0;
-    virtual void set_rx_thread_priority(const double) = 0;
-    virtual void read_calibration_file(const std::string&) = 0;
-    virtual void set_metadata_keys(std::string center_freq_key,
-                                   std::string sample_start_key) = 0;
 };
 
 } // namespace plasma

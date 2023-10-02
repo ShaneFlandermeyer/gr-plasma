@@ -11,6 +11,7 @@
 #include <gnuradio/plasma/pmt_constants.h>
 #include <gnuradio/plasma/usrp_radar.h>
 #include <nlohmann/json.hpp>
+#include <uhd/convert.hpp>
 #include <uhd/types/time_spec.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/utils/thread.hpp>
@@ -24,8 +25,12 @@ static const double BURST_MODE_DELAY = 2e-6;
 class usrp_radar_impl : public usrp_radar
 {
 private:
+    std::string d_args;
+
+private:
     uhd::usrp::multi_usrp::sptr d_usrp;
     double d_samp_rate;
+    double d_center_freq;
     double d_tx_gain;
     double d_rx_gain;
     double d_tx_freq;
@@ -37,7 +42,7 @@ private:
     size_t d_pulse_count;
     size_t d_tx_sample_count;
     size_t d_rx_sample_count;
-    uhd::time_spec_t d_start_time;
+    double d_start_time;
     std::vector<gr_complex> d_tx_buff;
 
     pmt::pmt_t d_meta;
@@ -56,28 +61,35 @@ private:
 
 
     /**
-     * @brief Transmit the data in the tx buffer in burst mode, where the
-     * repetition time is given by a field called "radar:prf" in a PMT dictionary
-     * called "annotations"
-     *
-     * @param usrp
-     * @param buff_ptrs
-     * @param num_samps_pulse
-     * @param start_time
-     */
-    void transmit(uhd::usrp::multi_usrp::sptr usrp,
-                         uhd::time_spec_t start_time);
+    //  * @brief Transmit the data in the tx buffer in burst mode, where the
+    //  * repetition time is given by a field called "radar:prf" in a PMT dictionary
+    //  * called "annotations"
+    //  *
+    //  * @param usrp
+    //  * @param buff_ptrs
+    //  * @param num_samps_pulse
+    //  * @param start_time
+    //  */
+    // void transmit(uhd::usrp::multi_usrp::sptr usrp, double start_time);
 
-    /**
-     * @brief Receive a CPI of samples from the USRP, then package them into a PDU
-     *
-     * @param usrp
-     * @param buff_ptrs
-     * @param num_samp_cpi
-     * @param start_time
-     */
-    void receive(uhd::usrp::multi_usrp::sptr usrp,
-                 uhd::time_spec_t start_time);
+    // /**
+    //  * @brief Receive a CPI of samples from the USRP, then package them into a PDU
+    //  *
+    //  * @param usrp
+    //  * @param buff_ptrs
+    //  * @param num_samp_cpi
+    //  * @param start_time
+    //  */
+    // void receive(uhd::usrp::multi_usrp::sptr usrp, uhd::time_spec_t start_time);
+
+    void transmit(uhd::usrp::multi_usrp::sptr usrp,
+                       
+                       uhd::tx_streamer::sptr tx_stream,
+                    //    std::atomic<bool>& burst_timer_elapsed,
+                       const size_t spb,
+                       bool elevate_priority,
+                       double tx_delay,
+                       const std::string& cpu_format = "fc32");
 
 public:
     usrp_radar_impl(const std::string& args);
@@ -109,20 +121,7 @@ public:
      * samples to remove from the beginning of transmission
      *
      */
-    void read_calibration_file(const std::string&) override;
-
-    void set_tx_thread_priority(const double) override;
-
-    void set_rx_thread_priority(const double) override;
-
-    void set_samp_rate(const double) override;
-    void set_tx_gain(const double) override;
-    void set_rx_gain(const double) override;
-    void set_tx_freq(const double) override;
-    void set_rx_freq(const double) override;
-    void set_start_time(const double) override;
-    void set_metadata_keys(std::string center_freq_key,
-                           std::string sample_start_key) override;
+    // void read_calibration_file(const std::string&) override;
 };
 
 } // namespace plasma
