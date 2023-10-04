@@ -87,6 +87,17 @@ void receive(uhd::usrp::multi_usrp::sptr usrp,
             std::cerr << e.what() << std::endl;
             return;
         }
+
+        // Handle errors
+        switch (md.error_code) {
+        case uhd::rx_metadata_t::ERROR_CODE_NONE:
+            if ((finished or stop_called) and md.end_of_burst) {
+                return;
+            }
+            break;
+        default:
+            break;
+        }
     }
 }
 
