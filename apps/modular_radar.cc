@@ -32,25 +32,57 @@ using start_time_type = std::chrono::time_point<std::chrono::steady_clock>;
 /***********************************************************************
  * Test result variables
  **********************************************************************/
-std::atomic_ullong num_overruns{ 0 };
-std::atomic_ullong num_underruns{ 0 };
 std::atomic_ullong num_rx_samps{ 0 };
 std::atomic_ullong num_tx_samps{ 0 };
-std::atomic_ullong num_dropped_samps{ 0 };
-std::atomic_ullong num_seq_errors{ 0 };
-std::atomic_ullong num_seqrx_errors{ 0 }; // "D"s
-std::atomic_ullong num_late_commands{ 0 };
-std::atomic_ullong num_timeouts_rx{ 0 };
-std::atomic_ullong num_timeouts_tx{ 0 };
 
 /***********************************************************************
- * Benchmark RX Rate
+ * USRP configuration functions
+ **********************************************************************/
+void config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
+                 const std::string& args,
+                 const double tx_rate,
+                 const double rx_rate,
+                 const double tx_freq,
+                 const double rx_freq,
+                 const std::string& tx_subdev = "",
+                 const std::string& rx_subdev = "",
+                 bool verbose = false)
+{
+    usrp = uhd::usrp::multi_usrp::make(args);
+    if (not tx_subdev.empty()) {
+        usrp->set_tx_subdev_spec(tx_subdev);
+    }
+    if (not rx_subdev.empty()) {
+        usrp->set_rx_subdev_spec(rx_subdev);
+    }
+    usrp->set_tx_rate(tx_rate);
+    usrp->set_rx_rate(rx_rate);
+    usrp->set_tx_freq(tx_freq);
+    usrp->set_rx_freq(rx_freq);
+
+    if (verbose) {
+        std::cout << boost::format("Using Device: %s") % usrp->get_pp_string()
+                  << std::endl;
+        std::cout << boost::format("Actual TX Rate: %f Msps") %
+                         (usrp->get_tx_rate() / 1e6)
+                  << std::endl;
+        std::cout << boost::format("Actual RX Rate: %f Msps") %
+                         (usrp->get_rx_rate() / 1e6)
+                  << std::endl;
+        std::cout << boost::format("Actual TX Freq: %f MHz") % (usrp->get_tx_freq() / 1e6)
+                  << std::endl;
+        std::cout << boost::format("Actual RX Freq: %f MHz") % (usrp->get_rx_freq() / 1e6)
+                  << std::endl;
+    }
+}
+
+/***********************************************************************
+ * Transmit and receive functions
  **********************************************************************/
 void receive(uhd::usrp::multi_usrp::sptr usrp,
-             //  const std::string& rx_cpu,
              uhd::rx_streamer::sptr rx_stream,
              std::vector<void*> buffs,
-             size_t spb,
+             size_t buff_size,
              std::atomic<bool>& finished,
              bool elevate_priority,
              double adjusted_rx_delay,
@@ -64,7 +96,7 @@ void receive(uhd::usrp::multi_usrp::sptr usrp,
     uhd::rx_metadata_t md;
 
     uhd::stream_cmd_t cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
-    cmd.num_samps = spb;
+    cmd.num_samps = buff_size;
 
     cmd.time_spec = usrp->get_time_now() + uhd::time_spec_t(adjusted_rx_delay);
     cmd.stream_now = rx_stream_now;
@@ -101,9 +133,6 @@ void receive(uhd::usrp::multi_usrp::sptr usrp,
     }
 }
 
-/***********************************************************************
- * Benchmark TX Rate
- **********************************************************************/
 void transmit(uhd::usrp::multi_usrp::sptr usrp,
               uhd::tx_streamer::sptr tx_stream,
               std::vector<void*> buffs,
@@ -125,13 +154,16 @@ void transmit(uhd::usrp::multi_usrp::sptr usrp,
     while (not finished) {
         const size_t n_sent = tx_stream->send(buffs, buff_size, md, timeout) *
                               tx_stream->get_num_channels();
+        num_tx_samps += n_sent;
         md.has_time_spec = false;
+        timeout = 0.1;
     }
 
     // send a mini EOB packet
     md.end_of_burst = true;
     tx_stream->send(buffs, 0, md);
 }
+
 /***********************************************************************
  * Main code + dispatcher
  **********************************************************************/
@@ -203,32 +235,24 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     adjusted_rx_delay = rx_delay;
 
     // create a usrp device
-    uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
+    bool verbose = true;
+    uhd::usrp::multi_usrp::sptr usrp;
+    config_usrp(
+        usrp, args, tx_rate, rx_rate, 2.4e9, 2.4e9, tx_subdev, rx_subdev, verbose);
 
-    // always select the subdevice first, the channel mapping affects the other settings
-    if (vm.count("rx_subdev")) {
-        usrp->set_rx_subdev_spec(rx_subdev);
-    }
-    if (vm.count("tx_subdev")) {
-        usrp->set_tx_subdev_spec(tx_subdev);
-    }
-
-    std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
-
-    boost::thread_group thread_group;
-
+    usrp->set_time_now(0.0);
     std::vector<size_t> rx_channel_nums(1, 0);
     std::vector<size_t> tx_channel_nums(1, 0);
 
-    std::cout << boost::format("Setting device timestamp to 0...") << std::endl;
-    usrp->set_time_now(0.0);
+    boost::thread_group thread_group;
+
 
     // spawn the receive test thread
     std::vector<char> rx_buff, tx_buff;
     std::vector<void*> rx_buffs, tx_buffs;
     if (vm.count("rx_rate")) {
         usrp->set_rx_rate(rx_rate);
-        if ((rx_delay == 0.0) && rx_channel_nums.size() > 1) {
+        if (rx_delay == 0.0 && rx_channel_nums.size() > 1) {
             adjusted_rx_delay = std::max(rx_delay, 0.05);
         }
         if (rx_delay == 0.0 && (rx_channel_nums.size() == 1)) {
@@ -240,16 +264,15 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         stream_args.channels = rx_channel_nums;
         stream_args.args = uhd::device_addr_t(rx_stream_args);
         uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
-        size_t spb = rx_stream->get_max_num_samps();
-        rx_buff = std::vector<char>(spb * uhd::convert::get_bytes_per_item(rx_cpu));
+        size_t buff_size = rx_stream->get_max_num_samps();
+        rx_buff = std::vector<char>(buff_size * uhd::convert::get_bytes_per_item(rx_cpu));
         for (size_t ch = 0; ch < rx_stream->get_num_channels(); ch++)
             rx_buffs.push_back(&rx_buff.front());
         auto rx_thread = thread_group.create_thread([=, &finished]() {
             receive(usrp,
-                    // rx_cpu,
                     rx_stream,
                     rx_buffs,
-                    spb,
+                    buff_size,
                     finished,
                     elevate_priority,
                     adjusted_rx_delay,
@@ -270,16 +293,16 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         stream_args.channels = tx_channel_nums;
         stream_args.args = uhd::device_addr_t(tx_stream_args);
         uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
-        size_t spb = tx_stream->get_max_num_samps();
-        std::cout << boost::format("Setting TX spb to %u\n") % spb;
-        tx_buff = std::vector<char>(spb * uhd::convert::get_bytes_per_item(tx_cpu));
+        size_t buff_size = tx_stream->get_max_num_samps();
+        std::cout << boost::format("Setting TX buff_size to %u\n") % buff_size;
+        tx_buff = std::vector<char>(buff_size * uhd::convert::get_bytes_per_item(tx_cpu));
         for (size_t ch = 0; ch < tx_stream->get_num_channels(); ch++)
             tx_buffs.push_back(&tx_buff.front()); // same buffer for each channel
         auto tx_thread = thread_group.create_thread([=, &finished]() {
             transmit(usrp,
                      tx_stream,
                      tx_buffs,
-                     spb,
+                     buff_size,
                      finished,
                      elevate_priority,
                      adjusted_tx_delay);
@@ -313,18 +336,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     std::cout << std::endl
               << boost::format("Benchmark rate summary:\n"
                                "  Num received samples:     %u\n"
-                               "  Num dropped samples:      %u\n"
-                               "  Num overruns detected:    %u\n"
-                               "  Num transmitted samples:  %u\n"
-                               "  Num sequence errors (Tx): %u\n"
-                               "  Num sequence errors (Rx): %u\n"
-                               "  Num underruns detected:   %u\n"
-                               "  Num late commands:        %u\n"
-                               "  Num timeouts (Tx):        %u\n"
-                               "  Num timeouts (Rx):        %u\n") %
-                     num_rx_samps % num_dropped_samps % num_overruns % num_tx_samps %
-                     num_seq_errors % num_seqrx_errors % num_underruns %
-                     num_late_commands % num_timeouts_tx % num_timeouts_rx
+                               "  Num transmitted samples:  %u\n") %
+                     num_rx_samps % num_tx_samps
               << std::endl;
     // finished
     std::cout << std::endl << "Done!" << std::endl << std::endl;
