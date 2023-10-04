@@ -28,15 +28,15 @@ class usrp_radar_impl : public usrp_radar
 {
 private:
     std::string d_args;
+    double d_tx_rate, d_rx_rate;
+    double d_tx_freq, d_rx_freq;
+    double d_tx_gain, d_rx_gain;
+    std::string d_tx_subdev, d_rx_subdev;
+    bool d_elevate_priority;
+    
 
 private:
     uhd::usrp::multi_usrp::sptr d_usrp;
-    double d_samp_rate;
-    double d_center_freq;
-    double d_tx_gain;
-    double d_rx_gain;
-    double d_tx_freq;
-    double d_rx_freq;
     double d_tx_thread_priority;
     double d_rx_thread_priority;
     size_t d_n_samp_pri;
@@ -68,13 +68,13 @@ private:
                      const double rx_rate,
                      const double tx_freq,
                      const double rx_freq,
+                     const double tx_gain,
+                     const double rx_gain,
                      const std::string& tx_subdev,
                      const std::string& rx_subdev,
                      bool verbose);
     void receive(uhd::usrp::multi_usrp::sptr usrp,
                  uhd::rx_streamer::sptr rx_stream,
-                 std::vector<void*> buffs,
-                 size_t buff_size,
                  std::atomic<bool>& finished,
                  bool elevate_priority,
                  double adjusted_rx_delay,
