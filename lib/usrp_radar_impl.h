@@ -33,6 +33,11 @@ private:
     double d_tx_gain, d_rx_gain;
     std::string d_tx_subdev, d_rx_subdev;
     bool d_elevate_priority;
+    gr_complex* d_tx_buff;
+    size_t d_tx_buff_size;
+    std::atomic<bool> d_finished;
+    std::atomic<bool> d_msg_received;
+
     
 
 private:
@@ -45,7 +50,7 @@ private:
     size_t d_tx_sample_count;
     size_t d_rx_sample_count;
     double d_start_time;
-    std::vector<gr_complex> d_tx_buff;
+    // std::vector<gr_complex> d_tx_buff;
 
     pmt::pmt_t d_meta;
     // Metadata keys
@@ -58,10 +63,11 @@ private:
 
     gr::thread::thread d_main_thread;
     gr::thread::mutex d_tx_buff_mutex;
-    std::atomic<bool> d_finished;
+    
     std::atomic<bool> d_armed;
     boost::thread_group d_tx_rx_thread_group;
 
+    void handle_msg(pmt::pmt_t msg);
     void config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
                      const std::string& args,
                      const double tx_rate,
@@ -82,7 +88,7 @@ private:
     void transmit(uhd::usrp::multi_usrp::sptr usrp,
                   uhd::tx_streamer::sptr tx_stream,
                   std::vector<void*> buffs,
-                  size_t buff_size,
+                //   size_t buff_size,
                   std::atomic<bool>& finished,
                   bool elevate_priority,
                   double tx_delay);

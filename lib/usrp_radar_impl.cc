@@ -25,8 +25,8 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
     d_rx_rate = 200e6;
     d_tx_freq = 1e9;
     d_rx_freq = 1e9;
-    d_tx_gain = 20;
-    d_rx_gain = 20;
+    d_tx_gain = 10;
+    d_rx_gain = 10;
     d_elevate_priority = true;
     std::string tx_subdev = "";
     std::string rx_subdev = "";
@@ -44,6 +44,7 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args)
 
     message_port_register_in(PMT_IN);
     message_port_register_out(PMT_OUT);
+    set_msg_handler(PMT_IN, [this](pmt::pmt_t msg) { this->handle_message(msg); });
 }
 
 usrp_radar_impl::~usrp_radar_impl() {}
@@ -62,9 +63,27 @@ bool usrp_radar_impl::stop()
     return block::stop();
 }
 
+void usrp_radar_impl::handle_message(const pmt::pmt_t& msg)
+{
+    if (pmt::is_pdu(msg)) {
+        pmt::pmt_t meta = pmt::car(msg);
+        pmt::pmt_t data = pmt::cdr(msg);
+        d_tx_buff_size = pmt::length(data);
+        d_tx_buff = pmt::c32vector_writable_elements(data, d_tx_buff_size);
+        d_msg_received = true;
+    }
+}
+
 void usrp_radar_impl::run()
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (not d_msg_received) {
+        if (d_finished) {
+            return;
+        } else {
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
+        }
+    }
+
     std::atomic<bool>& finished = d_finished;
     if (d_elevate_priority) {
         uhd::set_thread_priority_safe();
@@ -94,7 +113,7 @@ void usrp_radar_impl::run()
     stream_args.channels = rx_channel_nums;
     stream_args.args = uhd::device_addr_t(rx_stream_args);
     uhd::rx_streamer::sptr rx_stream = d_usrp->get_rx_stream(stream_args);
-    
+
     auto rx_thread = d_tx_rx_thread_group.create_thread([=, &finished]() {
         receive(d_usrp,
                 rx_stream,
@@ -107,6 +126,7 @@ void usrp_radar_impl::run()
     /***********************************************************************
      * Transmit thread
      **********************************************************************/
+    // TODO: Don't hard-code these
     double tx_delay = 0;
     double adjusted_tx_delay = tx_delay;
     std::vector<size_t> tx_channel_nums(1, 0);
@@ -125,15 +145,15 @@ void usrp_radar_impl::run()
     stream_args.channels = tx_channel_nums;
     stream_args.args = uhd::device_addr_t(tx_stream_args);
     uhd::tx_streamer::sptr tx_stream = d_usrp->get_tx_stream(stream_args);
-    size_t tx_buff_size = tx_stream->get_max_num_samps();
-    tx_buff = std::vector<gr_complex>(tx_buff_size);
+    // size_t tx_buff_size = tx_stream->get_max_num_samps();
+    // tx_buff = std::vector<gr_complex>(tx_buff_size);
     for (size_t ch = 0; ch < tx_stream->get_num_channels(); ch++)
-        tx_buffs.push_back(&tx_buff.front()); // same buffer for each channel
+        tx_buffs.push_back(d_tx_buff); // same buffer for each channel
     auto tx_thread = d_tx_rx_thread_group.create_thread([=, &finished]() {
         transmit(d_usrp,
                  tx_stream,
                  tx_buffs,
-                 tx_buff_size,
+                 //  tx_buff_size,
                  finished,
                  d_elevate_priority,
                  adjusted_tx_delay);
@@ -272,7 +292,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
                                uhd::tx_streamer::sptr tx_stream,
                                std::vector<void*> buffs,
-                               size_t buff_size,
+                               //    size_t buff_size,
                                std::atomic<bool>& finished,
                                bool elevate_priority,
                                double tx_delay)
@@ -288,7 +308,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
 
     double timeout = 0.1 + tx_delay;
     while (not finished) {
-        const size_t n_sent = tx_stream->send(buffs, buff_size, md, timeout) *
+        const size_t n_sent = tx_stream->send(buffs, d_tx_buff_size, md, timeout) *
                               tx_stream->get_num_channels();
         md.has_time_spec = false;
         timeout = 0.1;
