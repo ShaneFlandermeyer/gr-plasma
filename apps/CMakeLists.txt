@@ -11,8 +11,8 @@ include(GrPython)
 # add_executable(plasma_calibrate_delay calibrate_usrp_delay.cc)
 # target_link_libraries(plasma_calibrate_delay gnuradio-plasma)
 
-add_executable(usrp_tx usrp_tx.cc)
-target_link_libraries(usrp_tx gnuradio-plasma)
+add_executable(modular_radar modular_radar.cc)
+target_link_libraries(modular_radar gnuradio-plasma)
 
 # # Install executable
 # INSTALL(
