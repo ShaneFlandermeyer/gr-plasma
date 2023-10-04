@@ -47,13 +47,13 @@ std::atomic_ullong num_timeouts_tx{ 0 };
  * Benchmark RX Rate
  **********************************************************************/
 void receive(uhd::usrp::multi_usrp::sptr usrp,
-             const std::string& rx_cpu,
+             //  const std::string& rx_cpu,
              uhd::rx_streamer::sptr rx_stream,
+             std::vector<void*> buffs,
              size_t spb,
-             std::atomic<bool>& burst_timer_elapsed,
+             std::atomic<bool>& finished,
              bool elevate_priority,
              double adjusted_rx_delay,
-             double user_rx_delay,
              bool rx_stream_now)
 {
     if (elevate_priority) {
@@ -62,16 +62,6 @@ void receive(uhd::usrp::multi_usrp::sptr usrp,
 
     // setup variables and allocate buffer
     uhd::rx_metadata_t md;
-    if (spb == 0) {
-        spb = rx_stream->get_max_num_samps();
-    }
-    std::vector<char> buff(spb * uhd::convert::get_bytes_per_item(rx_cpu));
-    std::vector<void*> buffs;
-    for (size_t ch = 0; ch < rx_stream->get_num_channels(); ch++)
-        buffs.push_back(&buff.front()); // same buffer for each channel
-    bool had_an_overflow = false;
-    uhd::time_spec_t last_time;
-    const double rate = usrp->get_rx_rate();
 
     uhd::stream_cmd_t cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
     cmd.num_samps = spb;
@@ -80,84 +70,22 @@ void receive(uhd::usrp::multi_usrp::sptr usrp,
     cmd.stream_now = rx_stream_now;
     rx_stream->issue_stream_cmd(cmd);
 
-    const float burst_pkt_time = std::max<float>(0.100f, (2 * spb / rate));
-    float recv_timeout = burst_pkt_time + (adjusted_rx_delay);
+    float recv_timeout = 0.1 + adjusted_rx_delay;
 
     bool stop_called = false;
     while (true) {
-        if (burst_timer_elapsed and not stop_called) {
+        if (finished and not stop_called) {
             rx_stream->issue_stream_cmd(uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS);
             stop_called = true;
         }
         try {
             num_rx_samps += rx_stream->recv(buffs, cmd.num_samps, md, recv_timeout) *
                             rx_stream->get_num_channels();
-            recv_timeout = burst_pkt_time;
+            recv_timeout = 0.1;
         } catch (uhd::io_error& e) {
             std::cerr << "Caught an IO exception. " << std::endl;
             std::cerr << e.what() << std::endl;
             return;
-        }
-
-        // handle the error codes
-        switch (md.error_code) {
-        case uhd::rx_metadata_t::ERROR_CODE_NONE:
-            if (had_an_overflow) {
-                had_an_overflow = false;
-                const long dropped_samps = (md.time_spec - last_time).to_ticks(rate);
-                if (dropped_samps < 0) {
-                    std::cerr << "Timestamp after overrun recovery "
-                                 "ahead of error timestamp! Unable to calculate "
-                                 "number of dropped samples."
-                                 "(Delta: "
-                              << dropped_samps << " ticks)\n";
-                }
-                num_dropped_samps += std::max<long>(1, dropped_samps);
-            }
-            if ((burst_timer_elapsed or stop_called) and md.end_of_burst) {
-                return;
-            }
-            break;
-
-        // ERROR_CODE_OVERFLOW can indicate overflow or sequence error
-        case uhd::rx_metadata_t::ERROR_CODE_OVERFLOW:
-            last_time = md.time_spec;
-            had_an_overflow = true;
-            // check out_of_sequence flag to see if it was a sequence error or
-            // overflow
-            if (!md.out_of_sequence) {
-                num_overruns++;
-            } else {
-                num_seqrx_errors++;
-                std::cerr << "[Detected Rx sequence error." << std::endl;
-            }
-            break;
-
-        case uhd::rx_metadata_t::ERROR_CODE_LATE_COMMAND:
-            std::cerr << "Receiver error: " << md.strerror() << ", restart streaming..."
-                      << std::endl;
-            num_late_commands++;
-            // Radio core will be in the idle state. Issue stream command to restart
-            // streaming.
-            cmd.time_spec = usrp->get_time_now() + uhd::time_spec_t(0.05);
-            cmd.stream_now = (buffs.size() == 1);
-            rx_stream->issue_stream_cmd(cmd);
-            break;
-
-        case uhd::rx_metadata_t::ERROR_CODE_TIMEOUT:
-            if (burst_timer_elapsed) {
-                return;
-            }
-            std::cerr << "Receiver error: " << md.strerror() << ", continuing..."
-                      << std::endl;
-            num_timeouts_rx++;
-            break;
-
-            // Otherwise, it's an error
-        default:
-            std::cerr << "Receiver error: " << md.strerror() << std::endl;
-            std::cerr << "Unexpected error on recv, continuing..." << std::endl;
-            break;
         }
     }
 }
@@ -166,10 +94,10 @@ void receive(uhd::usrp::multi_usrp::sptr usrp,
  * Benchmark TX Rate
  **********************************************************************/
 void transmit(uhd::usrp::multi_usrp::sptr usrp,
-              const std::string& tx_cpu,
               uhd::tx_streamer::sptr tx_stream,
-              std::atomic<bool>& burst_timer_elapsed,
-              const size_t spb,
+              std::vector<void*> buffs,
+              size_t buff_size,
+              std::atomic<bool>& finished,
               bool elevate_priority,
               double tx_delay)
 {
@@ -177,22 +105,15 @@ void transmit(uhd::usrp::multi_usrp::sptr usrp,
         uhd::set_thread_priority_safe();
     }
 
-    // setup variables and allocate buffer
-    std::vector<char> buff(spb * uhd::convert::get_bytes_per_item(tx_cpu));
-    std::vector<const void*> buffs;
-    for (size_t ch = 0; ch < tx_stream->get_num_channels(); ch++)
-        buffs.push_back(&buff.front()); // same buffer for each channel
     // Create the metadata, and populate the time spec at the latest possible moment
     uhd::tx_metadata_t md;
     md.has_time_spec = (tx_delay != 0.0);
     md.time_spec = usrp->get_time_now() + uhd::time_spec_t(tx_delay);
 
     double timeout = 0.1 + tx_delay;
-
-    while (not burst_timer_elapsed) {
-        const size_t num_tx_samps_sent_now =
-            tx_stream->send(buffs, spb, md, timeout) * tx_stream->get_num_channels();
-        num_tx_samps += num_tx_samps_sent_now;
+    while (not finished) {
+        const size_t n_sent = tx_stream->send(buffs, buff_size, md, timeout) *
+                              tx_stream->get_num_channels();
         md.has_time_spec = false;
     }
 
@@ -200,48 +121,6 @@ void transmit(uhd::usrp::multi_usrp::sptr usrp,
     md.end_of_burst = true;
     tx_stream->send(buffs, 0, md);
 }
-
-void transmit_async_helper(uhd::tx_streamer::sptr tx_stream,
-                           std::atomic<bool>& burst_timer_elapsed)
-{
-    // setup variables and allocate buffer
-    uhd::async_metadata_t async_md;
-    bool exit_flag = false;
-
-    while (true) {
-        if (burst_timer_elapsed) {
-            exit_flag = true;
-        }
-
-        if (not tx_stream->recv_async_msg(async_md)) {
-            if (exit_flag == true)
-                return;
-            continue;
-        }
-
-        // handle the error codes
-        switch (async_md.event_code) {
-        case uhd::async_metadata_t::EVENT_CODE_BURST_ACK:
-            return;
-
-        case uhd::async_metadata_t::EVENT_CODE_UNDERFLOW:
-        case uhd::async_metadata_t::EVENT_CODE_UNDERFLOW_IN_PACKET:
-            num_underruns++;
-            break;
-
-        case uhd::async_metadata_t::EVENT_CODE_SEQ_ERROR:
-        case uhd::async_metadata_t::EVENT_CODE_SEQ_ERROR_IN_BURST:
-            num_seq_errors++;
-            break;
-
-        default:
-            std::cerr << "Event code: " << async_md.event_code << std::endl;
-            std::cerr << "Unexpected event on async recv, continuing..." << std::endl;
-            break;
-        }
-    }
-}
-
 /***********************************************************************
  * Main code + dispatcher
  **********************************************************************/
@@ -257,7 +136,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     std::string rx_cpu, tx_cpu;
     std::string ref, pps;
     std::string channel_list, rx_channel_list, tx_channel_list;
-    std::atomic<bool> burst_timer_elapsed(false);
+    std::atomic<bool> finished(false);
     double tx_delay, rx_delay, adjusted_tx_delay, adjusted_rx_delay;
     bool rx_stream_now = false;
     std::string priority;
@@ -288,7 +167,6 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         ("tx_delay", po::value<double>(&tx_delay)->default_value(0.0), "delay before starting TX in seconds")
         ("rx_delay", po::value<double>(&rx_delay)->default_value(0.0), "delay before starting RX in seconds")
         ("priority", po::value<std::string>(&priority)->default_value("normal"), "thread priority (normal, high)")
-        ("multi_streamer", "Create a separate streamer per channel")
     ;
     // clang-format on
     po::variables_map vm;
@@ -335,6 +213,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     usrp->set_time_now(0.0);
 
     // spawn the receive test thread
+    std::vector<char> rx_buff, tx_buff;
+    std::vector<void*> rx_buffs, tx_buffs;
     if (vm.count("rx_rate")) {
         usrp->set_rx_rate(rx_rate);
         if ((rx_delay == 0.0) && rx_channel_nums.size() > 1) {
@@ -344,24 +224,27 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
             rx_stream_now = true;
         }
 
-        size_t spb = 0;
         // create a receive streamer
         uhd::stream_args_t stream_args(rx_cpu, rx_otw);
         stream_args.channels = rx_channel_nums;
         stream_args.args = uhd::device_addr_t(rx_stream_args);
         uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
-        auto rx_thread = thread_group.create_thread([=, &burst_timer_elapsed]() {
+        size_t spb = rx_stream->get_max_num_samps();
+        rx_buff = std::vector<char>(spb * uhd::convert::get_bytes_per_item(rx_cpu));
+        for (size_t ch = 0; ch < rx_stream->get_num_channels(); ch++)
+            rx_buffs.push_back(&rx_buff.front());
+        auto rx_thread = thread_group.create_thread([=, &finished]() {
             receive(usrp,
-                    rx_cpu,
+                    // rx_cpu,
                     rx_stream,
+                    rx_buffs,
                     spb,
-                    burst_timer_elapsed,
+                    finished,
                     elevate_priority,
                     adjusted_rx_delay,
-                    rx_delay,
                     rx_stream_now);
         });
-        uhd::set_thread_name(rx_thread, "bmark_rx_stream");
+        uhd::set_thread_name(rx_thread, "rx_stream");
     }
 
     // spawn the transmit test thread
@@ -376,24 +259,21 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         stream_args.channels = tx_channel_nums;
         stream_args.args = uhd::device_addr_t(tx_stream_args);
         uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
-        const size_t max_spp = tx_stream->get_max_num_samps();
-        size_t spp = max_spp;
-        size_t spb = spp;
-        std::cout << boost::format("Setting TX spp to %u\n") % spp;
-        auto tx_thread = thread_group.create_thread([=, &burst_timer_elapsed]() {
+        size_t spb = tx_stream->get_max_num_samps();
+        std::cout << boost::format("Setting TX spb to %u\n") % spb;
+        tx_buff = std::vector<char>(spb * uhd::convert::get_bytes_per_item(tx_cpu));
+        for (size_t ch = 0; ch < tx_stream->get_num_channels(); ch++)
+            tx_buffs.push_back(&tx_buff.front()); // same buffer for each channel
+        auto tx_thread = thread_group.create_thread([=, &finished]() {
             transmit(usrp,
-                     tx_cpu,
                      tx_stream,
-                     burst_timer_elapsed,
+                     tx_buffs,
                      spb,
+                     finished,
                      elevate_priority,
                      adjusted_tx_delay);
         });
-        uhd::set_thread_name(tx_thread, "bmark_tx_stream");
-        auto tx_async_thread = thread_group.create_thread([=, &burst_timer_elapsed]() {
-            transmit_async_helper(tx_stream, burst_timer_elapsed);
-        });
-        uhd::set_thread_name(tx_async_thread, "bmark_tx_helper");
+        uhd::set_thread_name(tx_thread, "tx_stream");
     }
 
     // Sleep for the required duration (add any initial delay).
@@ -413,7 +293,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
                                 std::chrono::microseconds(usecs));
 
     // interrupt and join the threads
-    burst_timer_elapsed = true;
+    finished = true;
     thread_group.join_all();
 
     std::cout << "Benchmark complete." << std::endl << std::endl;
