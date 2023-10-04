@@ -227,7 +227,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     }
 
     if (priority == "high") {
-        uhd::set_thread_priority_safe();
+        // uhd::set_thread_priority_safe();
         elevate_priority = true;
     }
 
@@ -251,7 +251,6 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     std::vector<char> rx_buff, tx_buff;
     std::vector<void*> rx_buffs, tx_buffs;
     if (vm.count("rx_rate")) {
-        usrp->set_rx_rate(rx_rate);
         if (rx_delay == 0.0 && rx_channel_nums.size() > 1) {
             adjusted_rx_delay = std::max(rx_delay, 0.05);
         }
@@ -283,7 +282,6 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
 
     // spawn the transmit test thread
     if (vm.count("tx_rate")) {
-        usrp->set_tx_rate(tx_rate);
         if (tx_delay == 0.0 && tx_channel_nums.size() > 1) {
             adjusted_tx_delay = std::max(tx_delay, 0.25);
         }

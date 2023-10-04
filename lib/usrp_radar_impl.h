@@ -15,8 +15,10 @@
 #include <uhd/types/time_spec.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/utils/thread.hpp>
+#include <boost/thread/thread.hpp>
 #include <fstream>
 #include <queue>
+
 
 namespace gr {
 namespace plasma {
@@ -58,38 +60,32 @@ private:
     gr::thread::mutex d_tx_buff_mutex;
     std::atomic<bool> d_finished;
     std::atomic<bool> d_armed;
+    boost::thread_group d_tx_rx_thread_group;
 
-
-    /**
-    //  * @brief Transmit the data in the tx buffer in burst mode, where the
-    //  * repetition time is given by a field called "radar:prf" in a PMT dictionary
-    //  * called "annotations"
-    //  *
-    //  * @param usrp
-    //  * @param buff_ptrs
-    //  * @param num_samps_pulse
-    //  * @param start_time
-    //  */
-    // void transmit(uhd::usrp::multi_usrp::sptr usrp, double start_time);
-
-    // /**
-    //  * @brief Receive a CPI of samples from the USRP, then package them into a PDU
-    //  *
-    //  * @param usrp
-    //  * @param buff_ptrs
-    //  * @param num_samp_cpi
-    //  * @param start_time
-    //  */
-    // void receive(uhd::usrp::multi_usrp::sptr usrp, uhd::time_spec_t start_time);
-
+    void config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
+                     const std::string& args,
+                     const double tx_rate,
+                     const double rx_rate,
+                     const double tx_freq,
+                     const double rx_freq,
+                     const std::string& tx_subdev,
+                     const std::string& rx_subdev,
+                     bool verbose);
+    void receive(uhd::usrp::multi_usrp::sptr usrp,
+                 uhd::rx_streamer::sptr rx_stream,
+                 std::vector<void*> buffs,
+                 size_t buff_size,
+                 std::atomic<bool>& finished,
+                 bool elevate_priority,
+                 double adjusted_rx_delay,
+                 bool rx_stream_now);
     void transmit(uhd::usrp::multi_usrp::sptr usrp,
-                       
-                       uhd::tx_streamer::sptr tx_stream,
-                    //    std::atomic<bool>& burst_timer_elapsed,
-                       const size_t spb,
-                       bool elevate_priority,
-                       double tx_delay,
-                       const std::string& cpu_format = "fc32");
+                  uhd::tx_streamer::sptr tx_stream,
+                  std::vector<void*> buffs,
+                  size_t buff_size,
+                  std::atomic<bool>& finished,
+                  bool elevate_priority,
+                  double tx_delay);
 
 public:
     usrp_radar_impl(const std::string& args);

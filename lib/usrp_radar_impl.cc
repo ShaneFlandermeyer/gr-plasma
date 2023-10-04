@@ -17,17 +17,18 @@ usrp_radar::sptr usrp_radar::make(const std::string& args)
 
 usrp_radar_impl::usrp_radar_impl(const std::string& args)
     : gr::block(
-          "usrp_radar", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
-      d_args(args),
-      d_samp_rate(200e6),
-      d_center_freq(5e9)
+          "usrp_radar", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0))
 {
-    std::string cpu_format = "fc32";
-    std::string tx_otw = "sc16";
-    std::string tx_stream_args = "";
-
-    d_usrp = uhd::usrp::multi_usrp::make(args);
-
+    // Parameters
+    std::string tmp_args = "addr=192.168.30.2,use_dpdk=1";
+    double tx_rate = 200e6;
+    double rx_rate = 200e6;
+    double tx_freq = 1e9;
+    double rx_freq = 1e9;
+    std::string tx_subdev = "";
+    std::string rx_subdev = "";
+    config_usrp(
+        d_usrp, tmp_args, tx_rate, rx_rate, tx_freq, rx_freq, tx_subdev, rx_subdev, true);
 
     message_port_register_in(PMT_IN);
     message_port_register_out(PMT_OUT);
@@ -52,59 +53,207 @@ bool usrp_radar_impl::stop()
 void usrp_radar_impl::run()
 {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    boost::thread_group thread_group;
+    std::atomic<bool>& finished = d_finished;
+    bool elevate_priority = true;
+    if (elevate_priority) {
+        uhd::set_thread_priority_safe();
+    }
 
-    d_usrp->set_tx_rate(d_samp_rate);
+    /***********************************************************************
+     * Receive thread
+     **********************************************************************/
+    // TODO: Don't hard-code these
+    double rx_delay = 0;
+    double adjusted_rx_delay = rx_delay;
+    std::vector<size_t> rx_channel_nums(1, 0);
+    bool rx_stream_now = false;
+    std::string rx_cpu = "fc32";
+    std::string rx_otw = "sc16";
+    std::string rx_stream_args = "";
+    
+    std::vector<char> rx_buff;
+    std::vector<void*> rx_buffs;
+    if (rx_delay == 0.0 && rx_channel_nums.size() > 1) {
+        adjusted_rx_delay = std::max(rx_delay, 0.05);
+    }
+    if (rx_delay == 0.0 && (rx_channel_nums.size() == 1)) {
+        rx_stream_now = true;
+    }
+    // create a receive streamer
+    uhd::stream_args_t stream_args(rx_cpu, rx_otw);
+    stream_args.channels = rx_channel_nums;
+    stream_args.args = uhd::device_addr_t(rx_stream_args);
+    uhd::rx_streamer::sptr rx_stream = d_usrp->get_rx_stream(stream_args);
+    size_t buff_size = rx_stream->get_max_num_samps();
+    rx_buff = std::vector<char>(buff_size * uhd::convert::get_bytes_per_item(rx_cpu));
+    for (size_t ch = 0; ch < rx_stream->get_num_channels(); ch++)
+        rx_buffs.push_back(&rx_buff.front());
+    d_usrp->set_time_now(0.0);
+    auto rx_thread = d_tx_rx_thread_group.create_thread([=, &finished]() {
+        receive(d_usrp,
+                rx_stream,
+                rx_buffs,
+                buff_size,
+                finished,
+                elevate_priority,
+                adjusted_rx_delay,
+                rx_stream_now);
+    });
+    uhd::set_thread_name(rx_thread, "rx_stream");
+    /***********************************************************************
+     * TODO: Transmit thread
+     **********************************************************************/
+    double tx_delay = 0;
+    double adjusted_tx_delay = tx_delay;
+    std::vector<size_t> tx_channel_nums(1, 0);
+    std::string tx_cpu = "fc32";
+    std::string tx_otw = "sc16";
+    std::string tx_stream_args = "";
+    std::vector<char> tx_buff;
+    std::vector<void*> tx_buffs;
 
-    uhd::stream_args_t stream_args("fc32", "sc16");
-    stream_args.channels = std::vector<size_t>(1,0);
-    stream_args.args = uhd::device_addr_t("");
+    if (tx_delay == 0.0 && tx_channel_nums.size() > 1) {
+        adjusted_tx_delay = std::max(tx_delay, 0.25);
+    }
+
+    // create a transmit streamer
+    // uhd::stream_args_t stream_args(tx_cpu, tx_otw);
+    stream_args.channels = tx_channel_nums;
+    stream_args.args = uhd::device_addr_t(tx_stream_args);
     uhd::tx_streamer::sptr tx_stream = d_usrp->get_tx_stream(stream_args);
-    const size_t max_spp = tx_stream->get_max_num_samps();
-    size_t spp = max_spp;
-    size_t spb = spp;
-    bool elevate_priority = false;
-    double adjusted_tx_delay = 0.;
-    std::atomic<bool> burst_timer_elapsed(false);
-    auto tx_thread = thread_group.create_thread([=]() {
+    buff_size = tx_stream->get_max_num_samps();
+    std::cout << boost::format("Setting TX buff_size to %u\n") % buff_size;
+    tx_buff = std::vector<char>(buff_size * uhd::convert::get_bytes_per_item(tx_cpu));
+    for (size_t ch = 0; ch < tx_stream->get_num_channels(); ch++)
+        tx_buffs.push_back(&tx_buff.front()); // same buffer for each channel
+    auto tx_thread = d_tx_rx_thread_group.create_thread([=, &finished]() {
         transmit(d_usrp,
                  tx_stream,
-                 spb,
+                 tx_buffs,
+                 buff_size,
+                 finished,
                  elevate_priority,
                  adjusted_tx_delay);
     });
     uhd::set_thread_name(tx_thread, "tx_stream");
 
-    thread_group.join_all();
+    d_tx_rx_thread_group.join_all();
 }
 
-void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
-                               uhd::tx_streamer::sptr tx_stream,
-                            //    std::atomic<bool>& burst_timer_elapsed,
-                               const size_t spb,
-                               bool elevate_priority,
-                               double tx_delay,
-                               const std::string& cpu_format)
+void usrp_radar_impl::config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
+                                  const std::string& args,
+                                  const double tx_rate,
+                                  const double rx_rate,
+                                  const double tx_freq,
+                                  const double rx_freq,
+                                  const std::string& tx_subdev,
+                                  const std::string& rx_subdev,
+                                  bool verbose)
+{
+    usrp = uhd::usrp::multi_usrp::make(args);
+    if (not tx_subdev.empty()) {
+        usrp->set_tx_subdev_spec(tx_subdev);
+    }
+    if (not rx_subdev.empty()) {
+        usrp->set_rx_subdev_spec(rx_subdev);
+    }
+    usrp->set_tx_rate(tx_rate);
+    usrp->set_rx_rate(rx_rate);
+    usrp->set_tx_freq(tx_freq);
+    usrp->set_rx_freq(rx_freq);
+
+    if (verbose) {
+        std::cout << boost::format("Using Device: %s") % usrp->get_pp_string()
+                  << std::endl;
+        std::cout << boost::format("Actual TX Rate: %f Msps") %
+                         (usrp->get_tx_rate() / 1e6)
+                  << std::endl;
+        std::cout << boost::format("Actual RX Rate: %f Msps") %
+                         (usrp->get_rx_rate() / 1e6)
+                  << std::endl;
+        std::cout << boost::format("Actual TX Freq: %f MHz") % (usrp->get_tx_freq() / 1e6)
+                  << std::endl;
+        std::cout << boost::format("Actual RX Freq: %f MHz") % (usrp->get_rx_freq() / 1e6)
+                  << std::endl;
+    }
+}
+
+void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
+                              uhd::rx_streamer::sptr rx_stream,
+                              std::vector<void*> buffs,
+                              size_t buff_size,
+                              std::atomic<bool>& finished,
+                              bool elevate_priority,
+                              double adjusted_rx_delay,
+                              bool rx_stream_now)
 {
     if (elevate_priority) {
         uhd::set_thread_priority_safe();
     }
 
     // setup variables and allocate buffer
-    // TODO: Set up buffers using message port
-    std::vector<char> buff(spb * uhd::convert::get_bytes_per_item(cpu_format));
-    std::vector<const void*> buffs;
-    for (size_t ch = 0; ch < tx_stream->get_num_channels(); ch++)
-        buffs.push_back(&buff.front()); // same buffer for each channel
+    uhd::rx_metadata_t md;
+
+    uhd::stream_cmd_t cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
+    cmd.num_samps = buff_size;
+
+    cmd.time_spec = usrp->get_time_now() + uhd::time_spec_t(adjusted_rx_delay);
+    cmd.stream_now = rx_stream_now;
+    rx_stream->issue_stream_cmd(cmd);
+
+    float recv_timeout = 0.1 + adjusted_rx_delay;
+
+    bool stop_called = false;
+    size_t num_rx_samps = 0;
+    while (true) {
+        if (finished and not stop_called) {
+            rx_stream->issue_stream_cmd(uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS);
+            stop_called = true;
+        }
+        try {
+            num_rx_samps += rx_stream->recv(buffs, cmd.num_samps, md, recv_timeout) *
+                            rx_stream->get_num_channels();
+            recv_timeout = 0.1;
+        } catch (uhd::io_error& e) {
+            std::cerr << "Caught an IO exception. " << std::endl;
+            std::cerr << e.what() << std::endl;
+            return;
+        }
+
+        // Handle errors
+        switch (md.error_code) {
+        case uhd::rx_metadata_t::ERROR_CODE_NONE:
+            if ((finished or stop_called) and md.end_of_burst) {
+                return;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
+                               uhd::tx_streamer::sptr tx_stream,
+                               std::vector<void*> buffs,
+                               size_t buff_size,
+                               std::atomic<bool>& finished,
+                               bool elevate_priority,
+                               double tx_delay)
+{
+    if (elevate_priority) {
+        uhd::set_thread_priority_safe();
+    }
+
     // Create the metadata, and populate the time spec at the latest possible moment
     uhd::tx_metadata_t md;
     md.has_time_spec = (tx_delay != 0.0);
     md.time_spec = usrp->get_time_now() + uhd::time_spec_t(tx_delay);
-    double timeout = 0.1 + tx_delay;
 
-    while (not d_finished) {
-        const size_t n_sent =
-            tx_stream->send(buffs, spb, md, timeout) * tx_stream->get_num_channels();
+    double timeout = 0.1 + tx_delay;
+    while (not finished) {
+        const size_t n_sent = tx_stream->send(buffs, buff_size, md, timeout) *
+                              tx_stream->get_num_channels();
         md.has_time_spec = false;
         timeout = 0.1;
     }
@@ -113,6 +262,5 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     md.end_of_burst = true;
     tx_stream->send(buffs, 0, md);
 }
-
 } /* namespace plasma */
 } /* namespace gr */
