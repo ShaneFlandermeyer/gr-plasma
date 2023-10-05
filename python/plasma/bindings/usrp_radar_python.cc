@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(usrp_radar.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(77a74e7a84a29457deb7315df12d6ee8)                     */
+/* BINDTOOL_HEADER_FILE_HASH(87cde6ca464c0ee3d02017f849292e28)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -47,6 +47,7 @@ void bind_usrp_radar(py::module& m)
            py::arg("start_delay"),
            py::arg("elevate_priority"),
            py::arg("cal_file"),
+           py::arg("verbose"),
            D(usrp_radar,make)
         )
         

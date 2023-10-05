@@ -30,17 +30,19 @@ private:
     double tx_rate, rx_rate;
     double tx_freq, rx_freq;
     double tx_gain, rx_gain;
-    std::vector<size_t> tx_channel_nums, rx_channel_nums;
     double start_delay;
+    bool elevate_priority;
+    std::string cal_file;
+    std::vector<size_t> tx_channel_nums, rx_channel_nums;
     std::string tx_subdev, rx_subdev;
     std::string tx_device_addr, rx_device_addr;
     std::string tx_cpu_format, rx_cpu_format;
     std::string tx_otw_format, rx_otw_format;
-    std::string cal_file;
+    bool verbose;
+    
 
     gr::thread::thread d_main_thread;
     boost::thread_group d_tx_rx_thread_group;
-    bool elevate_priority;
     std::vector<void*> tx_buffs;
     size_t tx_buff_size;
     std::atomic<bool> finished;
@@ -73,6 +75,7 @@ private:
                   bool elevate_priority,
                   double tx_delay,
                   double has_time_spec);
+    void read_calibration_file(const std::string& filename);
 
 public:
     usrp_radar_impl(const std::string& args,
@@ -84,7 +87,8 @@ public:
                     const double rx_gain,
                     const double start_delay,
                     const bool elevate_priority,
-                    const std::string& cal_file);
+                    const std::string& cal_file,
+                    const bool verbose);
     ~usrp_radar_impl();
 
     /**

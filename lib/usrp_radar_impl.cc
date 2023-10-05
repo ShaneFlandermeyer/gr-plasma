@@ -19,7 +19,8 @@ usrp_radar::sptr usrp_radar::make(const std::string& args,
                                   const double rx_gain,
                                   const double start_delay,
                                   const bool elevate_priority,
-                                  const std::string& cal_file)
+                                  const std::string& cal_file,
+                                  const bool verbose)
 {
     return gnuradio::make_block_sptr<usrp_radar_impl>(args,
                                                       tx_rate,
@@ -30,7 +31,8 @@ usrp_radar::sptr usrp_radar::make(const std::string& args,
                                                       rx_gain,
                                                       start_delay,
                                                       elevate_priority,
-                                                      cal_file);
+                                                      cal_file,
+                                                      verbose);
 }
 
 usrp_radar_impl::usrp_radar_impl(const std::string& args,
@@ -42,7 +44,8 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args,
                                  const double rx_gain,
                                  const double start_delay,
                                  const bool elevate_priority,
-                                 const std::string& cal_file)
+                                 const std::string& cal_file,
+                                 const bool verbose)
     : gr::block(
           "usrp_radar", gr::io_signature::make(0, 0, 0), gr::io_signature::make(0, 0, 0)),
       usrp_args(args),
@@ -54,7 +57,8 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args,
       rx_gain(rx_gain),
       start_delay(start_delay),
       elevate_priority(elevate_priority),
-      cal_file(cal_file)
+      cal_file(cal_file),
+      verbose(verbose)
 {
     // Additional parameters. I have the hooks in to make them configurable, but we don't need them right now.
     this->tx_subdev = this->rx_subdev = "";
@@ -63,9 +67,7 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args,
     this->tx_device_addr = this->rx_device_addr = "";
     this->tx_channel_nums = std::vector<size_t>(1, 0);
     this->rx_channel_nums = std::vector<size_t>(1, 0);
-
-    // TODO: Don't hard-code this
-    this->n_delay = 118;
+    
     config_usrp(this->usrp,
                 this->usrp_args,
                 this->tx_rate,
@@ -76,7 +78,11 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args,
                 this->rx_gain,
                 this->tx_subdev,
                 this->rx_subdev,
-                true);
+                this->verbose);
+
+    if (not cal_file.empty()) {
+        read_calibration_file(cal_file);
+    }
 
     message_port_register_in(PMT_IN);
     message_port_register_out(PMT_OUT);
@@ -299,6 +305,32 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     // send a mini EOB packet
     md.end_of_burst = true;
     tx_stream->send("", 0, md);
+}
+
+void usrp_radar_impl::read_calibration_file(const std::string& filename)
+{
+    std::ifstream file(filename);
+    nlohmann::json json;
+    n_delay = 0;
+    if (file) {
+        file >> json;
+        std::string radio_type = usrp->get_mboard_name();
+        for (auto& config : json[radio_type]) {
+            if (config["samp_rate"] == usrp->get_tx_rate() and
+                config["master_clock_rate"] == usrp->get_master_clock_rate()) {
+                n_delay = config["delay"];
+                break;
+            }
+        }
+        if (n_delay == 0)
+            UHD_LOG_INFO("USRP Radar",
+                         "Calibration file found, but no data exists for this "
+                         "combination of radio, master clock rate, and sample rate");
+    } else {
+        UHD_LOG_INFO("USRP Radar", "No calibration file found");
+    }
+
+    file.close();
 }
 } /* namespace plasma */
 } /* namespace gr */
