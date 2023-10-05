@@ -11,76 +11,100 @@
 #include <gnuradio/plasma/pmt_constants.h>
 #include <gnuradio/plasma/usrp_radar.h>
 #include <nlohmann/json.hpp>
+#include <uhd/convert.hpp>
 #include <uhd/types/time_spec.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/utils/thread.hpp>
+#include <boost/thread/thread.hpp>
 #include <fstream>
 #include <queue>
 
+
 namespace gr {
 namespace plasma {
-static const double BURST_MODE_DELAY = 2e-6;
-// static const double BURST_MODE_DELAY = 0;
 class usrp_radar_impl : public usrp_radar
 {
 private:
-    uhd::usrp::multi_usrp::sptr d_usrp;
-    double d_samp_rate;
-    double d_tx_gain;
-    double d_rx_gain;
-    double d_tx_freq;
-    double d_rx_freq;
-    double d_tx_thread_priority;
-    double d_rx_thread_priority;
-    size_t d_n_samp_pri;
-    size_t d_delay_samps;
-    size_t d_pulse_count;
-    size_t d_tx_sample_count;
-    size_t d_rx_sample_count;
-    uhd::time_spec_t d_start_time;
-    std::vector<gr_complex> d_tx_buff;
-
-    pmt::pmt_t d_meta;
-    // Metadata keys
-    pmt::pmt_t d_center_freq_key;
-    pmt::pmt_t d_sample_start_key;
-
-    pmt::pmt_t rx_data_pmt;
-    pmt::pmt_t d_in_port;
-    pmt::pmt_t d_out_port;
-
+    // Block params
+    uhd::usrp::multi_usrp::sptr usrp;
+    std::string usrp_args;
+    double tx_rate, rx_rate;
+    double tx_freq, rx_freq;
+    double tx_gain, rx_gain;
+    double start_delay;
+    bool elevate_priority;
+    std::string cal_file;
+    std::vector<size_t> tx_channel_nums, rx_channel_nums;
+    std::string tx_subdev, rx_subdev;
+    std::string tx_device_addr, rx_device_addr;
+    std::string tx_cpu_format, rx_cpu_format;
+    std::string tx_otw_format, rx_otw_format;
+    bool verbose;
+    size_t n_delay;
+    
+    // Implementation params
     gr::thread::thread d_main_thread;
-    gr::thread::mutex d_tx_buff_mutex;
-    std::atomic<bool> d_finished;
-    std::atomic<bool> d_armed;
+    boost::thread_group d_tx_rx_thread_group;
+    std::vector<const void*> tx_buffs;
+    size_t tx_buff_size;
+    std::atomic<bool> finished;
+    std::atomic<bool> msg_received;
+    size_t n_tx_total;
+    
+    pmt::pmt_t tx_data;
+    pmt::pmt_t next_meta; // Metadata for the next Rx pdu
+    std::atomic<bool> new_msg_received;
 
 
-    /**
-     * @brief Transmit the data in the tx buffer in burst mode, where the
-     * repetition time is given by a field called "radar:prf" in a PMT dictionary
-     * called "annotations"
-     *
-     * @param usrp
-     * @param buff_ptrs
-     * @param num_samps_pulse
-     * @param start_time
-     */
-    void transmit(uhd::usrp::multi_usrp::sptr usrp,
-                         uhd::time_spec_t start_time);
+    // Metadata keys
+    std::string tx_freq_key;
+    std::string rx_freq_key;
+    std::string sample_start_key;
+    
 
-    /**
-     * @brief Receive a CPI of samples from the USRP, then package them into a PDU
-     *
-     * @param usrp
-     * @param buff_ptrs
-     * @param num_samp_cpi
-     * @param start_time
-     */
+
+private:
+    void handle_msg(pmt::pmt_t msg);
+    void config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
+                     const std::string& args,
+                     const double tx_rate,
+                     const double rx_rate,
+                     const double tx_freq,
+                     const double rx_freq,
+                     const double tx_gain,
+                     const double rx_gain,
+                     const std::string& tx_subdev,
+                     const std::string& rx_subdev,
+                     bool verbose);
     void receive(uhd::usrp::multi_usrp::sptr usrp,
-                 uhd::time_spec_t start_time);
+                 uhd::rx_streamer::sptr rx_stream,
+                 std::atomic<bool>& finished,
+                 bool elevate_priority,
+                 double adjusted_rx_delay,
+                 bool rx_stream_now);
+    void transmit(uhd::usrp::multi_usrp::sptr usrp,
+                  uhd::tx_streamer::sptr tx_stream,
+                  std::atomic<bool>& finished,
+                  bool elevate_priority,
+                  double tx_delay,
+                  double has_time_spec);
+    void read_calibration_file(const std::string& filename);
+    void set_metadata_keys(const std::string& tx_freq_key,
+                                   const std::string& rx_freq_key,
+                                   const std::string& sample_start_key);
 
 public:
-    usrp_radar_impl(const std::string& args);
+    usrp_radar_impl(const std::string& args,
+                    const double tx_rate,
+                    const double rx_rate,
+                    const double tx_freq,
+                    const double rx_freq,
+                    const double tx_gain,
+                    const double rx_gain,
+                    const double start_delay,
+                    const bool elevate_priority,
+                    const std::string& cal_file,
+                    const bool verbose);
     ~usrp_radar_impl();
 
     /**
@@ -109,20 +133,7 @@ public:
      * samples to remove from the beginning of transmission
      *
      */
-    void read_calibration_file(const std::string&) override;
-
-    void set_tx_thread_priority(const double) override;
-
-    void set_rx_thread_priority(const double) override;
-
-    void set_samp_rate(const double) override;
-    void set_tx_gain(const double) override;
-    void set_rx_gain(const double) override;
-    void set_tx_freq(const double) override;
-    void set_rx_freq(const double) override;
-    void set_start_time(const double) override;
-    void set_metadata_keys(std::string center_freq_key,
-                           std::string sample_start_key) override;
+    // void read_calibration_file(const std::string&) override;
 };
 
 } // namespace plasma

@@ -28,6 +28,6 @@ install(FILES
     cfar2D.h
     pdu_file_source.h
     pulse_doppler.h
-    cw_to_pulsed.h 
+    cw_to_pulsed.h
     DESTINATION include/gnuradio/plasma
 )
