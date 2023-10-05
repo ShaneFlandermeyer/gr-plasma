@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(usrp_radar.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(87cde6ca464c0ee3d02017f849292e28)                     */
+/* BINDTOOL_HEADER_FILE_HASH(abcaa93a8ea387faf927c248eaf93f2e)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -53,6 +53,15 @@ void bind_usrp_radar(py::module& m)
         
 
 
+
+
+        
+        .def("set_metadata_keys",
+             &usrp_radar::set_metadata_keys,
+             py::arg("tx_freq_key"),
+             py::arg("rx_freq_key"),
+             py::arg("sample_start_key"),
+             D(usrp_radar, set_metadata_keys))
 
         ;
 

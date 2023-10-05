@@ -25,6 +25,7 @@ namespace plasma {
 class usrp_radar_impl : public usrp_radar
 {
 private:
+    // Block params
     uhd::usrp::multi_usrp::sptr usrp;
     std::string usrp_args;
     double tx_rate, rx_rate;
@@ -39,15 +40,27 @@ private:
     std::string tx_cpu_format, rx_cpu_format;
     std::string tx_otw_format, rx_otw_format;
     bool verbose;
+    size_t n_delay;
     
-
+    // Implementation params
     gr::thread::thread d_main_thread;
     boost::thread_group d_tx_rx_thread_group;
-    std::vector<void*> tx_buffs;
+    std::vector<const void*> tx_buffs;
     size_t tx_buff_size;
     std::atomic<bool> finished;
     std::atomic<bool> msg_received;
-    size_t n_delay;
+    size_t n_tx_total;
+    
+    pmt::pmt_t tx_data;
+    pmt::pmt_t next_meta; // Metadata for the next Rx pdu
+    std::atomic<bool> new_msg_received;
+
+
+    // Metadata keys
+    std::string tx_freq_key;
+    std::string rx_freq_key;
+    std::string sample_start_key;
+    
 
 
 private:
@@ -76,6 +89,9 @@ private:
                   double tx_delay,
                   double has_time_spec);
     void read_calibration_file(const std::string& filename);
+    void set_metadata_keys(const std::string& tx_freq_key,
+                                   const std::string& rx_freq_key,
+                                   const std::string& sample_start_key);
 
 public:
     usrp_radar_impl(const std::string& args,

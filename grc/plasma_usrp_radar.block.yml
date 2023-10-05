@@ -56,10 +56,16 @@ parameters:
     default: False
     hide: part
   # Metadata keys
-  - id: center_freq_key
-    label: Center frequency key
+  - id: tx_freq_key
+    label: Tx frequency key
     dtype: string
-    default: core:frequency
+    default: core:tx_freq
+    hide: part
+    category: Metadata
+  - id: rx_freq_key
+    label: Rx frequency key
+    dtype: string
+    default: core:rx_freq
     hide: part
     category: Metadata
   - id: sample_start_key
@@ -81,7 +87,9 @@ outputs:
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.usrp_radar(${args}, ${samp_rate}, ${samp_rate}, ${tx_freq}, ${rx_freq}, ${tx_gain}, ${rx_gain}, ${start_delay}, ${elevate_priority}, ${cal_file}, ${verbose})
+  make: |-
+    plasma.usrp_radar(${args}, ${samp_rate}, ${samp_rate}, ${tx_freq}, ${rx_freq}, ${tx_gain}, ${rx_gain}, ${start_delay}, ${elevate_priority}, ${cal_file}, ${verbose})
+    self.${id}.set_metadata_keys(${tx_freq_key}, ${rx_freq_key}, ${sample_start_key})
     
 
 #  'file_format' specifies the version of the GRC yml format used in the file
