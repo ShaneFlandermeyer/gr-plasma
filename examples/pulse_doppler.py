@@ -23,16 +23,18 @@ if __name__ == '__main__':
             print("Warning: failed to XInitThreads()")
 
 from PyQt5 import Qt
-from gnuradio import plasma
-import sip
-from gnuradio import gr
+from gnuradio import qtgui
 from gnuradio.filter import firdes
+import sip
+from gnuradio import blocks
+from gnuradio import gr
 from gnuradio.fft import window
 import sys
 import signal
 from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
+from gnuradio import plasma
 
 
 
@@ -75,56 +77,89 @@ class pulse_doppler(gr.top_block, Qt.QWidget):
         # Variables
         ##################################################
         self.samp_rate = samp_rate = 40e6
-        self.n_pulse_cpi = n_pulse_cpi = 512
-        self.center_freq = center_freq = 2.45e9
-        self.bandwidth = bandwidth = 0.75*samp_rate
+        self.prf = prf = 1e3
+        self.num_pulse_cpi = num_pulse_cpi = 512
+        self.center_freq = center_freq = 5e9
+        self.bandwidth = bandwidth = 0.5*samp_rate
 
         ##################################################
         # Blocks
         ##################################################
-        self.plasma_waveform_controller_0 = plasma.waveform_controller(10000, samp_rate)
-        self.plasma_waveform_controller_0.init_meta_dict('radar:prf', 'core:sample_rate')
-        self.plasma_usrp_radar_0 = plasma.usrp_radar('num_send_frames=512,num_recv_frames=512')
-        self.plasma_usrp_radar_0.set_metadata_keys('core:frequency', 'radar:prf', 'core:sample_start')
+        self.qtgui_time_sink_x_0 = qtgui.time_sink_c(
+            1024, #size
+            samp_rate, #samp_rate
+            "", #name
+            0, #number of inputs
+            None # parent
+        )
+        self.qtgui_time_sink_x_0.set_update_time(0.10)
+        self.qtgui_time_sink_x_0.set_y_axis(-1, 1)
+
+        self.qtgui_time_sink_x_0.set_y_label('Amplitude', "")
+
+        self.qtgui_time_sink_x_0.enable_tags(True)
+        self.qtgui_time_sink_x_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, qtgui.TRIG_SLOPE_POS, 0.0, 0, 0, "")
+        self.qtgui_time_sink_x_0.enable_autoscale(False)
+        self.qtgui_time_sink_x_0.enable_grid(False)
+        self.qtgui_time_sink_x_0.enable_axis_labels(True)
+        self.qtgui_time_sink_x_0.enable_control_panel(False)
+        self.qtgui_time_sink_x_0.enable_stem_plot(False)
+
+
+        labels = ['Signal 1', 'Signal 2', 'Signal 3', 'Signal 4', 'Signal 5',
+            'Signal 6', 'Signal 7', 'Signal 8', 'Signal 9', 'Signal 10']
+        widths = [1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1]
+        colors = ['blue', 'red', 'green', 'black', 'cyan',
+            'magenta', 'yellow', 'dark red', 'dark green', 'dark blue']
+        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0]
+        styles = [1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1]
+        markers = [-1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1]
+
+
+        for i in range(2):
+            if len(labels[i]) == 0:
+                if (i % 2 == 0):
+                    self.qtgui_time_sink_x_0.set_line_label(i, "Re{{Data {0}}}".format(i/2))
+                else:
+                    self.qtgui_time_sink_x_0.set_line_label(i, "Im{{Data {0}}}".format(i/2))
+            else:
+                self.qtgui_time_sink_x_0.set_line_label(i, labels[i])
+            self.qtgui_time_sink_x_0.set_line_width(i, widths[i])
+            self.qtgui_time_sink_x_0.set_line_color(i, colors[i])
+            self.qtgui_time_sink_x_0.set_line_style(i, styles[i])
+            self.qtgui_time_sink_x_0.set_line_marker(i, markers[i])
+            self.qtgui_time_sink_x_0.set_line_alpha(i, alphas[i])
+
+        self._qtgui_time_sink_x_0_win = sip.wrapinstance(self.qtgui_time_sink_x_0.qwidget(), Qt.QWidget)
+        self.top_layout.addWidget(self._qtgui_time_sink_x_0_win)
+        self.plasma_usrp_radar_0 = plasma.usrp_radar("num_send_frames=512,num_recv_frames=512")
+        self.plasma_usrp_radar_0.set_metadata_keys('core:frequency', 'core:sample_start')
         self.plasma_usrp_radar_0.set_samp_rate(samp_rate)
         self.plasma_usrp_radar_0.set_tx_gain(50)
-        self.plasma_usrp_radar_0.set_rx_gain(50)
+        self.plasma_usrp_radar_0.set_rx_gain(40)
         self.plasma_usrp_radar_0.set_tx_freq(center_freq)
         self.plasma_usrp_radar_0.set_rx_freq(center_freq)
         self.plasma_usrp_radar_0.set_start_time(0.2)
-        self.plasma_usrp_radar_0.set_tx_thread_priority(1.0)
-        self.plasma_usrp_radar_0.set_rx_thread_priority(1.0)
-        self.plasma_usrp_radar_0.read_calibration_file("/home/shane/.uhd/delay_calibration.json")
-        self.plasma_range_doppler_sink_0 = plasma.range_doppler_sink(samp_rate, n_pulse_cpi, center_freq)
-        self.plasma_range_doppler_sink_0.set_metadata_keys('core:sample_rate', 'n_matrix_col', 'core:frequency', 'dynamic_range', 'radar:prf', 'radar:duration', 'detection_indices')
-        self.plasma_range_doppler_sink_0.set_dynamic_range(80)
-        self.plasma_range_doppler_sink_0.set_msg_queue_depth(1)
-        self._plasma_range_doppler_sink_0_win = sip.wrapinstance(self.plasma_range_doppler_sink_0.pyqwidget(), Qt.QWidget)
-        self.top_layout.addWidget(self._plasma_range_doppler_sink_0_win)
-        self.plasma_pulse_to_cpi_0 = plasma.pulse_to_cpi(n_pulse_cpi)
-        self.plasma_pulse_to_cpi_0.init_meta_dict('radar:n_pulse_cpi')
-        self.plasma_match_filt_0 = plasma.match_filt(n_pulse_cpi)
-        self.plasma_match_filt_0.set_metadata_keys('n_pulse_cpi')
-        self.plasma_match_filt_0.set_msg_queue_depth(1)
-        self.plasma_match_filt_0.set_backend(plasma.Device.DEFAULT)
-        self.plasma_lfm_source_0 = plasma.lfm_source(0.8*samp_rate, -bandwidth/2, 20e-6, samp_rate)
-        self.plasma_lfm_source_0.init_meta_dict('radar:bandwidth', 'radar:start_freq', 'radar:duration', 'core:sample_rate', 'core:label')
-        self.plasma_doppler_processing_0 = plasma.doppler_processing(n_pulse_cpi, n_pulse_cpi)
-        self.plasma_doppler_processing_0.set_msg_queue_depth(1)
-        self.plasma_doppler_processing_0.set_backend(plasma.Device.DEFAULT)
-        self.plasma_doppler_processing_0.set_metadata_keys('n_pulse_cpi', 'doppler_fft_size')
+        self.plasma_usrp_radar_0.set_tx_thread_priority(0.0)
+        self.plasma_usrp_radar_0.set_rx_thread_priority(0.0)
+        self.plasma_usrp_radar_0.read_calibration_file('/home/shane/.uhd/delay_calibration.json')
+        self.plasma_lfm_source_1_0 = plasma.lfm_source(bandwidth, -bandwidth/2, 10e-6, samp_rate, 0)
+        self.plasma_lfm_source_1_0.init_meta_dict('radar:bandwidth', 'radar:start_freq', 'radar:duration', 'core:sample_rate', 'core:label', 'radar:prf')
+        self.plasma_cw_to_pulsed_0 = plasma.cw_to_pulsed(10e3, samp_rate)
+        self.plasma_cw_to_pulsed_0.init_meta_dict('core:sample_rate', 'radar:prf')
+        self.blocks_message_debug_0 = blocks.message_debug(False)
 
 
         ##################################################
         # Connections
         ##################################################
-        self.msg_connect((self.plasma_doppler_processing_0, 'out'), (self.plasma_range_doppler_sink_0, 'in'))
-        self.msg_connect((self.plasma_lfm_source_0, 'out'), (self.plasma_match_filt_0, 'tx'))
-        self.msg_connect((self.plasma_lfm_source_0, 'out'), (self.plasma_waveform_controller_0, 'in'))
-        self.msg_connect((self.plasma_match_filt_0, 'out'), (self.plasma_doppler_processing_0, 'in'))
-        self.msg_connect((self.plasma_pulse_to_cpi_0, 'out'), (self.plasma_match_filt_0, 'rx'))
-        self.msg_connect((self.plasma_usrp_radar_0, 'out'), (self.plasma_pulse_to_cpi_0, 'in'))
-        self.msg_connect((self.plasma_waveform_controller_0, 'out'), (self.plasma_usrp_radar_0, 'in'))
+        self.msg_connect((self.plasma_cw_to_pulsed_0, 'out'), (self.plasma_usrp_radar_0, 'in'))
+        self.msg_connect((self.plasma_lfm_source_1_0, 'out'), (self.plasma_cw_to_pulsed_0, 'in'))
+        self.msg_connect((self.plasma_usrp_radar_0, 'out'), (self.qtgui_time_sink_x_0, 'in'))
 
 
     def closeEvent(self, event):
@@ -140,13 +175,20 @@ class pulse_doppler(gr.top_block, Qt.QWidget):
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.set_bandwidth(0.75*self.samp_rate)
+        self.set_bandwidth(0.5*self.samp_rate)
+        self.qtgui_time_sink_x_0.set_samp_rate(self.samp_rate)
 
-    def get_n_pulse_cpi(self):
-        return self.n_pulse_cpi
+    def get_prf(self):
+        return self.prf
 
-    def set_n_pulse_cpi(self, n_pulse_cpi):
-        self.n_pulse_cpi = n_pulse_cpi
+    def set_prf(self, prf):
+        self.prf = prf
+
+    def get_num_pulse_cpi(self):
+        return self.num_pulse_cpi
+
+    def set_num_pulse_cpi(self, num_pulse_cpi):
+        self.num_pulse_cpi = num_pulse_cpi
 
     def get_center_freq(self):
         return self.center_freq

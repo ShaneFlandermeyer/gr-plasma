@@ -9,10 +9,23 @@ category: "[plasma]"
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
+  - id: args
+    label: Device Arguments
+    dtype: string
+    default: '""'
+    hide: ${ ('part' if args == "" else 'none') }
   - id: samp_rate
     label: Sample Rate
     dtype: float
     default: "samp_rate"
+  - id: tx_freq
+    label: Tx Frequency
+    dtype: float
+    default: "center_freq"
+  - id: rx_freq
+    label: Rx Frequency
+    dtype: float
+    default: "center_freq"
   - id: tx_gain
     label: Tx Gain (dB)
     dtype: float
@@ -21,53 +34,38 @@ parameters:
     label: Rx Gain (dB)
     dtype: float
     default: 0
-  - id: tx_freq
-    label: Tx Center Frequency
+  - id: start_delay
+    label: Start Delay
     dtype: float
-    default: "center_freq"
-  - id: rx_freq
-    label: Rx Center Frequency
-    dtype: float
-    default: "center_freq"
-  - id: start_time
-    label: Start Time
-    dtype: float
-    default: 0.2
-  - id: args
-    label: Device Arguments
-    dtype: string
-    default: '"num_send_frames=512,num_recv_frames=512"'
-    hide: ${ ('part' if args == "" else 'none') }
+    default: 0.1
+  - id: elevate_priority
+    label: Elevate thread priority
+    dtype: bool
+    options: [False, True]
+    default: False
+    hide: ${ ('part' if elevate_priority == False else 'none') }
   - id: cal_file
     label: Calibration file
     dtype: file_save
     default: '""'
     hide: part
-  - id: tx_priority
-    label: Tx Thread Priority
-    dtype: float
-    options: [0.0, 1.0]
-    option_labels: ["Normal", "High"]
-    default: 0.0
-    hide: ${ ('part' if tx_priority == 0 else 'none') }
-  - id: rx_priority
-    label: Rx Thread Priority
-    dtype: float
-    options: [0.0, 1.0]
-    option_labels: ["Normal", "High"]
-    default: 0.0
-    hide: ${ ('part' if rx_priority == 0 else 'none') }
+  - id: verbose
+    label: Verbose
+    dtype: bool
+    options: [False, True]
+    default: False
+    hide: part
   # Metadata keys
-  - id: center_freq_key
-    label: Center frequency key
+  - id: tx_freq_key
+    label: Tx frequency key
     dtype: string
-    default: core:frequency
+    default: core:tx_freq
     hide: part
     category: Metadata
-  - id: prf_key
-    label: PRF key
+  - id: rx_freq_key
+    label: Rx frequency key
     dtype: string
-    default: radar:prf
+    default: core:rx_freq
     hide: part
     category: Metadata
   - id: sample_start_key
@@ -80,6 +78,7 @@ parameters:
 inputs:
   - id: in
     domain: message
+    optional: true
 
 outputs:
   - id: out
@@ -89,17 +88,8 @@ outputs:
 templates:
   imports: from gnuradio import plasma
   make: |-
-    plasma.usrp_radar(${args})
-    self.${id}.set_metadata_keys(${center_freq_key}, ${prf_key}, ${sample_start_key})
-    self.${id}.set_samp_rate(${samp_rate})
-    self.${id}.set_tx_gain(${tx_gain})
-    self.${id}.set_rx_gain(${rx_gain})
-    self.${id}.set_tx_freq(${tx_freq})
-    self.${id}.set_rx_freq(${rx_freq})
-    self.${id}.set_start_time(${start_time})
-    self.${id}.set_tx_thread_priority(${tx_priority})
-    self.${id}.set_rx_thread_priority(${rx_priority})
-    self.${id}.read_calibration_file(${cal_file})
+    plasma.usrp_radar(${args}, ${samp_rate}, ${samp_rate}, ${tx_freq}, ${rx_freq}, ${tx_gain}, ${rx_gain}, ${start_delay}, ${elevate_priority}, ${cal_file}, ${verbose})
+    self.${id}.set_metadata_keys(${tx_freq_key}, ${rx_freq_key}, ${sample_start_key})
     
 
 #  'file_format' specifies the version of the GRC yml format used in the file

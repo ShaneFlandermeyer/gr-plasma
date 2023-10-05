@@ -13,8 +13,8 @@
 /* If manual edits are made, the following tags should be modified accordingly.    */
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
-/* BINDTOOL_HEADER_FILE(lfm_source.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(badb1b368ff643c8b0409e5069ad2586)                     */
+/* BINDTOOL_HEADER_FILE(cw_to_pulsed.h)                                        */
+/* BINDTOOL_HEADER_FILE_HASH(87fc0b84fc680816485d0392b44c284f)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -23,37 +23,30 @@
 
 namespace py = pybind11;
 
-#include <gnuradio/plasma/lfm_source.h>
+#include <gnuradio/plasma/cw_to_pulsed.h>
 // pydoc.h is automatically generated in the build directory
-#include <lfm_source_pydoc.h>
+#include <cw_to_pulsed_pydoc.h>
 
-void bind_lfm_source(py::module& m)
+void bind_cw_to_pulsed(py::module& m)
 {
 
-    using lfm_source = ::gr::plasma::lfm_source;
+    using cw_to_pulsed = ::gr::plasma::cw_to_pulsed;
 
 
-    py::class_<lfm_source, gr::block, gr::basic_block, std::shared_ptr<lfm_source>>(
-        m, "lfm_source", D(lfm_source))
+    py::class_<cw_to_pulsed, gr::block, gr::basic_block, std::shared_ptr<cw_to_pulsed>>(
+        m, "cw_to_pulsed", D(cw_to_pulsed))
 
-        .def(py::init(&lfm_source::make),
-             py::arg("bandwidth"),
-             py::arg("start_freq"),
-             py::arg("pulse_width"),
-             py::arg("samp_rate"),
+        .def(py::init(&cw_to_pulsed::make),
              py::arg("prf"),
-             D(lfm_source, make))
+             py::arg("samp_rate"),
+             D(cw_to_pulsed, make))
 
 
         .def("init_meta_dict",
-             &lfm_source::init_meta_dict,
-             py::arg("bandwidth_key"),
-             py::arg("start_freq_key"),
-             py::arg("duration_key"),
+             &cw_to_pulsed::init_meta_dict,
              py::arg("sample_rate_key"),
-             py::arg("label_key"),
              py::arg("prf_key"),
-             D(lfm_source, init_meta_dict))
+             D(cw_to_pulsed, init_meta_dict))
 
         ;
 }
