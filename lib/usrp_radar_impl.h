@@ -42,7 +42,7 @@ private:
     
 
 private:
-    uhd::usrp::multi_usrp::sptr d_usrp;
+    uhd::usrp::multi_usrp::sptr usrp;
     double d_tx_thread_priority;
     double d_rx_thread_priority;
     size_t d_n_samp_pri;
