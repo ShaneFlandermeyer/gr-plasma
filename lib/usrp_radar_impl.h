@@ -27,16 +27,17 @@ static const double BURST_MODE_DELAY = 2e-6;
 class usrp_radar_impl : public usrp_radar
 {
 private:
-    std::string d_args;
-    double d_tx_rate, d_rx_rate;
-    double d_tx_freq, d_rx_freq;
-    double d_tx_gain, d_rx_gain;
-    std::string d_tx_subdev, d_rx_subdev;
-    bool d_elevate_priority;
-    gr_complex* d_tx_buff;
-    size_t d_tx_buff_size;
-    std::atomic<bool> d_finished;
-    std::atomic<bool> d_msg_received;
+    std::string usrp_args;
+    double tx_rate, rx_rate;
+    double tx_freq, rx_freq;
+    double tx_gain, rx_gain;
+    std::string tx_subdev, rx_subdev;
+    bool elevate_priority;
+    gr_complex* tx_buff;
+    size_t tx_buff_size;
+    std::atomic<bool> finished;
+    std::atomic<bool> msg_received;
+    size_t n_delay = 0;
 
     
 
@@ -45,12 +46,10 @@ private:
     double d_tx_thread_priority;
     double d_rx_thread_priority;
     size_t d_n_samp_pri;
-    size_t d_delay_samps;
     size_t d_pulse_count;
     size_t d_tx_sample_count;
     size_t d_rx_sample_count;
     double d_start_time;
-    // std::vector<gr_complex> d_tx_buff;
 
     pmt::pmt_t d_meta;
     // Metadata keys
@@ -88,7 +87,6 @@ private:
     void transmit(uhd::usrp::multi_usrp::sptr usrp,
                   uhd::tx_streamer::sptr tx_stream,
                   std::vector<void*> buffs,
-                //   size_t buff_size,
                   std::atomic<bool>& finished,
                   bool elevate_priority,
                   double tx_delay);
