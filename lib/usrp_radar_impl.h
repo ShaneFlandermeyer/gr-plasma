@@ -22,50 +22,33 @@
 
 namespace gr {
 namespace plasma {
-static const double BURST_MODE_DELAY = 2e-6;
-// static const double BURST_MODE_DELAY = 0;
 class usrp_radar_impl : public usrp_radar
 {
 private:
+    uhd::usrp::multi_usrp::sptr usrp;
     std::string usrp_args;
     double tx_rate, rx_rate;
     double tx_freq, rx_freq;
     double tx_gain, rx_gain;
+    std::vector<size_t> tx_channel_nums, rx_channel_nums;
+    double start_delay;
     std::string tx_subdev, rx_subdev;
+    std::string tx_device_addr, rx_device_addr;
+    std::string tx_cpu_format, rx_cpu_format;
+    std::string tx_otw_format, rx_otw_format;
+    std::string cal_file;
+
+    gr::thread::thread d_main_thread;
+    boost::thread_group d_tx_rx_thread_group;
     bool elevate_priority;
-    gr_complex* tx_buff;
+    std::vector<void*> tx_buffs;
     size_t tx_buff_size;
     std::atomic<bool> finished;
     std::atomic<bool> msg_received;
-    size_t n_delay = 0;
+    size_t n_delay;
 
-    
 
 private:
-    uhd::usrp::multi_usrp::sptr usrp;
-    double d_tx_thread_priority;
-    double d_rx_thread_priority;
-    size_t d_n_samp_pri;
-    size_t d_pulse_count;
-    size_t d_tx_sample_count;
-    size_t d_rx_sample_count;
-    double d_start_time;
-
-    pmt::pmt_t d_meta;
-    // Metadata keys
-    pmt::pmt_t d_center_freq_key;
-    pmt::pmt_t d_sample_start_key;
-
-    pmt::pmt_t rx_data_pmt;
-    pmt::pmt_t d_in_port;
-    pmt::pmt_t d_out_port;
-
-    gr::thread::thread d_main_thread;
-    gr::thread::mutex d_tx_buff_mutex;
-    
-    std::atomic<bool> d_armed;
-    boost::thread_group d_tx_rx_thread_group;
-
     void handle_msg(pmt::pmt_t msg);
     void config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
                      const std::string& args,
@@ -86,13 +69,22 @@ private:
                  bool rx_stream_now);
     void transmit(uhd::usrp::multi_usrp::sptr usrp,
                   uhd::tx_streamer::sptr tx_stream,
-                  std::vector<void*> buffs,
                   std::atomic<bool>& finished,
                   bool elevate_priority,
-                  double tx_delay);
+                  double tx_delay,
+                  double has_time_spec);
 
 public:
-    usrp_radar_impl(const std::string& args);
+    usrp_radar_impl(const std::string& args,
+                    const double tx_rate,
+                    const double rx_rate,
+                    const double tx_freq,
+                    const double rx_freq,
+                    const double tx_gain,
+                    const double rx_gain,
+                    const double start_delay,
+                    const bool elevate_priority,
+                    const std::string& cal_file);
     ~usrp_radar_impl();
 
     /**

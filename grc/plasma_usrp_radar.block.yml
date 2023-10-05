@@ -9,10 +9,23 @@ category: "[plasma]"
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
+  - id: args
+    label: Device Arguments
+    dtype: string
+    default: '""'
+    hide: ${ ('part' if args == "" else 'none') }
   - id: samp_rate
     label: Sample Rate
     dtype: float
     default: "samp_rate"
+  - id: tx_freq
+    label: Tx Frequency
+    dtype: float
+    default: "center_freq"
+  - id: rx_freq
+    label: Rx Frequency
+    dtype: float
+    default: "center_freq"
   - id: tx_gain
     label: Tx Gain (dB)
     dtype: float
@@ -21,42 +34,22 @@ parameters:
     label: Rx Gain (dB)
     dtype: float
     default: 0
-  - id: tx_freq
-    label: Tx Center Frequency
+  - id: start_delay
+    label: Start Delay
     dtype: float
-    default: "center_freq"
-  - id: rx_freq
-    label: Rx Center Frequency
-    dtype: float
-    default: "center_freq"
-  - id: start_time
-    label: Start Time
-    dtype: float
-    default: 0.2
-  - id: args
-    label: Device Arguments
-    dtype: string
-    default: '"num_send_frames=512,num_recv_frames=512"'
-    hide: ${ ('part' if args == "" else 'none') }
+    default: 0.1
+  - id: elevate_priority
+    label: Tx/Rx Thread Priority
+    dtype: bool
+    options: [False, True]
+    option_labels: ["Normal", "High"]
+    default: False
+    hide: ${ ('part' if elevate_priority == False else 'none') }
   - id: cal_file
     label: Calibration file
     dtype: file_save
     default: '""'
     hide: part
-  - id: tx_priority
-    label: Tx Thread Priority
-    dtype: float
-    options: [0.0, 1.0]
-    option_labels: ["Normal", "High"]
-    default: 0.0
-    hide: ${ ('part' if tx_priority == 0 else 'none') }
-  - id: rx_priority
-    label: Rx Thread Priority
-    dtype: float
-    options: [0.0, 1.0]
-    option_labels: ["Normal", "High"]
-    default: 0.0
-    hide: ${ ('part' if rx_priority == 0 else 'none') }
   # Metadata keys
   - id: center_freq_key
     label: Center frequency key
@@ -83,7 +76,7 @@ outputs:
 
 templates:
   imports: from gnuradio import plasma
-  make: plasma.usrp_radar(${args})
+  make: plasma.usrp_radar(${args}, ${samp_rate}, ${samp_rate}, ${tx_freq}, ${rx_freq}, ${tx_gain}, ${rx_gain}, ${start_delay}, ${elevate_priority}, ${cal_file})
     
 
 #  'file_format' specifies the version of the GRC yml format used in the file
