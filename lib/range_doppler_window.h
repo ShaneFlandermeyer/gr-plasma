@@ -153,8 +153,8 @@ private:
     pmt::pmt_t d_center_freq_key;
     pmt::pmt_t d_detection_indices_key;
 
-    void set_range_axis();
-    void set_velocity_axis();
+    void set_range_axis(double rmin, double rmax);
+    void set_velocity_axis(double vmin, double vmax);
     void plot_detections(pmt::pmt_t indices, int nrow, int ncol);
 };
 

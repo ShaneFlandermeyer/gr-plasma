@@ -24,6 +24,8 @@ private:
     size_t d_ncol;
     double d_center_freq;
     double d_dynamic_range_db;
+    double d_pulsewidth;
+    double d_prf;
     // GUI parameters
     int d_argc;
     char* d_argv;
@@ -34,11 +36,14 @@ private:
     size_t d_msg_queue_depth;
 
     pmt::pmt_t d_meta;
+
     // Metadata keys
     pmt::pmt_t d_samp_rate_key;
     pmt::pmt_t d_center_freq_key;
     pmt::pmt_t d_n_matrix_col_key;
     pmt::pmt_t d_dynamic_range_key;
+    pmt::pmt_t d_pulsewidth_key;
+    pmt::pmt_t d_prf_key;
 
 
 public:

@@ -37,7 +37,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: '128'
+    value: '512'
   states:
     bus_sink: false
     bus_source: false
@@ -54,9 +54,23 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [184, 12]
+    coordinate: [192, 12.0]
     rotation: 0
     state: enabled
+- name: blocks_message_debug_0
+  id: blocks_message_debug
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    en_uvec: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1272, 440.0]
+    rotation: 0
+    state: disabled
 - name: plasma_cw_to_pulsed_0
   id: plasma_cw_to_pulsed
   parameters:
@@ -65,7 +79,7 @@ blocks:
     comment: ''
     maxoutbuf: '0'
     minoutbuf: '0'
-    prf: 10e3
+    prf: 5e3
     prf_key: radar:prf
     samp_rate: samp_rate
     sample_rate_key: core:sample_rate
@@ -144,7 +158,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    center_freq: 2.4e9
+    center_freq: 5e9
     center_freq_key: core:tx_freq
     comment: ''
     depth: '10'
@@ -170,19 +184,19 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    args: '"addr=192.168.30.2,use_dpdk=1"'
+    args: '"addr=192.168.30.2, use_dpdk=1"'
     cal_file: '"/home/shane/.uhd/delay.json"'
     comment: ''
     elevate_priority: 'True'
     maxoutbuf: '0'
     minoutbuf: '0'
-    rx_freq: 2.4e9
+    rx_freq: 5e9
     rx_freq_key: core:rx_freq
-    rx_gain: '10'
+    rx_gain: '20'
     samp_rate: samp_rate
     sample_start_key: core:sample_start
     start_delay: '0.1'
-    tx_freq: 2.4e9
+    tx_freq: 5e9
     tx_freq_key: core:tx_freq
     tx_gain: '10'
     verbose: 'False'
@@ -198,6 +212,7 @@ connections:
 - [plasma_cw_to_pulsed_0, out, plasma_usrp_radar_0, in]
 - [plasma_lfm_source_0, out, plasma_cw_to_pulsed_0, in]
 - [plasma_lfm_source_0, out, plasma_pulse_doppler_0, tx]
+- [plasma_pulse_doppler_0, out, blocks_message_debug_0, print]
 - [plasma_pulse_doppler_0, out, plasma_range_doppler_sink_0, in]
 - [plasma_pulse_to_cpi_0, out, plasma_pulse_doppler_0, rx]
 - [plasma_usrp_radar_0, out, plasma_pulse_to_cpi_0, in]

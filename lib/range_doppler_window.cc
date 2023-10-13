@@ -165,16 +165,24 @@ void RangeDopplerWindow::customEvent(QEvent* e)
             pmt::dict_ref(meta, d_samp_rate_key, pmt::from_double(d_samp_rate)));
         d_center_freq = pmt::to_double(
             pmt::dict_ref(meta, d_center_freq_key, pmt::from_double(d_center_freq)));
+        double start_range = pmt::to_double(
+            pmt::dict_ref(meta, pmt::intern("start_range"), pmt::from_double(0)));
+        double stop_range = pmt::to_double(
+            pmt::dict_ref(meta, pmt::intern("stop_range"), pmt::from_double(1)));
+        // double start_vel = pmt::to_double(
+        //     pmt::dict_ref(meta, pmt::intern("start_velocity"), pmt::from_double(0)));
+        // double stop_vel = pmt::to_double(
+        //     pmt::dict_ref(meta, pmt::intern("stop_velocity"), pmt::from_double(1)));
 
         // If the metadata exists,
-        set_range_axis();
-        set_velocity_axis();
+        set_range_axis(start_range, stop_range);
+        set_velocity_axis(-1, -1);
 
 
         // CFAR plotting
         pmt::pmt_t indices = pmt::dict_ref(meta, d_detection_indices_key, pmt::PMT_NIL);
         if (not pmt::is_null(indices)) {
-          plot_detections(indices, rows, cols);
+            plot_detections(indices, rows, cols);
         }
 
         d_zoomer->setZoomBase(d_spectro->boundingRect());
@@ -183,23 +191,15 @@ void RangeDopplerWindow::customEvent(QEvent* e)
     d_busy = false;
 }
 
-void RangeDopplerWindow::set_range_axis()
+void RangeDopplerWindow::set_range_axis(double start, double stop)
 {
-    if (d_prf == 0 or d_pulsewidth == 0 or d_samp_rate == 0) {
-        return;
-    } else {
-        const double c = ::plasma::physconst::c;
-        double rmin = -(c / 2) * d_pulsewidth;
-        double rmax = (c / 2) * (1 / d_prf);
-        ylim(rmin, rmax);
-        // Update the axes if we're plotting range and doppler
-        QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
-        y->setTitle("Range (m)");
-        y = d_plot->axisWidget(QwtPlot::xBottom);
-    }
+    ylim(start, stop);
+    QwtScaleWidget* y = d_plot->axisWidget(QwtPlot::yLeft);
+    y->setTitle("Range (m)");
+    y = d_plot->axisWidget(QwtPlot::xBottom);
 }
 
-void RangeDopplerWindow::set_velocity_axis()
+void RangeDopplerWindow::set_velocity_axis(double vmin, double vmax)
 {
     const double c = ::plasma::physconst::c;
     if (d_prf == 0) {

@@ -99,19 +99,50 @@ void range_doppler_sink_impl::handle_rx_msg(pmt::pmt_t msg)
     if (pmt::is_pdu(msg)) {
         samples = pmt::cdr(msg);
         d_meta = pmt::car(msg);
+        d_pulsewidth = pmt::to_double(pmt::dict_ref(d_meta, d_pulsewidth_key, pmt::from_double(d_pulsewidth)));
+        d_prf = pmt::to_double(pmt::dict_ref(d_meta, d_prf_key, pmt::from_double(d_prf)));
     }
     size_t n = pmt::length(samples);
     size_t nrow = n / d_ncol;
     const gr_complex* in = pmt::c32vector_elements(samples, n);
 
+    // TODO: Hard-coding a range swath to speed up plotting
+    double swath_start = -10;
+    double swath_stop = 50;
+    double fs = d_samp_rate;
+    double ts = 1 / fs;
+    size_t lx = round(d_pulsewidth / ts);
+    const double c = 3e8;
+    size_t rstart = round(swath_start * (2 / c) / ts) + (lx - 1);
+    size_t rstop = round(swath_stop * (2 / c) / ts) + (lx - 1);
+    d_meta = pmt::dict_add(d_meta, pmt::intern("start_range"), pmt::from_double(swath_start));
+    d_meta = pmt::dict_add(d_meta, pmt::intern("stop_range"), pmt::from_double(swath_stop));
+
+    // double vel_start = -20;
+    // double vel_stop = 20;
+    // // get index of velocity start and stop
+    // double lam = c / d_center_freq;
+    // double vmax = (lam / 2) * (d_prf / 2);
+    // double vmin = -vmax;
+    // size_t vstart = round((vel_start - vmin) / (vmax - vmin) * d_ncol);
+    // size_t vstop = round((vel_stop - vmin) / (vmax - vmin) * d_ncol);
+    // d_meta = pmt::dict_add(d_meta, pmt::intern("start_velocity"), pmt::from_double(vel_start));
+    // d_meta = pmt::dict_add(d_meta, pmt::intern("stop_velocity"), pmt::from_double(vel_stop));
+    // std::cout << "vstart: " << vstart << std::endl;
+    // std::cout << "vstop: " << vstop << std::endl;
+
     // convert the input data to dB, normalize, and set the dynamic range
     af::array plot_data(af::dim4(nrow, d_ncol), reinterpret_cast<const af::cfloat*>(in));
+    plot_data = plot_data(af::seq(rstart, rstop), af::span);
+    // plot_data = plot_data(af::span, af::seq(vstart, vstop));
     plot_data = 20 * log10(abs(plot_data));
-    plot_data -= af::tile(af::max(af::flat(plot_data)), nrow, d_ncol);
+    plot_data -= af::tile(af::max(af::flat(plot_data)), plot_data.dims(0), plot_data.dims(1));
     plot_data = af::clamp(plot_data, -d_dynamic_range_db, 0);
+    
     plot_data = plot_data.T();
     double* out = plot_data.as(f64).host<double>();
-    d_qapp->postEvent(d_main_gui, new RangeDopplerUpdateEvent(out, nrow, d_ncol, d_meta));
+    
+    d_qapp->postEvent(d_main_gui, new RangeDopplerUpdateEvent(out, rstop-rstart, d_ncol, d_meta));
     delete[] out;
 }
 
@@ -138,6 +169,8 @@ void range_doppler_sink_impl::set_metadata_keys(std::string samp_rate_key,
     d_n_matrix_col_key  = pmt::intern(n_matrix_col_key);
     d_center_freq_key   = pmt::intern(center_freq_key);
     d_dynamic_range_key = pmt::intern(dynamic_range_key);
+    d_prf_key = pmt::intern(prf_key);
+    d_pulsewidth_key = pmt::intern(pulsewidth_key);
     // TODO: Pass the last 4 keys to the window object
     d_main_gui->set_metadata_keys(prf_key, pulsewidth_key, samp_rate_key, center_freq_key, detection_indices_key);
 }
