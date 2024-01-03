@@ -1,17 +1,17 @@
 options:
   parameters:
-    author: Shane Flandermeyer
+    author: ''
     catch_exceptions: 'True'
     category: '[GRC Hier Blocks]'
     cmake_opt: ''
     comment: ''
     copyright: ''
-    description: Example of range and doppler processing
+    description: ''
     gen_cmake: 'On'
     gen_linking: dynamic
     generate_options: qt_gui
     hier_block_src_path: '.:'
-    id: pulse_doppler
+    id: untitled
     max_nouts: '0'
     output_language: python
     placement: (0,0)
@@ -22,7 +22,7 @@ options:
     run_options: prompt
     sizing_mode: fixed
     thread_safe_setters: ''
-    title: Pulse Doppler Processing
+    title: Not titled yet
     window_size: (1000,1000)
   states:
     bus_sink: false
@@ -33,47 +33,23 @@ options:
     state: enabled
 
 blocks:
-- name: bandwidth
-  id: variable
-  parameters:
-    comment: ''
-    value: 0.75*samp_rate
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [472, 12.0]
-    rotation: 0
-    state: enabled
-- name: center_freq
-  id: variable
-  parameters:
-    comment: ''
-    value: 2.45e9
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [280, 12.0]
-    rotation: 0
-    state: enabled
 - name: n_pulse_cpi
   id: variable
   parameters:
     comment: ''
-    value: '512'
+    value: '128'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [376, 12.0]
+    coordinate: [288, 12.0]
     rotation: 0
     state: enabled
 - name: samp_rate
   id: variable
   parameters:
     comment: ''
-    value: 40e6
+    value: 100e6
   states:
     bus_sink: false
     bus_source: false
@@ -81,49 +57,23 @@ blocks:
     coordinate: [184, 12]
     rotation: 0
     state: enabled
-- name: plasma_cfar2D_0
-  id: plasma_cfar2D
+- name: plasma_cw_to_pulsed_0
+  id: plasma_cw_to_pulsed
   parameters:
     affinity: ''
     alias: ''
-    backend: plasma.Device.DEFAULT
     comment: ''
-    depth: '1'
-    detection_indices_key: detection_indices
-    guard_win_size: (2,2)
     maxoutbuf: '0'
     minoutbuf: '0'
-    n_detections_key: n_detections
-    n_pulse_cpi_key: n_pulse_cpi
-    num_pulse_cpi: n_pulse_cpi
-    pfa: 1e-6
-    train_win_size: (3,3)
+    prf: 10e3
+    prf_key: radar:prf
+    samp_rate: samp_rate
+    sample_rate_key: core:sample_rate
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1144, 268.0]
-    rotation: 0
-    state: bypassed
-- name: plasma_doppler_processing_0
-  id: plasma_doppler_processing
-  parameters:
-    affinity: ''
-    alias: ''
-    backend: plasma.Device.DEFAULT
-    comment: ''
-    depth: '1'
-    doppler_fft_size: doppler_fft_size
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    n_pulse_cpi_key: n_pulse_cpi
-    nfft: n_pulse_cpi
-    num_pulse_cpi: n_pulse_cpi
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [952, 332.0]
+    coordinate: [480, 428.0]
     rotation: 0
     state: enabled
 - name: plasma_lfm_source_0
@@ -131,61 +81,47 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    bandwidth: 0.8*samp_rate
+    bandwidth: samp_rate/2
     bandwidth_key: radar:bandwidth
     comment: ''
     duration_key: radar:duration
     label_key: core:label
     maxoutbuf: '0'
     minoutbuf: '0'
-    pulse_width: 20e-6
+    prf: '0'
+    prf_key: radar:prf
+    pulse_width: 10e-6
     samp_rate: samp_rate
     sample_rate_key: core:sample_rate
-    start_freq: -bandwidth/2
+    start_freq: -samp_rate/4
     start_freq_key: radar:start_freq
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [56, 252.0]
+    coordinate: [192, 388.0]
     rotation: 0
-    state: enabled
-- name: plasma_match_filt_0
-  id: plasma_match_filt
+    state: true
+- name: plasma_pulse_doppler_0
+  id: plasma_pulse_doppler
   parameters:
     affinity: ''
     alias: ''
-    backend: plasma.Device.DEFAULT
+    backend: plasma.Device.CUDA
     comment: ''
-    depth: '1'
+    depth: '100'
+    doppler_fft_size_key: doppler_fft_size
     maxoutbuf: '0'
     minoutbuf: '0'
-    n_pulse_cpi_key: n_pulse_cpi
-    num_pulse_cpi: n_pulse_cpi
+    n_pulse_cpi: n_pulse_cpi
+    nfft: n_pulse_cpi
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [768, 272.0]
+    coordinate: [1032, 300.0]
     rotation: 0
     state: enabled
-- name: plasma_pdu_file_sink_0
-  id: plasma_pdu_file_sink
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    data_filename: ''
-    meta_filename: ''
-    save_meta: 'False'
-    type: complex
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1352, 372.0]
-    rotation: 0
-    state: disabled
 - name: plasma_pulse_to_cpi_0
   id: plasma_pulse_to_cpi
   parameters:
@@ -200,7 +136,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [640, 388.0]
+    coordinate: [912, 436.0]
     rotation: 0
     state: enabled
 - name: plasma_range_doppler_sink_0
@@ -208,12 +144,12 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    center_freq: center_freq
-    center_freq_key: core:frequency
+    center_freq: 2.4e9
+    center_freq_key: core:tx_freq
     comment: ''
-    depth: '1'
+    depth: '10'
     detection_indices_key: detection_indices
-    dynamic_range: '80'
+    dynamic_range: '60'
     dynamic_range_key: dynamic_range
     gui_hint: ''
     n_matrix_col_key: n_matrix_col
@@ -226,7 +162,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1384, 276.0]
+    coordinate: [1288, 252.0]
     rotation: 0
     state: enabled
 - name: plasma_usrp_radar_0
@@ -234,60 +170,37 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    args: num_send_frames=512,num_recv_frames=512
-    cal_file: '"/home/shane/.uhd/delay_calibration.json"'
-    center_freq_key: core:frequency
+    args: '"addr=192.168.30.2,use_dpdk=1"'
+    cal_file: '"/home/shane/.uhd/delay.json"'
     comment: ''
+    elevate_priority: 'True'
     maxoutbuf: '0'
     minoutbuf: '0'
-    prf_key: radar:prf
-    rx_freq: center_freq
-    rx_gain: '50'
-    rx_priority: '1.0'
+    rx_freq: 2.4e9
+    rx_freq_key: core:rx_freq
+    rx_gain: '10'
     samp_rate: samp_rate
     sample_start_key: core:sample_start
-    start_time: '0.2'
-    tx_freq: center_freq
-    tx_gain: '50'
-    tx_priority: '1.0'
+    start_delay: '0.1'
+    tx_freq: 2.4e9
+    tx_freq_key: core:tx_freq
+    tx_gain: '10'
+    verbose: 'False'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [408, 348.0]
+    coordinate: [680, 468.0]
     rotation: 0
-    state: enabled
-- name: plasma_waveform_controller_0
-  id: plasma_waveform_controller
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    prf: '10000'
-    prf_key: radar:prf
-    samp_rate: samp_rate
-    samp_rate_key: core:sample_rate
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [184, 412.0]
-    rotation: 0
-    state: enabled
+    state: true
 
 connections:
-- [plasma_cfar2D_0, out, plasma_pdu_file_sink_0, in]
-- [plasma_cfar2D_0, out, plasma_range_doppler_sink_0, in]
-- [plasma_doppler_processing_0, out, plasma_cfar2D_0, in]
-- [plasma_lfm_source_0, out, plasma_match_filt_0, tx]
-- [plasma_lfm_source_0, out, plasma_waveform_controller_0, in]
-- [plasma_match_filt_0, out, plasma_doppler_processing_0, in]
-- [plasma_pulse_to_cpi_0, out, plasma_match_filt_0, rx]
+- [plasma_cw_to_pulsed_0, out, plasma_usrp_radar_0, in]
+- [plasma_lfm_source_0, out, plasma_cw_to_pulsed_0, in]
+- [plasma_lfm_source_0, out, plasma_pulse_doppler_0, tx]
+- [plasma_pulse_doppler_0, out, plasma_range_doppler_sink_0, in]
+- [plasma_pulse_to_cpi_0, out, plasma_pulse_doppler_0, rx]
 - [plasma_usrp_radar_0, out, plasma_pulse_to_cpi_0, in]
-- [plasma_waveform_controller_0, out, plasma_usrp_radar_0, in]
 
 metadata:
   file_format: 1
-  grc_version: 3.10.3.0

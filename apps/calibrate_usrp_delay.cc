@@ -1,5 +1,5 @@
 #include <nlohmann/json.hpp>
-#include <plasma_dsp/linear_fm_waveform.h>
+#include <plasma_dsp/lfm.h>
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/utils/safe_main.hpp>
 #include <uhd/utils/thread.hpp>
@@ -192,7 +192,9 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     if (std::string::npos != last_slash_idx) {
         directory = filename.substr(0, last_slash_idx);
     }
-    double start_time = 0.2;
+
+    
+    double start_time = 0.1;
     boost::thread_group tx_thread;
     std::vector<double> master_clock_rates(rates.size());
     std::vector<size_t> delays(rates.size());
@@ -217,8 +219,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         double bandwidth = rates[i] / 2;
         double pulse_width = 20e-6;
         double prf = 10e3;
-        plasma::LinearFMWaveform waveform(bandwidth, pulse_width, rates[i], prf);
-        af::array waveform_array = waveform.step().as(c32);
+        af::array waveform_array = plasma::lfm(-bandwidth/2, bandwidth, pulse_width, rates[i], prf).as(c32);
         std::unique_ptr<std::complex<float>> waveform_data(
             reinterpret_cast<std::complex<float>*>(waveform_array.host<af::cfloat>()));
 
@@ -247,7 +248,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         af::array x(rx_buff.size(), c32);
         x.write(reinterpret_cast<af::cfloat*>(rx_buff.data()),
                 rx_buff.size() * sizeof(af::cfloat));
-        af::array h = waveform.MatchedFilter();
+        af::array h = af::conjg(af::flip(waveform_array, 0));
         af::array y = af::convolve1(x, h, AF_CONV_EXPAND, AF_CONV_AUTO);
         double max;
         unsigned int argmax;

@@ -1,0 +1,43 @@
+id: plasma_cw_to_pulsed
+label: CW To Pulsed
+category: '[plasma]'
+
+parameters:
+- id: prf
+  label: PRF
+  dtype: float
+  default: "prf"
+- id: samp_rate
+  label: Sample Rate
+  dtype: float
+  default: "samp_rate"
+- id: sample_rate_key
+  label: Sample Rate Key
+  dtype: string
+  category: Metadata
+  hide: part
+  default: core:sample_rate
+- id: prf_key
+  label: PRF Key
+  dtype: string
+  category: Metadata
+  hide: part
+  default: radar:prf
+
+inputs:
+- label: in
+  domain: message
+  optional: true
+
+outputs:
+- label: out
+  domain: message
+  optional: true
+
+templates:
+  imports: from gnuradio import plasma
+  make: |-
+    plasma.cw_to_pulsed(${prf}, ${samp_rate})
+    self.${id}.init_meta_dict(${sample_rate_key}, ${prf_key})
+
+file_format: 1

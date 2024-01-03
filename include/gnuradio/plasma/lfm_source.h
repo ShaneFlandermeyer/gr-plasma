@@ -33,7 +33,7 @@ public:
      * creating new instances.
      */
     static sptr
-    make(double bandwidth, double start_freq, double pulse_width, double samp_rate);
+    make(double bandwidth, double start_freq, double pulse_width, double samp_rate, double prf);
 
     /**
      * @brief Set the metadata keys in the PDU output
@@ -47,7 +47,8 @@ public:
                                 const std::string& start_freq_key,
                                 const std::string& duration_key,
                                 const std::string& sample_rate_key,
-                                const std::string& label_key) = 0;
+                                const std::string& label_key,
+                                const std::string& prf_key) = 0;
 };
 
 } // namespace plasma
