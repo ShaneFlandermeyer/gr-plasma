@@ -59,8 +59,8 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
     d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
     if (not d_meta_filename.empty()) {
         d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
-        d_meta_dict = pmt::make_dict();
     }
+    d_meta_dict = pmt::make_dict();
 }
 
 /*
@@ -80,9 +80,11 @@ pdu_file_sink_impl::~pdu_file_sink_impl()
     d_meta["global"] = global;
 
     // Write the metadata to a file and close both files
-    d_meta_file << d_meta.dump(2) << std::endl;
+    if (not d_meta_filename.empty()) {
+        d_meta_file << d_meta.dump(2) << std::endl;
+        d_meta_file.close();
+    }
     d_data_file.close();
-    d_meta_file.close();
 }
 
 void pdu_file_sink_impl::handle_message(const pmt::pmt_t& msg)
@@ -145,7 +147,6 @@ void pdu_file_sink_impl::run()
         // If the user wants metadata and we have some, save it
         if (d_meta_file.is_open() and pmt::length(pmt::dict_keys(d_meta_dict)) > 0) {
             parse_meta(d_meta_dict, d_meta);
-            // GR_LOG_DEBUG(d_logger, d_meta.dump(4));
             d_meta_dict = pmt::make_dict();
         }
     }
