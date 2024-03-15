@@ -48,7 +48,7 @@ To install gr-plasma system-wide, you should first install
 instructions in its README. Additional required dependencies should be installed as:
 
 ```[bash]
-sudo apt install nlohmann-json3-dev
+sudo apt install nlohmann-json3-dev libqwt-qt5-dev
 ```
 
 Next, run the following from the top-level directory of the module:

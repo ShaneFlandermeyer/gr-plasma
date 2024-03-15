@@ -88,7 +88,7 @@ pmt::pmt_t pdu_file_source_impl::parse_meta(const nlohmann::json& json)
             // Parse the primitive JSON values as dictionary key:value pairs
             pmt::pmt_t pmt_value;
             if (value.is_string())
-                pmt_value = pmt::intern(value);
+                pmt_value = pmt::intern(std::string{value});
             else if (value.is_number_float())
                 pmt_value = pmt::from_double(value);
             else if (value.is_number_integer())
