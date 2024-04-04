@@ -18,19 +18,18 @@ namespace plasma {
 class pulse_doppler_impl : public pulse_doppler
 {
 private:
-    af::array d_match_filt;
-    af::Backend d_backend;
-    size_t d_msg_queue_depth;
-    int d_num_pulse_cpi;
-    int d_fftsize;
+    af::array match_filt;
+    af::Backend backend;
+    size_t msg_queue_depth;
+    int num_pulse_cpi;
+    int nfft;
 
-    pmt::pmt_t d_tx_port;
-    pmt::pmt_t d_rx_port;
-    pmt::pmt_t d_out_port;
-    pmt::pmt_t d_meta;
-    pmt::pmt_t d_data;
+    pmt::pmt_t meta;
+    pmt::pmt_t tx_port;
+    pmt::pmt_t rx_port;
+    pmt::pmt_t out_port;
     // Metadata keys
-    pmt::pmt_t d_doppler_fft_size_key;
+    pmt::pmt_t doppler_fft_size_key;
 
     void handle_tx_msg(pmt::pmt_t);
     void handle_rx_msg(pmt::pmt_t);
