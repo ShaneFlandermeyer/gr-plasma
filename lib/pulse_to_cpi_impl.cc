@@ -52,15 +52,27 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
     } else {
         GR_LOG_WARN(d_logger, "Invalid message type")
     }
+
+    size_t samps_per_pulse = pmt::length(samples);
+    if (d_pulse_count == 0) {
+        if (d_data.size() != d_n_pulse_cpi * samps_per_pulse) {
+            d_data = std::vector<gr_complex>(d_n_pulse_cpi * samps_per_pulse);
+        }
+    }
     // Store the new PDU data
-    std::vector<gr_complex> new_data = pmt::c32vector_elements(samples);
-    d_data.insert(d_data.end(), new_data.begin(), new_data.end());
+    const gr_complex* data = pmt::c32vector_elements(samples, samps_per_pulse);
+    // Insert the data into the global data vector at the current index
+    // std::copy(
+    //     data, data + samps_per_pulse, d_data.begin() + d_pulse_count * samps_per_pulse);
+    for (size_t i = 0; i < samps_per_pulse; i++) {
+        d_data[d_pulse_count * samps_per_pulse + i] = data[i];
+    }
+
     d_pulse_count++;
     // Output a PDU containing all the pulses in a column-major format
     if (d_pulse_count == d_n_pulse_cpi) {
         message_port_pub(d_out_port,
                          pmt::cons(d_meta, pmt::init_c32vector(d_data.size(), d_data)));
-        d_data.clear();
         // Reset the metadata
         d_meta = pmt::make_dict();
         d_pulse_count = 0;
