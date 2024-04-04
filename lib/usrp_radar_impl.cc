@@ -86,6 +86,7 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args,
                 this->rx_subdev,
                 this->verbose);
 
+    n_delay = 0;
     if (not cal_file.empty()) {
         read_calibration_file(cal_file);
     }
@@ -137,7 +138,7 @@ void usrp_radar_impl::run()
         uhd::set_thread_priority_safe();
     }
 
-    /***********************************************************************
+    /*************************>**********************************************
      * Receive thread
      **********************************************************************/
     double start_time = usrp->get_time_now().get_real_secs() + start_delay;
@@ -301,6 +302,7 @@ void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
     md.has_time_spec = has_time_spec;
     md.time_spec = uhd::time_spec_t(start_time);
 
+
     double timeout = 0.1 + start_time;
     while (not finished) {
         if (new_msg_received) {
@@ -326,7 +328,6 @@ void usrp_radar_impl::read_calibration_file(const std::string& filename)
 {
     std::ifstream file(filename);
     nlohmann::json json;
-    n_delay = 0;
     if (file) {
         file >> json;
         std::string radio_type = usrp->get_mboard_name();
