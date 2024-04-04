@@ -86,6 +86,7 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args,
                 this->rx_subdev,
                 this->verbose);
 
+    n_delay = 0;
     if (not cal_file.empty()) {
         read_calibration_file(cal_file);
     }
@@ -326,7 +327,6 @@ void usrp_radar_impl::read_calibration_file(const std::string& filename)
 {
     std::ifstream file(filename);
     nlohmann::json json;
-    n_delay = 0;
     if (file) {
         file >> json;
         std::string radio_type = usrp->get_mboard_name();
