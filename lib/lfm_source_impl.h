@@ -21,35 +21,29 @@ class lfm_source_impl : public lfm_source
 {
 private:
     // Message ports
-    const pmt::pmt_t d_msg_port;
-    const pmt::pmt_t d_out_port;
+    const pmt::pmt_t msg_port;
+    const pmt::pmt_t out_port;
     pmt::pmt_t d_msg;
 
     // Waveform parameters
-    double d_bandwidth;
-    double d_start_freq;
-    double d_pulse_width;
-    double d_samp_rate;
-    double d_prf;
+    double bandwidth;
+    double start_freq;
+    double pulse_width;
+    double samp_rate;
+    double prf;
 
     // Waveform object and IQ data
-    pmt::pmt_t d_data;
-    // std::unique_ptr<std::complex<float>> d_data;
-    size_t d_num_samp;
-    uint64_t d_start_time;
-    uint64_t d_send_time;
+    pmt::pmt_t pmt_samples;
 
     // Metadata fields
-    pmt::pmt_t d_label_key;
-    pmt::pmt_t d_sample_rate_key;
-    pmt::pmt_t d_bandwidth_key;
-    pmt::pmt_t d_start_freq_key;
-    pmt::pmt_t d_duration_key;
-    pmt::pmt_t d_prf_key;
-    // Metadata dict(s)
-    pmt::pmt_t d_global;
-    pmt::pmt_t d_annotations;
-    pmt::pmt_t d_meta;
+    pmt::pmt_t meta;
+    pmt::pmt_t label_key;
+    pmt::pmt_t sample_rate_key;
+    pmt::pmt_t bandwidth_key;
+    pmt::pmt_t start_freq_key;
+    pmt::pmt_t duration_key;
+    pmt::pmt_t prf_key;
+    
 
     void handle_msg(pmt::pmt_t msg);
 

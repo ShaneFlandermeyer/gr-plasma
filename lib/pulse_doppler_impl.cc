@@ -66,8 +66,6 @@ void pulse_doppler_impl::handle_tx_msg(pmt::pmt_t msg)
         af::setBackend(backend);
     }
     tx_samples = af::array(af::dim4(n), reinterpret_cast<const af::cfloat*>(tx_data_ptr));
-    // match_filt = af::conjg(match_filt);
-    // match_filt = af::flip(match_filt, 0);
 }
 
 void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
@@ -91,7 +89,6 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
     size_t num_samples_cpi = pmt::length(rx_samples);
     size_t num_fast_time_samples = num_samples_cpi / num_pulse_cpi;
     size_t num_conv_samples = num_fast_time_samples + tx_samples.elements() - 1;
-    size_t num_rdm_samples = nfft * num_conv_samples;
 
     // Make sure backend matches before
     if (af::getActiveBackend() != backend) {
@@ -107,8 +104,11 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
     // Doppler processing
     rdm = ::plasma::fftshift(af::fftNorm(rdm.T(), 1.0, nfft), 0).T();
 
+    // Extract slices of the RDM
+    // TODO: Do this before pulse compression and make it a message argument
 
     // Publish message
+    size_t num_rdm_samples = rdm.elements();
     pmt::pmt_t rdm_pmt = pmt::make_c32vector(num_rdm_samples, 0);
     gr_complex* rdm_data = pmt::c32vector_writable_elements(rdm_pmt, num_rdm_samples);
     rdm.host(rdm_data);
