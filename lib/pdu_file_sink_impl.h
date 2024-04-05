@@ -21,106 +21,22 @@ namespace plasma {
 class pdu_file_sink_impl : public pdu_file_sink
 {
 private:
-    /**
-     * @brief Size of each data sample, determined by the type input parameter
-     *
-     */
-    size_t d_itemsize;
-    /**
-     * @brief Name of the data file
-     *
-     */
-    std::string d_data_filename;
+    size_t itemsize;
+    std::queue<pmt::pmt_t> data_queue, meta_queue;
+    pmt::pmt_t data, meta;
+    nlohmann::json meta_json;
 
-    /**
-     * @brief Name of the metadata file
-     *
-     */
-    std::string d_meta_filename;
+    std::string data_filename, meta_filename;
+    std::ofstream data_file, meta_file;
 
-    /**
-     * @brief Queue of data to be written to a file
-     *
-     */
-    std::queue<pmt::pmt_t> d_data_queue;
-
-    /**
-     * @brief Queue of metadata to be written to a file
-     *
-     */
-    std::queue<pmt::pmt_t> d_meta_queue;
-
-    /**
-     * @brief File stream to write data to
-     *
-     */
-    std::ofstream d_data_file;
-
-    /**
-     * @brief File stream to write metadata to
-     *
-     */
-    std::ofstream d_meta_file;
-
-    /**
-     * @brief Worker thread used for run() method
-     *
-     */
-    gr::thread::thread d_thread;
-
-    /**
-     * @brief Mutex to be acquired when accessing the queues
-     *
-     */
-    gr::thread::mutex d_mutex;
-
-    /**
-     * @brief Condition variable that signals the worker thread to write to file
-     *
-     */
-    gr::thread::condition_variable d_cond;
-
-    /**
-     * @brief Indicates that the block should clean up and shut down
-     *
-     */
-    std::atomic<bool> d_finished;
-
-    /**
-     * @brief Current data item to be written to file
-     *
-     */
-    pmt::pmt_t d_data;
-
-    /**
-     * @brief Current metadata item to be written to file
-     *
-     */
-    pmt::pmt_t d_meta_dict;
+    // Threading
+    gr::thread::thread main_thread;
+    gr::thread::mutex queue_mutex;
+    gr::thread::condition_variable write_cond;
+    std::atomic<bool> finished;
 
 
-    /**
-     * @brief SigMF metadata object
-     *
-     */
-    nlohmann::json d_meta;
-    nlohmann::json d_global;
-    nlohmann::json d_capture;
-    nlohmann::json d_annotation;
-
-    /**
-     * @brief Use the data type parameter and system endianness to fill the
-     * SigMF datatype field
-     *
-     * @return std::string
-     */
     std::string get_datatype_string();
-
-    /**
-     * @brief Parse an input PMT dictionary for SigMF metadata
-     *
-     * @param dict
-     */
     void parse_meta(const pmt::pmt_t& dict, nlohmann::json& json);
 
 

@@ -49,18 +49,18 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
     : gr::block("pdu_file_sink",
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
-      d_itemsize(itemsize),
-      d_data_filename(data_filename),
-      d_meta_filename(meta_filename)
+      itemsize(itemsize),
+      data_filename(data_filename),
+      meta_filename(meta_filename)
 {
 
     message_port_register_in(PMT_IN);
     set_msg_handler(PMT_IN, [this](const pmt::pmt_t& msg) { handle_message(msg); });
-    d_data_file = std::ofstream(d_data_filename, std::ios::binary | std::ios::out);
-    if (not d_meta_filename.empty()) {
-        d_meta_file = std::ofstream(d_meta_filename, std::ios::out);
+    data_file = std::ofstream(data_filename, std::ios::binary | std::ios::out);
+    if (not meta_filename.empty()) {
+        meta_file = std::ofstream(meta_filename, std::ios::out);
     }
-    d_meta_dict = pmt::make_dict();
+    meta = pmt::make_dict();
 }
 
 /*
@@ -68,48 +68,37 @@ pdu_file_sink_impl::pdu_file_sink_impl(size_t itemsize,
  */
 pdu_file_sink_impl::~pdu_file_sink_impl()
 {
-    // The algorithm in parse_meta creates a JSON array of length 1 for the
-    // global field when it should be a JSON object according to the SigMF spec
-    nlohmann::json global;
-    for (size_t i = 0; i < d_meta["global"].size(); i++) {
-        for (auto& x : d_meta["global"][i].items()) {
-            global[x.key()] = x.value();
-        }
-        d_meta["global"].erase(i);
-    }
-    d_meta["global"] = global;
-
     // Write the metadata to a file and close both files
-    if (not d_meta_filename.empty()) {
-        d_meta_file << d_meta.dump(2) << std::endl;
-        d_meta_file.close();
+    if (not meta_filename.empty()) {
+        meta_file << meta_json.dump(2) << std::endl;
+        meta_file.close();
     }
-    d_data_file.close();
+    data_file.close();
 }
 
 void pdu_file_sink_impl::handle_message(const pmt::pmt_t& msg)
 {
     if (pmt::is_pdu(msg)) {
-        gr::thread::scoped_lock lock(d_mutex);
-        d_data_queue.push(pmt::cdr(msg));
-        d_meta_queue.push(pmt::car(msg));
-        d_cond.notify_one();
+        gr::thread::scoped_lock lock(queue_mutex);
+        data_queue.push(pmt::cdr(msg));
+        meta_queue.push(pmt::car(msg));
+        write_cond.notify_one();
     }
 }
 
 bool pdu_file_sink_impl::start()
 {
-    d_finished = false;
-    d_thread = gr::thread::thread([this] { run(); });
+    finished = false;
+    main_thread = gr::thread::thread([this] { run(); });
 
     return block::start();
 }
 
 bool pdu_file_sink_impl::stop()
 {
-    d_finished = true;
-    d_cond.notify_one();
-    d_thread.join();
+    finished = true;
+    write_cond.notify_one();
+    main_thread.join();
 
     return block::stop();
 }
@@ -119,35 +108,27 @@ void pdu_file_sink_impl::run()
     static bool first = true;
     while (true) {
         {
-            gr::thread::scoped_lock lock(d_mutex);
-            d_cond.wait(lock, [this] { return not d_data_queue.empty() || d_finished; });
-            if (d_finished)
+            gr::thread::scoped_lock lock(queue_mutex);
+            write_cond.wait(lock, [this] { return not data_queue.empty() || finished; });
+            if (finished)
                 return;
-            d_data = d_data_queue.front();
-            d_meta_dict = pmt::dict_update(d_meta_dict, d_meta_queue.front());
-            if (first) {
-                // Add global metadata fields for the first output dictionary
-                first = false;
-                pmt::pmt_t input_global_dict =
-                    pmt::dict_ref(d_meta_dict, PMT_GLOBAL, pmt::PMT_NIL);
-                pmt::pmt_t global = pmt::make_dict();
-                global = pmt::dict_add(
-                    global, PMT_DATATYPE, pmt::intern(get_datatype_string()));
-                global = pmt::dict_add(global, PMT_VERSION, pmt::intern("1.0.0"));
-                if (not pmt::is_null(input_global_dict))
-                    global = pmt::dict_update(global, input_global_dict);
-                // d_meta[pmt::symbol_to_string(PMT_GLOBAL)] =
-                d_meta_dict = pmt::dict_add(d_meta_dict, PMT_GLOBAL, global);
-            }
-            d_data_queue.pop();
-            d_meta_queue.pop();
+            data = data_queue.front();
+            meta = pmt::dict_update(meta, meta_queue.front());
+            data_queue.pop();
+            meta_queue.pop();
         }
-        size_t n = pmt::length(d_data);
-        d_data_file.write((char*)pmt::blob_data(d_data), n * d_itemsize);
+        size_t n = pmt::length(data);
+        data_file.write((char*)pmt::blob_data(data), n * itemsize);
         // If the user wants metadata and we have some, save it
-        if (d_meta_file.is_open() and pmt::length(pmt::dict_keys(d_meta_dict)) > 0) {
-            parse_meta(d_meta_dict, d_meta);
-            d_meta_dict = pmt::make_dict();
+        if (meta_file.is_open() and pmt::length(pmt::dict_keys(meta)) > 0) {
+            parse_meta(meta, meta_json);
+            meta = pmt::make_dict();
+        }
+
+        if (first) {
+            std::string datatype = get_datatype_string();
+            meta_json["datatype"] = datatype;
+            first = false;
         }
     }
 }
@@ -182,7 +163,7 @@ void pdu_file_sink_impl::parse_meta(const pmt::pmt_t& dict, nlohmann::json& json
 std::string pdu_file_sink_impl::get_datatype_string()
 {
     std::string outstr;
-    switch (d_itemsize) {
+    switch (itemsize) {
     case sizeof(gr_complex):
         outstr = "cf";
         break;
@@ -198,7 +179,7 @@ std::string pdu_file_sink_impl::get_datatype_string()
     default:
         break;
     }
-    outstr += std::to_string(8 * d_itemsize);
+    outstr += std::to_string(8 * itemsize);
     if (is_big_endian()) {
         outstr += "_be";
     } else {
