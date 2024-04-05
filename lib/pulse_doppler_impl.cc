@@ -59,18 +59,21 @@ void pulse_doppler_impl::handle_tx_msg(pmt::pmt_t msg)
     }
     size_t n = pmt::length(samples);
 
-    const gr_complex* tx_samples = pmt::c32vector_elements(samples, n);
+    const gr_complex* tx_data_ptr = pmt::c32vector_elements(samples, n);
 
     // Create the matched filter
-    match_filt = af::array(af::dim4(n), reinterpret_cast<const af::cfloat*>(tx_samples));
-    match_filt = af::conjg(match_filt);
-    match_filt = af::flip(match_filt, 0);
+    if (af::getActiveBackend() != backend) {
+        af::setBackend(backend);
+    }
+    tx_samples = af::array(af::dim4(n), reinterpret_cast<const af::cfloat*>(tx_data_ptr));
+    // match_filt = af::conjg(match_filt);
+    // match_filt = af::flip(match_filt, 0);
 }
 
 void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
 {
     pmt::pmt_t rx_samples;
-    if (this->nmsgs(rx_port) > msg_queue_depth or match_filt.elements() == 0) {
+    if (this->nmsgs(rx_port) > msg_queue_depth or tx_samples.elements() == 0) {
         return;
     }
     // Get a copy of the input samples
@@ -87,23 +90,25 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
     // Compute matrix and vector dimensions
     size_t num_samples_cpi = pmt::length(rx_samples);
     size_t num_fast_time_samples = num_samples_cpi / num_pulse_cpi;
-    size_t num_rdm_samples = nfft * (num_fast_time_samples + match_filt.elements() - 1);
+    size_t num_conv_samples = num_fast_time_samples + tx_samples.elements() - 1;
+    size_t num_rdm_samples = nfft * num_conv_samples;
 
-    // Get input and output data
-    const gr_complex* in = pmt::c32vector_elements(rx_samples, num_samples_cpi);
+    // Make sure backend matches before
+    if (af::getActiveBackend() != backend) {
+        af::setBackend(backend);
+    }
+
+    // Pulse compression on Rx data
+    const gr_complex* rx_data_ptr = pmt::c32vector_elements(rx_samples, num_samples_cpi);
+    af::array xr(af::dim4(num_fast_time_samples, num_pulse_cpi),
+                 reinterpret_cast<const af::cfloat*>(rx_data_ptr));
+    af::array rdm = af::ifft(af::fft(xr, num_conv_samples) *
+                             af::conjg(af::fft(tx_samples, num_conv_samples)));
+    // Doppler processing
+    rdm = ::plasma::fftshift(af::fftNorm(rdm.T(), 1.0, nfft), 0).T();
 
 
-    // Apply the matched filter to each column
-    af::array rdm(af::dim4(num_fast_time_samples, num_pulse_cpi),
-                  reinterpret_cast<const af::cfloat*>(in));
-    rdm = af::convolve1(rdm, match_filt, AF_CONV_EXPAND, AF_CONV_AUTO);
-
-    // Do a doppler FFT for each range bin
-    rdm = rdm.T();
-    rdm = af::fftNorm(rdm, 1.0, nfft);
-    rdm = ::plasma::fftshift(rdm, 0);
-    rdm = rdm.T();
-
+    // Publish message
     pmt::pmt_t rdm_pmt = pmt::make_c32vector(num_rdm_samples, 0);
     gr_complex* rdm_data = pmt::c32vector_writable_elements(rdm_pmt, num_rdm_samples);
     rdm.host(rdm_data);
@@ -116,21 +121,20 @@ void pulse_doppler_impl::set_msg_queue_depth(size_t depth) { msg_queue_depth = d
 
 void pulse_doppler_impl::set_backend(Device::Backend backend)
 {
-    // switch (backend) {
-    // case Device::CPU:
-    //     backend = AF_BACKEND_CPU;
-    //     break;
-    // case Device::CUDA:
-    //     backend = AF_BACKEND_CUDA;
-    //     break;
-    // case Device::OPENCL:
-    //     backend = AF_BACKEND_OPENCL;
-    //     break;
-    // default:
-    //     backend = AF_BACKEND_DEFAULT;
-    //     break;
-    // }
-    // af::setBackend(backend);
+    switch (backend) {
+    case Device::CPU:
+        this->backend = AF_BACKEND_CPU;
+        break;
+    case Device::CUDA:
+        this->backend = AF_BACKEND_CUDA;
+        break;
+    case Device::OPENCL:
+        this->backend = AF_BACKEND_OPENCL;
+        break;
+    default:
+        this->backend = AF_BACKEND_DEFAULT;
+        break;
+    }
 }
 
 void pulse_doppler_impl::init_meta_dict(std::string doppler_fft_size_key)

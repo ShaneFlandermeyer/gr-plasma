@@ -62,11 +62,8 @@ void pulse_to_cpi_impl::handle_msg(pmt::pmt_t msg)
     // Store the new PDU data
     const gr_complex* data = pmt::c32vector_elements(samples, samps_per_pulse);
     // Insert the data into the global data vector at the current index
-    // std::copy(
-    //     data, data + samps_per_pulse, d_data.begin() + d_pulse_count * samps_per_pulse);
-    for (size_t i = 0; i < samps_per_pulse; i++) {
-        d_data[d_pulse_count * samps_per_pulse + i] = data[i];
-    }
+    std::copy(
+        data, data + samps_per_pulse, d_data.begin() + d_pulse_count * samps_per_pulse);
 
     d_pulse_count++;
     // Output a PDU containing all the pulses in a column-major format

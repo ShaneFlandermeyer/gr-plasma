@@ -18,7 +18,7 @@ namespace plasma {
 class pulse_doppler_impl : public pulse_doppler
 {
 private:
-    af::array match_filt;
+    af::array tx_samples;
     af::Backend backend;
     size_t msg_queue_depth;
     int num_pulse_cpi;
