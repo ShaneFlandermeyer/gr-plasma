@@ -25,7 +25,7 @@ pulse_doppler_impl::pulse_doppler_impl(int num_pulse_cpi, int doppler_fft_size)
                 gr::io_signature::make(0, 0, 0),
                 gr::io_signature::make(0, 0, 0)),
       num_pulse_cpi(num_pulse_cpi),
-      nfft(doppler_fft_size)
+      doppler_fft_size(doppler_fft_size)
 {
     tx_port = PMT_TX;
     rx_port = PMT_RX;
@@ -88,7 +88,6 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
     // Compute matrix and vector dimensions
     size_t num_samples_cpi = pmt::length(rx_samples);
     size_t num_fast_time_samples = num_samples_cpi / num_pulse_cpi;
-    size_t num_conv_samples = num_fast_time_samples + tx_samples.elements() - 1;
 
     // Make sure backend matches before
     if (af::getActiveBackend() != backend) {
@@ -101,7 +100,7 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
                  reinterpret_cast<const af::cfloat*>(rx_data_ptr));
     af::array rdm = af::convolve1(af::flip(af::conjg(tx_samples), 0), xr, AF_CONV_EXPAND);
     // Doppler processing
-    rdm = ::plasma::fftshift(af::fftNorm(rdm.T(), 1.0, nfft), 0).T();
+    rdm = ::plasma::fftshift(af::fftNorm(rdm.T(), 1.0, doppler_fft_size), 0).T();
 
     // Publish message
     size_t num_rdm_samples = rdm.elements();
@@ -137,7 +136,8 @@ void pulse_doppler_impl::init_meta_dict(std::string doppler_fft_size_key)
 {
     this->doppler_fft_size_key = pmt::intern(doppler_fft_size_key);
     meta = pmt::make_dict();
-    meta = pmt::dict_add(meta, this->doppler_fft_size_key, pmt::from_long(nfft));
+    meta =
+        pmt::dict_add(meta, this->doppler_fft_size_key, pmt::from_long(doppler_fft_size));
 }
 
 } /* namespace plasma */

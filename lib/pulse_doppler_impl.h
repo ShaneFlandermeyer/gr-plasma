@@ -22,7 +22,7 @@ private:
     af::Backend backend;
     size_t msg_queue_depth;
     int num_pulse_cpi;
-    int nfft;
+    int doppler_fft_size;
 
     pmt::pmt_t meta;
     pmt::pmt_t tx_port;
