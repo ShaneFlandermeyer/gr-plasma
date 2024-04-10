@@ -54,7 +54,7 @@ private:
     size_t n_tx_total;
 
     pmt::pmt_t tx_data;
-    pmt::pmt_t next_meta; // Metadata for the next Rx pdu
+    pmt::pmt_t meta;
 
     // Metadata keys
     std::string tx_freq_key;

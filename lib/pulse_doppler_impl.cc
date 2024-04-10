@@ -99,13 +99,9 @@ void pulse_doppler_impl::handle_rx_msg(pmt::pmt_t msg)
     const gr_complex* rx_data_ptr = pmt::c32vector_elements(rx_samples, num_samples_cpi);
     af::array xr(af::dim4(num_fast_time_samples, num_pulse_cpi),
                  reinterpret_cast<const af::cfloat*>(rx_data_ptr));
-    af::array rdm = af::ifft(af::fft(xr, num_conv_samples) *
-                             af::conjg(af::fft(tx_samples, num_conv_samples)));
+    af::array rdm = af::convolve1(af::flip(af::conjg(tx_samples), 0), xr, AF_CONV_EXPAND);
     // Doppler processing
     rdm = ::plasma::fftshift(af::fftNorm(rdm.T(), 1.0, nfft), 0).T();
-
-    // Extract slices of the RDM
-    // TODO: Do this before pulse compression and make it a message argument
 
     // Publish message
     size_t num_rdm_samples = rdm.elements();
