@@ -234,7 +234,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
                               double start_time)
 {
     if (elevate_priority) {
-        uhd::set_thread_priority();
+        uhd::set_thread_priority(1.0);
     }
     // setup variables
     uhd::rx_metadata_t md;
@@ -282,7 +282,7 @@ void usrp_radar_impl::transmit_bursts(uhd::usrp::multi_usrp::sptr usrp,
                                       double start_time)
 {
     if (elevate_priority) {
-        uhd::set_thread_priority();
+        uhd::set_thread_priority(1.0);
     }
     // Create the metadata, and populate the time spec at the latest possible moment
     uhd::tx_metadata_t md;
