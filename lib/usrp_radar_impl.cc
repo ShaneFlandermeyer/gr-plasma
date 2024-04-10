@@ -57,7 +57,7 @@ usrp_radar_impl::usrp_radar_impl(const std::string& args,
       rx_gain(rx_gain),
       start_delay(start_delay),
       elevate_priority(elevate_priority),
-      cal_file(cal_file),
+      calibration_file(cal_file),
       verbose(verbose)
 {
     // Additional parameters. I have the hooks in to make them configurable, but we don't
@@ -102,7 +102,7 @@ usrp_radar_impl::~usrp_radar_impl() {}
 bool usrp_radar_impl::start()
 {
     finished = false;
-    d_main_thread = gr::thread::thread([this] { run(); });
+    main_thread = gr::thread::thread(&usrp_radar_impl::run, this);
     return block::start();
 }
 
@@ -133,40 +133,37 @@ void usrp_radar_impl::run()
         }
     }
 
-    std::atomic<bool>& finished = this->finished;
-    if (this->elevate_priority) {
-        uhd::set_thread_priority_safe();
-    }
 
-    /*************************>**********************************************
+    double start_time = usrp->get_time_now().get_real_secs() + start_delay;
+    /***********************************************************************
      * Receive thread
      **********************************************************************/
-    double start_time = usrp->get_time_now().get_real_secs() + start_delay;
-    bool rx_stream_now = (start_delay == 0.0 && (rx_channel_nums.size() == 1));
+
     // create a receive streamer
     uhd::stream_args_t rx_stream_args(rx_cpu_format, rx_otw_format);
     rx_stream_args.channels = rx_channel_nums;
     rx_stream_args.args = uhd::device_addr_t(rx_device_addr);
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(rx_stream_args);
-    auto rx_thread = d_tx_rx_thread_group.create_thread([=, &finished]() {
-        receive(usrp, rx_stream, finished, elevate_priority, start_time, rx_stream_now);
-    });
-    uhd::set_thread_name(rx_thread, "rx_stream");
+    rx_thread =
+        gr::thread::thread(&usrp_radar_impl::receive, this, usrp, rx_stream, start_time);
+
     /***********************************************************************
      * Transmit thread
      **********************************************************************/
-    bool tx_has_time_spec = (start_delay != 0.0);
     uhd::stream_args_t tx_stream_args(tx_cpu_format, tx_otw_format);
     tx_stream_args.channels = tx_channel_nums;
     tx_stream_args.args = uhd::device_addr_t(tx_device_addr);
     uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(tx_stream_args);
-    auto tx_thread = d_tx_rx_thread_group.create_thread([=, &finished]() {
-        transmit(
-            usrp, tx_stream, finished, elevate_priority, start_time, tx_has_time_spec);
-    });
-    uhd::set_thread_name(tx_thread, "tx_stream");
+    tx_thread =
+        gr::thread::thread(&usrp_radar_impl::transmit, this, usrp, tx_stream, start_time);
 
-    d_tx_rx_thread_group.join_all();
+    if (elevate_priority) {
+        gr::thread::set_thread_priority(tx_thread.native_handle(), 99);
+        gr::thread::set_thread_priority(rx_thread.native_handle(), 99);
+    }
+
+    tx_thread.join();
+    rx_thread.join();
 }
 
 void usrp_radar_impl::config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
@@ -217,29 +214,22 @@ void usrp_radar_impl::config_usrp(uhd::usrp::multi_usrp::sptr& usrp,
 
 void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
                               uhd::rx_streamer::sptr rx_stream,
-                              std::atomic<bool>& finished,
-                              bool elevate_priority,
-                              double start_time,
-                              bool rx_stream_now)
+                              double start_time)
 {
-    if (elevate_priority) {
-        uhd::set_thread_priority_safe(1, true);
-    }
 
     // setup variables
     uhd::rx_metadata_t md;
     uhd::stream_cmd_t cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
     cmd.time_spec = uhd::time_spec_t(start_time);
-    cmd.stream_now = rx_stream_now;
+    cmd.stream_now = start_time >= usrp->get_time_now().get_real_secs();
     rx_stream->issue_stream_cmd(cmd);
 
     // Set up and allocate buffers
     pmt::pmt_t rx_data_pmt = pmt::make_c32vector(tx_buff_size, 0);
     gr_complex* rx_data_ptr = pmt::c32vector_writable_elements(rx_data_pmt, tx_buff_size);
 
-
     double time_until_start = start_time - usrp->get_time_now().get_real_secs();
-    double recv_timeout = 0.1 + time_until_start;
+    double timeout = 0.1 + time_until_start;
     bool stop_called = false;
 
     // TODO: Handle multiple channels (e.g., one out port per channel)
@@ -249,15 +239,15 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
             stop_called = true;
         }
         try {
+
             if (n_delay > 0) {
                 // Throw away n_delay samples at the beginning
                 std::vector<gr_complex> dummy_vec(n_delay);
-                size_t n_rx =
-                    rx_stream->recv(dummy_vec.data(), n_delay, md, recv_timeout);
-                n_delay -= n_rx;
+                n_delay -= rx_stream->recv(dummy_vec.data(), n_delay, md, timeout);
             }
-            rx_stream->recv(rx_data_ptr, tx_buff_size, md, recv_timeout);
-            recv_timeout = 0.1;
+            rx_stream->recv(rx_data_ptr, tx_buff_size, md, timeout);
+            timeout = 0.1;
+
             // Copy any new metadata to the output and reset the metadata
             pmt::pmt_t meta = this->next_meta;
             if (pmt::length(meta) > 0) {
@@ -266,7 +256,7 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
                 this->next_meta = pmt::make_dict();
             }
             message_port_pub(PMT_OUT, pmt::cons(meta, rx_data_pmt));
-            // TODO: May need to resize the buffer if the transmit waveform changes
+
         } catch (uhd::io_error& e) {
             std::cerr << "Caught an IO exception. " << std::endl;
             std::cerr << e.what() << std::endl;
@@ -288,20 +278,13 @@ void usrp_radar_impl::receive(uhd::usrp::multi_usrp::sptr usrp,
 
 void usrp_radar_impl::transmit(uhd::usrp::multi_usrp::sptr usrp,
                                uhd::tx_streamer::sptr tx_stream,
-                               std::atomic<bool>& finished,
-                               bool elevate_priority,
-                               double start_time,
-                               double has_time_spec)
+                               double start_time)
 {
-    if (elevate_priority) {
-        uhd::set_thread_priority_safe(1, true);
-    }
 
     // Create the metadata, and populate the time spec at the latest possible moment
     uhd::tx_metadata_t md;
-    md.has_time_spec = has_time_spec;
+    md.has_time_spec = start_time != 0.0;
     md.time_spec = uhd::time_spec_t(start_time);
-
 
     double timeout = 0.1 + start_time;
     while (not finished) {

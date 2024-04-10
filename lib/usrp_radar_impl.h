@@ -32,35 +32,34 @@ private:
     double tx_freq, rx_freq;
     double tx_gain, rx_gain;
     double start_delay;
-    bool elevate_priority;
-    std::string cal_file;
     std::vector<size_t> tx_channel_nums, rx_channel_nums;
     std::string tx_subdev, rx_subdev;
     std::string tx_device_addr, rx_device_addr;
     std::string tx_cpu_format, rx_cpu_format;
     std::string tx_otw_format, rx_otw_format;
+
+    bool elevate_priority;
+    std::string calibration_file;
     bool verbose;
     size_t n_delay;
-    
+
     // Implementation params
-    gr::thread::thread d_main_thread;
-    boost::thread_group d_tx_rx_thread_group;
+    gr::thread::thread main_thread;
+    gr::thread::thread tx_thread;
+    gr::thread::thread rx_thread;
     std::vector<const void*> tx_buffs;
-    size_t tx_buff_size;
     std::atomic<bool> finished;
-    std::atomic<bool> msg_received;
+    std::atomic<bool> new_msg_received;
+    size_t tx_buff_size;
     size_t n_tx_total;
-    
+
     pmt::pmt_t tx_data;
     pmt::pmt_t next_meta; // Metadata for the next Rx pdu
-    std::atomic<bool> new_msg_received;
-
 
     // Metadata keys
     std::string tx_freq_key;
     std::string rx_freq_key;
     std::string sample_start_key;
-    
 
 
 private:
@@ -78,20 +77,14 @@ private:
                      bool verbose);
     void receive(uhd::usrp::multi_usrp::sptr usrp,
                  uhd::rx_streamer::sptr rx_stream,
-                 std::atomic<bool>& finished,
-                 bool elevate_priority,
-                 double adjusted_rx_delay,
-                 bool rx_stream_now);
+                 double start_time);
     void transmit(uhd::usrp::multi_usrp::sptr usrp,
                   uhd::tx_streamer::sptr tx_stream,
-                  std::atomic<bool>& finished,
-                  bool elevate_priority,
-                  double tx_delay,
-                  double has_time_spec);
+                  double start_time);
     void read_calibration_file(const std::string& filename);
     void set_metadata_keys(const std::string& tx_freq_key,
-                                   const std::string& rx_freq_key,
-                                   const std::string& sample_start_key);
+                           const std::string& rx_freq_key,
+                           const std::string& sample_start_key);
 
 public:
     usrp_radar_impl(const std::string& args,
@@ -107,33 +100,10 @@ public:
                     const bool verbose);
     ~usrp_radar_impl();
 
-    /**
-     * @brief
-     *
-     * @param msg
-     */
-    void handle_message(const pmt::pmt_t& msg);
-
-    /**
-     * @brief Initialize all buffers and set up the transmit and recieve threads
-     *
-     */
     void run();
-    /**
-     * @brief Start the main worker thread
-     */
     bool start() override;
-    /**
-     * @brief Stop the main worker thread
-     */
     bool stop() override;
-
-    /**
-     * @brief Use the calibration file to determine the number of
-     * samples to remove from the beginning of transmission
-     *
-     */
-    // void read_calibration_file(const std::string&) override;
+    void handle_message(const pmt::pmt_t& msg);
 };
 
 } // namespace plasma
