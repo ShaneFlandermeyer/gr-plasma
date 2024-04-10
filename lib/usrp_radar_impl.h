@@ -37,6 +37,7 @@ private:
     std::string tx_device_addr, rx_device_addr;
     std::string tx_cpu_format, rx_cpu_format;
     std::string tx_otw_format, rx_otw_format;
+    double prf;
 
     bool elevate_priority;
     std::string calibration_file;
@@ -47,10 +48,10 @@ private:
     gr::thread::thread main_thread;
     gr::thread::thread tx_thread;
     gr::thread::thread rx_thread;
-    std::vector<const void*> tx_buffs;
+    std::vector<std::vector<gr_complex>> tx_buffs;
     std::atomic<bool> finished;
     std::atomic<bool> new_msg_received;
-    size_t tx_buff_size;
+    size_t tx_buff_size, rx_buff_size;
     size_t n_tx_total;
 
     pmt::pmt_t tx_data;
@@ -60,6 +61,7 @@ private:
     std::string tx_freq_key;
     std::string rx_freq_key;
     std::string sample_start_key;
+    std::string prf_key;
 
 
 private:
@@ -78,13 +80,17 @@ private:
     void receive(uhd::usrp::multi_usrp::sptr usrp,
                  uhd::rx_streamer::sptr rx_stream,
                  double start_time);
-    void transmit(uhd::usrp::multi_usrp::sptr usrp,
-                  uhd::tx_streamer::sptr tx_stream,
-                  double start_time);
+    void transmit_bursts(uhd::usrp::multi_usrp::sptr usrp,
+                         uhd::tx_streamer::sptr tx_stream,
+                         double start_time);
+    void transmit_continuous(uhd::usrp::multi_usrp::sptr usrp,
+                             uhd::tx_streamer::sptr tx_stream,
+                             double start_time);
     void read_calibration_file(const std::string& filename);
     void set_metadata_keys(const std::string& tx_freq_key,
                            const std::string& rx_freq_key,
-                           const std::string& sample_start_key);
+                           const std::string& sample_start_key,
+                           const std::string& prf_key);
 
 public:
     usrp_radar_impl(const std::string& args,

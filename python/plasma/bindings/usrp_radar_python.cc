@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Free Software Foundation, Inc.
+ * Copyright 2024 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(usrp_radar.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(abcaa93a8ea387faf927c248eaf93f2e)                     */
+/* BINDTOOL_HEADER_FILE_HASH(ee50b82bdee91d0a5b514b240f9555a5)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -30,50 +30,34 @@ namespace py = pybind11;
 void bind_usrp_radar(py::module& m)
 {
 
-    using usrp_radar    = ::gr::plasma::usrp_radar;
+    using usrp_radar = ::gr::plasma::usrp_radar;
 
 
-    py::class_<usrp_radar, gr::block, gr::basic_block,
-        std::shared_ptr<usrp_radar>>(m, "usrp_radar", D(usrp_radar))
+    py::class_<usrp_radar, gr::block, gr::basic_block, std::shared_ptr<usrp_radar>>(
+        m, "usrp_radar", D(usrp_radar))
 
         .def(py::init(&usrp_radar::make),
-           py::arg("args"),
-           py::arg("tx_rate"),
-           py::arg("rx_rate"),
-           py::arg("tx_freq"),
-           py::arg("rx_freq"),
-           py::arg("tx_gain"),
-           py::arg("rx_gain"),
-           py::arg("start_delay"),
-           py::arg("elevate_priority"),
-           py::arg("cal_file"),
-           py::arg("verbose"),
-           D(usrp_radar,make)
-        )
-        
+             py::arg("args"),
+             py::arg("tx_rate"),
+             py::arg("rx_rate"),
+             py::arg("tx_freq"),
+             py::arg("rx_freq"),
+             py::arg("tx_gain"),
+             py::arg("rx_gain"),
+             py::arg("start_delay"),
+             py::arg("elevate_priority"),
+             py::arg("cal_file"),
+             py::arg("verbose"),
+             D(usrp_radar, make))
 
 
-
-
-        
         .def("set_metadata_keys",
              &usrp_radar::set_metadata_keys,
              py::arg("tx_freq_key"),
              py::arg("rx_freq_key"),
              py::arg("sample_start_key"),
+             py::arg("prf_key"),
              D(usrp_radar, set_metadata_keys))
 
         ;
-
-
-
-
 }
-
-
-
-
-
-
-
-

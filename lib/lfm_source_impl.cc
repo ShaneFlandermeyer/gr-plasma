@@ -37,7 +37,7 @@ lfm_source_impl::lfm_source_impl(
       prf(prf)
 {
     af::array samples =
-        ::plasma::lfm(start_freq, bandwidth, pulse_width, samp_rate, prf).as(c32);
+        ::plasma::lfm(start_freq, bandwidth, pulse_width, samp_rate, 0).as(c32);
     pmt_samples = pmt::init_c32vector(
         samples.elements(), reinterpret_cast<gr_complex*>(samples.host<af::cfloat>()));
 

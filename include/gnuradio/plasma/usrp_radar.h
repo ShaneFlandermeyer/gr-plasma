@@ -45,7 +45,8 @@ public:
                      const bool verbose);
     virtual void set_metadata_keys(const std::string& tx_freq_key,
                                    const std::string& rx_freq_key,
-                                   const std::string& sample_start_key) = 0;
+                                   const std::string& sample_start_key,
+                                   const std::string& prf_key) = 0;
 };
 
 } // namespace plasma

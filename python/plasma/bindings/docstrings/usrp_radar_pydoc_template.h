@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Free Software Foundation, Inc.
+ * Copyright 2024 Free Software Foundation, Inc.
  *
  * This file is part of GNU Radio
  *
@@ -7,7 +7,7 @@
  *
  */
 #include "pydoc_macros.h"
-#define D(...) DOC(gr,plasma, __VA_ARGS__ )
+#define D(...) DOC(gr, plasma, __VA_ARGS__)
 /*
   This file contains placeholders for docstrings for the Python bindings.
   Do not edit! These were automatically extracted during the binding process
@@ -15,19 +15,16 @@
  */
 
 
- 
- static const char *__doc_gr_plasma_usrp_radar = R"doc()doc";
+static const char* __doc_gr_plasma_usrp_radar = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_usrp_radar_usrp_radar_0 = R"doc()doc";
+static const char* __doc_gr_plasma_usrp_radar_usrp_radar_0 = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_usrp_radar_usrp_radar_1 = R"doc()doc";
+static const char* __doc_gr_plasma_usrp_radar_usrp_radar_1 = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_usrp_radar_make = R"doc()doc";
+static const char* __doc_gr_plasma_usrp_radar_make = R"doc()doc";
 
 
- static const char *__doc_gr_plasma_usrp_radar_set_metadata_keys = R"doc()doc";
-
-  
+static const char* __doc_gr_plasma_usrp_radar_set_metadata_keys = R"doc()doc";
