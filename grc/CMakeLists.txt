@@ -20,5 +20,5 @@ install(FILES
     plasma_pdu_file_source.block.yml
     plasma_pulse_doppler.block.yml
     plasma_cw_to_pulsed.block.yml
-    DESTINATION share/gnuradio/grc/blocks
+    plasma_range_limit.block.yml DESTINATION share/gnuradio/grc/blocks
 )
