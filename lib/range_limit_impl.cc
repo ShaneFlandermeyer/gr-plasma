@@ -10,59 +10,38 @@
 
 namespace gr {
   namespace plasma {
-
-    #pragma message("set the following appropriately and remove this warning")
-    using input_type = float;
-    #pragma message("set the following appropriately and remove this warning")
-    using output_type = float;
-    range_limit::sptr
-    range_limit::make(int range)
+    range_limit::sptr range_limit::make(int min_range, int max_range, bool abs_max_range, double multiplier)
     {
-      return gnuradio::make_block_sptr<range_limit_impl>(
-        range);
+      return gnuradio::make_block_sptr<range_limit_impl>(min_range, max_range, abs_max_range, multiplier);
     }
-
 
     /*
      * The private constructor
      */
-    range_limit_impl::range_limit_impl(int range)
-      : gr::block("range_limit",
-              gr::io_signature::make(1 /* min inputs */, 1 /* max inputs */, sizeof(input_type)),
-              gr::io_signature::make(1 /* min outputs */, 1 /*max outputs */, sizeof(output_type)))
-    {}
+    range_limit_impl::range_limit_impl(int min_range, int max_range, bool abs_max_range, double multiplier)
+      : gr::block("range_limit", gr::io_signature::make(0,0,0), gr::io_signature::make(0,0,0)),
+        d_min_range(min_range),
+        d_max_range(max_range),
+        d_abs_max_range(abs_max_range),
+        d_multiplier(multiplier)
+    {
+      d_data = pmt::make_c32vector(1, 0);
+      d_meta = pmt::make_dict();
+
+      d_in_port = PMT_IN;
+      d_out_port = PMT_OUT;
+      message_port_register_in(d_in_port);
+      message_port_register_out(d_out_port);
+      set_msg_handler(d_in_port, [this](pmt::pmt_t msg) {handle_msg(msg);});
+    }
 
     /*
      * Our virtual destructor.
      */
-    range_limit_impl::~range_limit_impl()
-    {
-    }
+    range_limit_impl::~range_limit_impl() {}
 
-    void
-    range_limit_impl::forecast (int noutput_items, gr_vector_int &ninput_items_required)
-    {
-    #pragma message("implement a forecast that fills in how many items on each input you need to produce noutput_items and remove this warning")
-      /* <+forecast+> e.g. ninput_items_required[0] = noutput_items */
-    }
-
-    int
-    range_limit_impl::general_work (int noutput_items,
-                       gr_vector_int &ninput_items,
-                       gr_vector_const_void_star &input_items,
-                       gr_vector_void_star &output_items)
-    {
-      auto in = static_cast<const input_type*>(input_items[0]);
-      auto out = static_cast<output_type*>(output_items[0]);
-
-      #pragma message("Implement the signal processing in your block and remove this warning")
-      // Do <+signal processing+>
-      // Tell runtime system how many input items we consumed on
-      // each input stream.
-      consume_each (noutput_items);
-
-      // Tell runtime system how many output items we produced.
-      return noutput_items;
+    void handle_msg(pmt::pmt_t msg){
+      
     }
 
   } /* namespace plasma */

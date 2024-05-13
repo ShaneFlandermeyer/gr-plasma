@@ -32,7 +32,7 @@ namespace gr {
        * class. plasma::range_limit::make is the public interface for
        * creating new instances.
        */
-      static sptr make(int range=100);
+      static sptr make(int min_range=100, int max_range=10000, bool abs_max_range=false, double multiplier=1);
     };
 
   } // namespace plasma

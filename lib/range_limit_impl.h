@@ -9,6 +9,7 @@
 #define INCLUDED_PLASMA_RANGE_LIMIT_IMPL_H
 
 #include <gnuradio/plasma/range_limit.h>
+#include <gnuradio/plasma/pmt_constants.h>
 
 namespace gr {
   namespace plasma {
@@ -16,20 +17,21 @@ namespace gr {
     class range_limit_impl : public range_limit
     {
      private:
-      // Nothing to declare in this block.
+      int d_min_range;
+      int d_max_range;
+      bool d_abs_max_range;
+      int d_multiplier;
+
+      pmt::pmt_t d_meta;
+      pmt::pmt_t d_data;
+
+      pmt::pmt_t d_in_port;
+      pmt::pmt_t d_out_port;
+      void handle_msg(pmt::pmt_t);
 
      public:
-      range_limit_impl(int range);
+      range_limit_impl(int min_range, int max_range, bool abs_max_range, double multiplier);
       ~range_limit_impl();
-
-      // Where all the action really happens
-      void forecast (int noutput_items, gr_vector_int &ninput_items_required);
-
-      int general_work(int noutput_items,
-           gr_vector_int &ninput_items,
-           gr_vector_const_void_star &input_items,
-           gr_vector_void_star &output_items);
-
     };
 
   } // namespace plasma
