@@ -1,44 +1,37 @@
 id: plasma_range_limit
-label: range_limit
+label: Range Limiter
 category: '[plasma]'
+
+parameters:
+- id: min_range
+  label: Minimum Range (m)
+  dtype: int
+  default: 100
+- id: max_range
+  label: Maximum Range (m)
+  dtype: int
+  default: 10000
+- id: abs_max_range
+  label: Use Absolute Maximum Range
+  dtype: enum
+  options: [true, false]
+  option_labels: [True, False]
+- id: multiplier
+  label: Multiplier
+  dtype: int
+  default: 1
+
+inputs:
+- id: in
+  domain: message
+
+outputs:
+- id: out
+  domain: message
 
 templates:
   imports: from gnuradio import plasma
   make: |-
-  plasma.range_limit(${min_range}, ${max_range}, ${abs_max_range}}, ${multiplier})
-
-
-#  Make one 'parameters' list entry for every parameter you want settable from the GUI.
-#     Keys include:
-#     * id (makes the value accessible as keyname, e.g. in the make entry)
-#     * label (label shown in the GUI)
-#     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
-#     * default
-parameters:
--id: min_range
- label: Minimum Range (m)
- dtype: int
- default: 100
--id: max_range
- label: Maximum Range (m)
- dtype: int
- default: 10000
--id: abs_max_range
- label: Use Absolute Maximum Range
- dtype: enum
- options: [true, false]
- option_labels: [True, False]
--id: multiplier
- label: Multiplier
- dtype: int
- default: 1
-# Metadata keys
-inputs:
--id: in
- domain: message
-
-outputs:
--id: out
- domain: message
+   plasma.range_limit(${min_range}, ${max_range}, ${abs_max_range}, ${multiplier})
 
 file_format: 1
