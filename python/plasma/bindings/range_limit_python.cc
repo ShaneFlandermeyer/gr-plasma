@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(range_limit.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(1e557f561d74bed5bcfbdcf904e23d3a)                     */
+/* BINDTOOL_HEADER_FILE_HASH(0d827619d02e57988006cb1f81e2c996)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -30,13 +30,17 @@ namespace py = pybind11;
 void bind_range_limit(py::module& m)
 {
 
-    using range_limit    = gr::plasma::range_limit;
+    using range_limit    = ::gr::plasma::range_limit;
 
 
     py::class_<range_limit, gr::block, gr::basic_block,
         std::shared_ptr<range_limit>>(m, "range_limit", D(range_limit))
 
         .def(py::init(&range_limit::make),
+           py::arg("min_range") = 100,
+           py::arg("max_range") = 10000,
+           py::arg("abs_max_range") = false,
+           py::arg("multiplier") = 1,
            D(range_limit,make)
         )
         

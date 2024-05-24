@@ -13,9 +13,9 @@ parameters:
   default: 10000
 - id: abs_max_range
   label: Use Absolute Maximum Range
-  dtype: enum
-  options: [true, false]
-  option_labels: [True, False]
+  dtype: bool
+  options: [False, True]
+  default: False
 - id: multiplier
   label: Multiplier
   dtype: int

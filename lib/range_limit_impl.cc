@@ -90,17 +90,20 @@ namespace gr {
       else{
         max_index = index_calc(d_max_range, samp_rate) + floor(wf_len * samp_rate * d_multiplier);
       }
-      if(max_index > pmt::length(samples) - 1){
+      if((size_t)max_index > pmt::length(samples) - 1){
         max_index = pmt::length(samples) - 1;
       }
-
+      //REMOVE THIS
+      std::cout << "Min Index: " << min_index << std::endl;
+      std::cout << "Max Index: " << max_index << std::endl;
+      //END REMOVE
       size_t data_len(0);
       const gr_complex* data = pmt::c32vector_elements(samples, data_len);
       
       int trimmed_len = max_index - min_index + 1;
       pmt::pmt_t samples_trim = pmt::make_c32vector(trimmed_len, 0);
       for (int i = min_index; i <= max_index; i++){
-        pmt::c32vector_set(samples_trim, trimmed_len, data[i]);
+        pmt::c32vector_set(samples_trim, i - min_index, data[i]);
       }
 
       meta = pmt::dict_add(meta, pmt::intern("radar:min_range"), pmt::from_long(d_min_range));

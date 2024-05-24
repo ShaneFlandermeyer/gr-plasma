@@ -52,6 +52,7 @@ list(APPEND plasma_python_files
     pulse_to_cpi_python.cc
     python_bindings.cc
     range_doppler_sink_python.cc
+    range_limit_python.cc
     usrp_radar_python.cc
     waveform_controller_python.cc
     device_python.cc
