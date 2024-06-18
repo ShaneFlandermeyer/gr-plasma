@@ -20,7 +20,8 @@ namespace gr {
       int d_min_range;
       int d_max_range;
       bool d_abs_max_range;
-      int d_multiplier;
+      double d_multiplier;
+      double d_samp_rate;
 
       pmt::pmt_t d_meta;
       pmt::pmt_t d_min_range_key;
@@ -33,7 +34,7 @@ namespace gr {
       void handle_msg(pmt::pmt_t);
 
      public:
-      range_limit_impl(int min_range, int max_range, bool abs_max_range, double multiplier);
+      range_limit_impl(int min_range, int max_range, bool abs_max_range, double multiplier, double samp_rate);
       void set_metadata_keys(const std::string& min_range_key, const std::string& max_range_key, const std::string& range_mult_key);
       ~range_limit_impl();
     };

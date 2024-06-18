@@ -18,8 +18,12 @@ parameters:
   default: False
 - id: multiplier
   label: Multiplier
-  dtype: int
+  dtype: float
   default: 1
+- id: samp_rate
+  label: Sample Rate
+  dtype: float
+  default: samp_rate
 # Metadata Keys
 - id: min_range_key
   label: Minimum Range Key
@@ -51,7 +55,7 @@ outputs:
 templates:
   imports: from gnuradio import plasma
   make: |-
-   plasma.range_limit(${min_range}, ${max_range}, ${abs_max_range}, ${multiplier})
+   plasma.range_limit(${min_range}, ${max_range}, ${abs_max_range}, ${multiplier}, ${samp_rate})
    self.${id}.set_metadata_keys(${min_range_key}, ${max_range_key}, ${range_mult_key})
 
 file_format: 1

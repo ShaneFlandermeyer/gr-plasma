@@ -11,20 +11,21 @@
 
 namespace gr {
   namespace plasma {
-    range_limit::sptr range_limit::make(int min_range, int max_range, bool abs_max_range, double multiplier)
+    range_limit::sptr range_limit::make(int min_range, int max_range, bool abs_max_range, double multiplier, double samp_rate)
     {
-      return gnuradio::make_block_sptr<range_limit_impl>(min_range, max_range, abs_max_range, multiplier);
+      return gnuradio::make_block_sptr<range_limit_impl>(min_range, max_range, abs_max_range, multiplier, samp_rate);
     }
 
     /*
      * The private constructor
      */
-    range_limit_impl::range_limit_impl(int min_range, int max_range, bool abs_max_range, double multiplier)
+    range_limit_impl::range_limit_impl(int min_range, int max_range, bool abs_max_range, double multiplier, double samp_rate)
       : gr::block("range_limit", gr::io_signature::make(0,0,0), gr::io_signature::make(0,0,0)),
         d_min_range(min_range),
         d_max_range(max_range),
         d_abs_max_range(abs_max_range),
-        d_multiplier(multiplier)
+        d_multiplier(multiplier),
+        d_samp_rate(samp_rate)
     {
       d_data = pmt::make_c32vector(1, 0);
       d_meta = pmt::make_dict();
@@ -56,16 +57,6 @@ namespace gr {
         return;
       }
 
-      double samp_rate;
-      //Get sample rate
-      if (pmt::dict_has_key(meta, pmt::intern("core:sample_rate")) || pmt::dict_has_key(meta, pmt::intern("core:samp_rate"))){
-        samp_rate = pmt::to_double(pmt::dict_ref(meta, pmt::intern("core:sample_rate"), pmt::PMT_NIL));
-      }
-      else{
-        GR_LOG_ERROR(d_logger, "Sample rate not defined");
-        return;
-      }
-
       double wf_len;
       //Get waveform length
       if (pmt::dict_has_key(meta, pmt::intern("radar:duration"))){
@@ -85,13 +76,13 @@ namespace gr {
       auto index_calc = [](double range, double samp_rate) -> int{
         return floor(2*(range/(3e8))*samp_rate);
       };
-      min_index = index_calc(d_min_range, samp_rate);
-      max_index = index_calc(d_max_range, samp_rate) + floor(wf_len * samp_rate * d_multiplier);
+      min_index = index_calc(d_min_range, d_samp_rate);
+      max_index = index_calc(d_max_range, d_samp_rate) + floor(wf_len * d_samp_rate * d_multiplier);
       calc_max_range = d_max_range;
 
       if(d_abs_max_range || (size_t)max_index > pmt::length(samples) - 1){
         max_index = pmt::length(samples) - 1;
-        calc_max_range = floor((max_index*(3e8))/(2*samp_rate)); //Correct the max range for metadata
+        calc_max_range = floor((max_index*(3e8))/(2*d_samp_rate)); //Correct the max range for metadata
       }
 
       size_t data_len(0);
