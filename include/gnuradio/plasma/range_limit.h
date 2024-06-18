@@ -33,6 +33,8 @@ namespace gr {
        * creating new instances.
        */
       static sptr make(int min_range=100, int max_range=10000, bool abs_max_range=false, double multiplier=1);
+
+      virtual void set_metadata_keys(const std::string& min_range_key, const std::string& max_range_key, const std::string& range_mult_key) = 0;
     };
 
   } // namespace plasma

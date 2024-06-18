@@ -20,6 +20,25 @@ parameters:
   label: Multiplier
   dtype: int
   default: 1
+# Metadata Keys
+- id: min_range_key
+  label: Minimum Range Key
+  dtype: string
+  default: radar:min_range
+  hide: part
+  category: Metadata
+- id: max_range_key
+  label: Maximum Range Key
+  dtype: string
+  default: radar:max_range
+  hide: part
+  category: Metadata
+- id: range_mult_key
+  label: Range Multiplier Key
+  dtype: string
+  default: radar:range_mult
+  hide: part
+  category: Metadata
 
 inputs:
 - id: in
@@ -33,5 +52,6 @@ templates:
   imports: from gnuradio import plasma
   make: |-
    plasma.range_limit(${min_range}, ${max_range}, ${abs_max_range}, ${multiplier})
+   self.${id}.set_metadata_keys(${min_range_key}, ${max_range_key}, ${range_mult_key})
 
 file_format: 1

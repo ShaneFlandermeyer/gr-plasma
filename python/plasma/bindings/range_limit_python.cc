@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(range_limit.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(0d827619d02e57988006cb1f81e2c996)                     */
+/* BINDTOOL_HEADER_FILE_HASH(84a008b75920db7234fda2b72e7bcc2c)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -46,6 +46,15 @@ void bind_range_limit(py::module& m)
         
 
 
+
+
+        
+        .def("set_metadata_keys", &range_limit::set_metadata_keys,       
+            py::arg("min_range_key"),
+            py::arg("max_range_key"),
+            py::arg("range_mult_key"),
+            D(range_limit,set_metadata_keys)
+        )
 
         ;
 

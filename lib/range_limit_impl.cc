@@ -52,17 +52,17 @@ namespace gr {
         samples = msg;
       }
       else{
-        GR_LOG_WARN(d_logger, "Invalid message type");
+        GR_LOG_ERROR(d_logger, "Invalid message type");
         return;
       }
 
       double samp_rate;
       //Get sample rate
-      if (pmt::dict_has_key(meta, pmt::intern("core:sample_rate"))){
+      if (pmt::dict_has_key(meta, pmt::intern("core:sample_rate")) || pmt::dict_has_key(meta, pmt::intern("core:samp_rate"))){
         samp_rate = pmt::to_double(pmt::dict_ref(meta, pmt::intern("core:sample_rate"), pmt::PMT_NIL));
       }
       else{
-        GR_LOG_WARN(d_logger, "Sample rate not defined");
+        GR_LOG_ERROR(d_logger, "Sample rate not defined");
         return;
       }
 
@@ -72,31 +72,28 @@ namespace gr {
         wf_len = pmt::to_double(pmt::dict_ref(meta, pmt::intern("radar:duration"), pmt::PMT_NIL));
       }
       else{
-        GR_LOG_WARN(d_logger, "Waveform length not defined");
-        return;
+        throw std::invalid_argument("Waveform length not defined");
       }
 
+      if (d_min_range < 0 || d_max_range < 0){
+        throw std::invalid_argument("Negative Range Entered");
+      }
 
       int min_index, max_index;
+      int calc_max_range;
       //Define the min and max index
       auto index_calc = [](double range, double samp_rate) -> int{
         return floor(2*(range/(3e8))*samp_rate);
       };
       min_index = index_calc(d_min_range, samp_rate);
+      max_index = index_calc(d_max_range, samp_rate) + floor(wf_len * samp_rate * d_multiplier);
+      calc_max_range = d_max_range;
 
-      if (d_abs_max_range){
+      if(d_abs_max_range || (size_t)max_index > pmt::length(samples) - 1){
         max_index = pmt::length(samples) - 1;
+        calc_max_range = floor((max_index*(3e8))/(2*samp_rate)); //Correct the max range for metadata
       }
-      else{
-        max_index = index_calc(d_max_range, samp_rate) + floor(wf_len * samp_rate * d_multiplier);
-      }
-      if((size_t)max_index > pmt::length(samples) - 1){
-        max_index = pmt::length(samples) - 1;
-      }
-      //REMOVE THIS
-      std::cout << "Min Index: " << min_index << std::endl;
-      std::cout << "Max Index: " << max_index << std::endl;
-      //END REMOVE
+
       size_t data_len(0);
       const gr_complex* data = pmt::c32vector_elements(samples, data_len);
       
@@ -106,11 +103,16 @@ namespace gr {
         pmt::c32vector_set(samples_trim, i - min_index, data[i]);
       }
 
-      meta = pmt::dict_add(meta, pmt::intern("radar:min_range"), pmt::from_long(d_min_range));
-      meta = pmt::dict_add(meta, pmt::intern("radar:max_range"), pmt::from_long(d_max_range));
-      meta = pmt::dict_add(meta, pmt::intern("radar:range_mult"), pmt::from_long(d_multiplier));
-
+      meta = pmt::dict_add(meta, d_min_range_key, pmt::from_long(d_min_range));
+      meta = pmt::dict_add(meta, d_max_range_key, pmt::from_long(calc_max_range));
+      meta = pmt::dict_add(meta, d_range_mult_key, pmt::from_long(d_multiplier));
       message_port_pub(d_out_port, pmt::cons(meta, samples_trim));
+    }
+
+    void range_limit_impl::set_metadata_keys(const std::string& min_range_key, const std::string& max_range_key, const std::string& range_mult_key){
+      d_min_range_key = pmt::intern(min_range_key);
+      d_max_range_key = pmt::intern(max_range_key);
+      d_range_mult_key = pmt::intern(range_mult_key);
     }
 
   } /* namespace plasma */

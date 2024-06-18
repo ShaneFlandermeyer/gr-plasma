@@ -23,6 +23,9 @@ namespace gr {
       int d_multiplier;
 
       pmt::pmt_t d_meta;
+      pmt::pmt_t d_min_range_key;
+      pmt::pmt_t d_max_range_key;
+      pmt::pmt_t d_range_mult_key;
       pmt::pmt_t d_data;
 
       pmt::pmt_t d_in_port;
@@ -31,6 +34,7 @@ namespace gr {
 
      public:
       range_limit_impl(int min_range, int max_range, bool abs_max_range, double multiplier);
+      void set_metadata_keys(const std::string& min_range_key, const std::string& max_range_key, const std::string& range_mult_key);
       ~range_limit_impl();
     };
 
