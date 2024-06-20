@@ -80,11 +80,13 @@ namespace gr {
       max_index = index_calc(d_max_range, d_samp_rate) + floor(wf_len * d_samp_rate * d_multiplier);
       calc_max_range = d_max_range;
 
+      //Correct the max range for metadata, if needed
       if(d_abs_max_range || (size_t)max_index > pmt::length(samples) - 1){
         max_index = pmt::length(samples) - 1;
-        calc_max_range = floor((max_index*(3e8))/(2*d_samp_rate)); //Correct the max range for metadata
+        calc_max_range = floor((max_index*(3e8))/(2*d_samp_rate)); 
       }
 
+      //Perform the trim
       size_t data_len(0);
       const gr_complex* data = pmt::c32vector_elements(samples, data_len);
       
@@ -94,6 +96,7 @@ namespace gr {
         pmt::c32vector_set(samples_trim, i - min_index, data[i]);
       }
 
+      //Add metadata and publish
       meta = pmt::dict_add(meta, d_min_range_key, pmt::from_long(d_min_range));
       meta = pmt::dict_add(meta, d_max_range_key, pmt::from_long(calc_max_range));
       meta = pmt::dict_add(meta, d_range_mult_key, pmt::from_long(d_multiplier));
