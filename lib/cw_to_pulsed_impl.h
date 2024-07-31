@@ -17,25 +17,26 @@ namespace plasma {
 class cw_to_pulsed_impl : public cw_to_pulsed
 {
 private:
-    double d_prf;
-    double d_sample_rate;
+    double prf;
+    double sample_rate;
+
+    pmt::pmt_t last_data;
 
     // TODO: Make this key user-configurable
-    pmt::pmt_t d_nonzero_key = pmt::string_to_symbol("n_nonzero");
-    pmt::pmt_t d_sample_rate_key;
-    pmt::pmt_t d_prf_key;
+    pmt::pmt_t nonzero_key = pmt::string_to_symbol("n_nonzero");
+    pmt::pmt_t sample_rate_key;
+    pmt::pmt_t prf_key;
 
-    pmt::pmt_t d_in_port;
-    pmt::pmt_t d_out_port;
+    pmt::pmt_t in_port;
+    pmt::pmt_t out_port;
 
 public:
     cw_to_pulsed_impl(double prf, double samp_rate);
 
     void handle_msg(pmt::pmt_t msg);
-    void parse_meta(pmt::pmt_t meta);
+    void parse_input_meta(pmt::pmt_t meta);
 
-    void init_meta_dict(const std::string& sample_rate_key,
-                                const std::string& prf_key);
+    void init_meta_dict(const std::string& sample_rate_key, const std::string& prf_key);
 };
 
 } // namespace plasma
