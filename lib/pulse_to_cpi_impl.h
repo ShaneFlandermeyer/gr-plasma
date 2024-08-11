@@ -18,14 +18,14 @@ class pulse_to_cpi_impl : public pulse_to_cpi
 {
 private:
     // Metadata keys
-    pmt::pmt_t d_n_pulse_cpi_key;
-    pmt::pmt_t d_in_port;
-    pmt::pmt_t d_out_port;
-    pmt::pmt_t d_meta;
+    pmt::pmt_t pulses_per_cpi_key;
+    pmt::pmt_t in_port;
+    pmt::pmt_t out_port;
+    pmt::pmt_t meta;
 
-    std::vector<gr_complex> d_data;
-    size_t d_n_pulse_cpi;
-    size_t d_pulse_count;
+    std::vector<gr_complex> data;
+    size_t pulses_per_cpi;
+    size_t pulse_count;
 
 
 public:

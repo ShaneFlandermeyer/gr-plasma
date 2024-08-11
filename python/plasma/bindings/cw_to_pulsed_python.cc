@@ -30,7 +30,7 @@ namespace py = pybind11;
 void bind_cw_to_pulsed(py::module& m)
 {
 
-    using cw_to_pulsed = gr::plasma::cw_to_pulsed;
+    using cw_to_pulsed = ::gr::plasma::cw_to_pulsed;
 
 
     py::class_<cw_to_pulsed, gr::block, gr::basic_block, std::shared_ptr<cw_to_pulsed>>(
@@ -41,6 +41,12 @@ void bind_cw_to_pulsed(py::module& m)
              py::arg("samp_rate"),
              D(cw_to_pulsed, make))
 
+
+        .def("init_meta_dict",
+             &cw_to_pulsed::init_meta_dict,
+             py::arg("sample_rate_key"),
+             py::arg("prf_key"),
+             D(cw_to_pulsed, init_meta_dict))
 
         ;
 }
