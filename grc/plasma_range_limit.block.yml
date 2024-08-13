@@ -1,0 +1,61 @@
+id: plasma_range_limit
+label: Range Limiter
+category: '[plasma]'
+
+parameters:
+- id: min_range
+  label: Minimum Range (m)
+  dtype: int
+  default: 100
+- id: max_range
+  label: Maximum Range (m)
+  dtype: int
+  default: 10000
+- id: abs_max_range
+  label: Use Absolute Maximum Range
+  dtype: bool
+  options: [False, True]
+  default: False
+- id: multiplier
+  label: Multiplier
+  dtype: float
+  default: 1
+- id: samp_rate
+  label: Sample Rate
+  dtype: float
+  default: samp_rate
+# Metadata Keys
+- id: min_range_key
+  label: Minimum Range Key
+  dtype: string
+  default: radar:min_range
+  hide: part
+  category: Metadata
+- id: max_range_key
+  label: Maximum Range Key
+  dtype: string
+  default: radar:max_range
+  hide: part
+  category: Metadata
+- id: range_mult_key
+  label: Range Multiplier Key
+  dtype: string
+  default: radar:range_mult
+  hide: part
+  category: Metadata
+
+inputs:
+- id: in
+  domain: message
+
+outputs:
+- id: out
+  domain: message
+
+templates:
+  imports: from gnuradio import plasma
+  make: |-
+   plasma.range_limit(${min_range}, ${max_range}, ${abs_max_range}, ${multiplier}, ${samp_rate})
+   self.${id}.set_metadata_keys(${min_range_key}, ${max_range_key}, ${range_mult_key})
+
+file_format: 1

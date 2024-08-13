@@ -37,6 +37,8 @@ namespace py = pybind11;
     void bind_pdu_file_source(py::module& m);
     void bind_pulse_doppler(py::module& m);
     void bind_cw_to_pulsed(py::module& m);
+    void bind_range_limit(py::module& m);
+    void bind_pdu_slicer(py::module& m);
 // ) END BINDING_FUNCTION_PROTOTYPES
 
 
@@ -81,5 +83,7 @@ PYBIND11_MODULE(plasma_python, m)
     bind_pdu_file_source(m);
     bind_pulse_doppler(m);
     bind_cw_to_pulsed(m);
+    bind_range_limit(m);
+    bind_pdu_slicer(m);
     // ) END BINDING_FUNCTION_CALLS
 }
