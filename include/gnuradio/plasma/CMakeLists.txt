@@ -29,5 +29,6 @@ install(FILES
     pdu_file_source.h
     pulse_doppler.h
     cw_to_pulsed.h
-    range_limit.h DESTINATION include/gnuradio/plasma
+    range_limit.h
+    pdu_slicer.h DESTINATION include/gnuradio/plasma
 )

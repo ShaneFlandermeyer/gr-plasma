@@ -52,3 +52,4 @@ GR_ADD_TEST(qa_pulse_to_cpi ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_
 GR_ADD_TEST(qa_pdu_file_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_file_source.py)
 GR_ADD_TEST(qa_pulse_doppler ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pulse_doppler.py)
 GR_ADD_TEST(qa_cw_to_pulsed ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_cw_to_pulsed.py)
+GR_ADD_TEST(qa_pdu_slicer ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_pdu_slicer.py)
